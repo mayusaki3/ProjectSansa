@@ -1,13 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <RootNamespace>SansaServer</RootNamespace>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UserSecretsId>dotnet-SansaServer-09778C63-D409-4CCD-A3AC-4B883A78367F</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SansaLib\SansaLib.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.7" />
   </ItemGroup>
-
 </Project>
