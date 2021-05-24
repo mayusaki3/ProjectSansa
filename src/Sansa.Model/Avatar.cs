@@ -22,19 +22,7 @@ namespace Sansa.Model
         public void Load(List<GLB_Chunk> ChunkList)
         {
             // チャンク0を処理
-            using var ms = new MemoryStream(ChunkList[0].ChunkData, 0, (int)ChunkList[0].ChunkLength);
-            using var rd = new StreamReader(ms, Encoding.UTF8);
-            string js = rd.ReadToEnd();
-
-            string fnam = @"C:\WORKPLACE\VRoom\LOAD.txt";
-            using (StreamWriter sw = new(fnam))
-            {
-                sw.WriteLine(js.Replace(",", ",\r\n"));
-                Logging.Write("入力VRMのチャンク0(JSON)を " + fnam + " に出力しました。");
-            }
-
-            AvaterTF.rootobject = JsonSerializer.Deserialize<AvatarTF.RootObject>(js);
-
+            avatarTF.Parse(ChunkList[0]);
 
 
         }
@@ -52,32 +40,13 @@ namespace Sansa.Model
             ChunkList = new();
 
             // GLBチャンク0作成
-            GLB_Chunk chunk0 = new();
-            chunk0.ChunkType = GLB_Chunk.ChankType.JSON;
-            JsonSerializerOptions opt = new()
-            {
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            };
-            opt.Converters.Add(new AvatarTF.JsonConverterForNullableInt());
-            opt.Converters.Add(new AvatarTF.JsonConverterForNullableDouble());
+            avatarTF.ToChunk(out GLB_Chunk chunk0);
 
-            string js = JsonSerializer.Serialize(AvaterTF.rootobject, opt);
-            byte[] jsbytes = System.Text.Encoding.UTF8.GetBytes(js);
-            chunk0.ChunkLength = (uint)(jsbytes.Length + jsbytes.Length % 4);
-            chunk0.ChunkData = new byte[chunk0.ChunkLength];
-            jsbytes.CopyTo(chunk0.ChunkData, 0);
-            for (int i = jsbytes.Length; i < chunk0.ChunkLength; i++) chunk0.ChunkData[i] = 0x20;
             ChunkList.Add(chunk0);
-
-
-            string fnam = @"C:\WORKPLACE\VRoom\SAVE.txt";
-            using StreamWriter sw = new(fnam);
-            sw.WriteLine(js.Replace(",", ",\r\n"));
-            Logging.Write("出力VRMのチャンク0(JSON)を " + fnam + " に出力しました。");
-
         }
 
         #endregion
+ 
 
         #endregion
 
@@ -98,7 +67,7 @@ namespace Sansa.Model
 
         #region アバター
 
-        public AvatarTF AvaterTF { get; } = new();
+        public AvatarTF avatarTF { get; } = new();
 
         #endregion
 
