@@ -1,7 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Version>0.0.1</Version>
+    <Company>Project Sansa</Company>
+    <PackageProjectUrl>https://github.com/mayusaki3/ProjectSansa</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JaffaCore\JaffaCore.csproj" />
+    <Reference Include="JaffaCore">
+      <HintPath>..\Dlls\JaffaCore.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

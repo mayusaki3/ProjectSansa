@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28803.352
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JaffaCore", "JaffaCore\JaffaCore.csproj", "{907B1DAF-156E-4052-8F14-BF6E44F00FBF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sansa.Model", "Sansa.Model\Sansa.Model.csproj", "{174179D3-86C9-4DEA-97B9-A841FF336644}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sansa.Model.UnitTest", "Sansa.Model.UnitTest\Sansa.Model.UnitTest.csproj", "{D70A76D4-B6DE-4D7B-ABB4-E7181C5B2A78}"
@@ -15,10 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{907B1DAF-156E-4052-8F14-BF6E44F00FBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{907B1DAF-156E-4052-8F14-BF6E44F00FBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{907B1DAF-156E-4052-8F14-BF6E44F00FBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{907B1DAF-156E-4052-8F14-BF6E44F00FBF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{174179D3-86C9-4DEA-97B9-A841FF336644}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{174179D3-86C9-4DEA-97B9-A841FF336644}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{174179D3-86C9-4DEA-97B9-A841FF336644}.Release|Any CPU.ActiveCfg = Release|Any CPU

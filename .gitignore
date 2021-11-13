@@ -1,6 +1,5 @@
 .vs
-src/JaffaCore/obj/
-src/JaffaCore/bin/
+src/Dlls/*.dll
 src/Sansa.Model/obj/
 src/Sansa.Model/bin/
 src/Sansa.Model.UnitTest/obj/
