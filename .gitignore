@@ -1,0 +1,7 @@
+.vs
+src/Dlls/*.dll
+src/Sansa.Model/obj/
+src/Sansa.Model/bin/
+src/Sansa.Model.UnitTest/obj/
+src/Sansa.Model.UnitTest/bin/
+*.user
