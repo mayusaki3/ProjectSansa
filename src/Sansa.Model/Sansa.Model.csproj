@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Version>0.0.1</Version>
+    <Company>Project Sansa</Company>
+    <PackageProjectUrl>https://github.com/mayusaki3/ProjectSansa</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Format\VRM\**" />
+    <EmbeddedResource Remove="Format\VRM\**" />
+    <None Remove="Format\VRM\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="AvatarTF\AvaterTF.Accessor.Sparse.cs" />
+    <Compile Remove="AvatarTF\AvaterTF.Schema.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="JaffaCore">
+      <HintPath>..\Dlls\JaffaCore.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
