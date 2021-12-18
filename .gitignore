@@ -1,5 +1,7 @@
 .vs
 src/Dlls/*.dll
+src/GameEngine/o3de/
+src/GameEngine/o3de_manager/
 src/Sansa.Model/obj/
 src/Sansa.Model/bin/
 src/Sansa.Model.UnitTest/obj/
