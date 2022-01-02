@@ -5,5 +5,6 @@ cd o3de
 
 cmd /c scripts\o3de.bat register --this-engine
 
-rem ■■■  終了しました  ■■■
+cd ..
+rem ■■■  3_終了しました  ■■■
 pause

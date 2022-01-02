@@ -15,5 +15,6 @@ cmake -S ..\o3de -G "Visual Studio 17 2022" -DLY_3RDPARTY_PATH=../o3de/3rdparty
 
 cmake --build . --target AssetProcessor Editor --config profile -- /m
 
-rem ■■■  終了しました  ■■■
+cd ..\..
+rem ■■■  4_終了しました  ■■■
 pause

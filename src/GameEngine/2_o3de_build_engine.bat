@@ -11,5 +11,6 @@ cmd /c ..\python\get_python.bat
 
 cmake -S ../ -G "Visual Studio 17 2022" -DLY_3RDPARTY_PATH=../3rdparty
 
-rem ■■■  終了しました  ■■■
+cd ..\..
+rem ■■■  2_終了しました  ■■■
 pause

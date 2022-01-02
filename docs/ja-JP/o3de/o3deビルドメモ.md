@@ -26,7 +26,8 @@ src/GameEngine/ 内
 ```
 1_o3de_download.bat
 ```
-src/GameEngine/o3de/ にダウンロードされます。
+src/GameEngine/o3de/ にダウンロードされます。  
+2回目以降はpullします。
 
 # o3de のビルド
 スタートメニューから以下を起動します。
@@ -55,6 +56,7 @@ src/GameEngine/ 内
 ```
 4_o3de_build_manager.bat
 ```
+エラーがある場合は、o3deフォルダを削除して最初からやり直してください。  
 成功すれば、以下のファイルができているので、実行してみましょう。  
 src\GameEngine\o3de\bin\profile\o3de.exe  
 先ほどと同様に以下のバッチをドラッグして実行してください。  
