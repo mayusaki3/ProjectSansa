@@ -1,16 +1,20 @@
 chcp 65001
 %~d0
 cd %~dp0
-rmdir /q /s o3de\3rdparty
+c:
+cd \o3de
+rmdir /q /s o3de-packages
 rmdir /q /s o3de\build
-mkdir o3de\3rdparty
+mkdir o3de-packages
 mkdir o3de\build
-cd o3de\build
+cd o3de
 
-cmd /c ..\python\get_python.bat
+cmd /c python\get_python.bat
 
-cmake -S ../ -G "Visual Studio 17 2022" -DLY_3RDPARTY_PATH=../3rdparty
+cmake -B build/windows_vs2019 -S . -G "Visual Studio 16 2019" -DLY_3RDPARTY_PATH=../o3de-packages
+cmake --build build/windows_vs2019 --target AssetProcessor Editor --config profile -- -m
 
-cd ..\..
+%~d0
+cd %~dp0
 rem ■■■  2_終了しました  ■■■
 pause
