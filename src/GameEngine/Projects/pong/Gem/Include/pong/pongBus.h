@@ -9,7 +9,7 @@ namespace pong
     class pongRequests
     {
     public:
-        AZ_RTTI(pongRequests, "{6feb512f-2ede-4dd5-821a-26659886b719}");
+        AZ_RTTI(pongRequests, "{0a16afa0-f673-46a4-9b24-0c22e48e4dd4}");
         virtual ~pongRequests() = default;
         // Put your public methods here
     };

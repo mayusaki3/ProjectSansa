@@ -10,7 +10,7 @@ namespace pong
         : public AZ::Module
     {
     public:
-        AZ_RTTI(pongModule, "{18a9140a-d371-45fd-ab8e-67b9aa4b443d}", AZ::Module);
+        AZ_RTTI(pongModule, "{8b31528d-b8de-4c5d-9706-1cc00fc921ec}", AZ::Module);
         AZ_CLASS_ALLOCATOR(pongModule, AZ::SystemAllocator, 0);
 
         pongModule()

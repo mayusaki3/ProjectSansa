@@ -1,6 +1,6 @@
 {
     "project_name": "pong",
-    "project_id": "{aecdd8b7-5184-42f6-82b4-43bcdcab95af}",
+    "project_id": "{5b5c086c-2bed-4672-885e-2aff97730362}",
     "origin": "The primary repo for pong goes here: i.e. http://www.mydomain.com",
     "license": "What license pong uses goes here: i.e. https://opensource.org/licenses/Apache-2.0 Or https://opensource.org/licenses/MIT etc.",
     "display_name": "pong",

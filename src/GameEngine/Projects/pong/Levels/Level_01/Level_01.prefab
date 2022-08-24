@@ -17,7 +17,11 @@
             },
             "Component_[14126657869720434043]": {
                 "$type": "EditorEntitySortComponent",
-                "Id": 14126657869720434043
+                "Id": 14126657869720434043,
+                "Child Entity Order": [
+                    "Entity_[1176639161715]",
+                    "Entity_[638623608011]"
+                ]
             },
             "Component_[15230859088967841193]": {
                 "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
@@ -201,7 +205,7 @@
                     "Controller": {
                         "Configuration": {
                             "Field of View": 55.0,
-                            "EditorEntityId": 8929576024571800510
+                            "EditorEntityId": 2854363386095637353
                         }
                     }
                 },
@@ -250,7 +254,8 @@
                     "$type": "GenericComponentWrapper",
                     "Id": 7255796294953281766,
                     "m_template": {
-                        "$type": "FlyCameraInputComponent"
+                        "$type": "FlyCameraInputComponent",
+                        "Is enabled": false
                     }
                 },
                 "Component_[8866210352157164042]": {
@@ -352,7 +357,8 @@
                 },
                 "Component_[16247165675903986673]": {
                     "$type": "EditorVisibilityComponent",
-                    "Id": 16247165675903986673
+                    "Id": 16247165675903986673,
+                    "VisibilityFlag": false
                 },
                 "Component_[18082433625958885247]": {
                     "$type": "EditorDisabledCompositionComponent",
@@ -540,6 +546,71 @@
                 "Component_[931091830724002070]": {
                     "$type": "EditorInspectorComponent",
                     "Id": 931091830724002070
+                }
+            }
+        },
+        "Entity_[638623608011]": {
+            "Id": "Entity_[638623608011]",
+            "Name": "Start Menu",
+            "Components": {
+                "Component_[10527572368166190996]": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 10527572368166190996
+                },
+                "Component_[10553828086381717052]": {
+                    "$type": "SelectionComponent",
+                    "Id": 10553828086381717052
+                },
+                "Component_[13359316863079308760]": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 13359316863079308760,
+                    "Parent Entity": "Entity_[1146574390643]",
+                    "Transform Data": {
+                        "Translate": [
+                            -0.007976907305419445,
+                            0.09999656677246094,
+                            4.007898330688477
+                        ]
+                    }
+                },
+                "Component_[13472310198071280023]": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 13472310198071280023
+                },
+                "Component_[13867514120098432275]": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 13867514120098432275
+                },
+                "Component_[15447355963104109962]": {
+                    "$type": "EditorLockComponent",
+                    "Id": 15447355963104109962
+                },
+                "Component_[3365363076103095147]": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 3365363076103095147
+                },
+                "Component_[4048695173013094566]": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 4048695173013094566
+                },
+                "Component_[5705629555779261246]": {
+                    "$type": "GenericComponentWrapper",
+                    "Id": 5705629555779261246,
+                    "m_template": {
+                        "$type": "UiCanvasAssetRefComponent",
+                        "CanvasAssetRef": {
+                            "AssetPath": "assets/startmenu.uicanvas"
+                        },
+                        "IsAutoLoad": true
+                    }
+                },
+                "Component_[7017875219037338201]": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 7017875219037338201
+                },
+                "Component_[9934344514052856805]": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 9934344514052856805
                 }
             }
         }

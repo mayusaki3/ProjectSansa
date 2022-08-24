@@ -12,7 +12,7 @@ namespace pong
         , protected pongRequestBus::Handler
     {
     public:
-        AZ_COMPONENT(pongSystemComponent, "{83ee31fc-feac-46f3-bf60-93959f4954e7}");
+        AZ_COMPONENT(pongSystemComponent, "{775af133-dc1f-4211-b07f-be0fcd2e16a0}");
 
         static void Reflect(AZ::ReflectContext* context);
 
