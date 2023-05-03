@@ -1,10 +1,12 @@
 # o3deメモ
 
 Project Sansaでは、ゲームエンジンとして Open 3D Engine (o3de) を使用します。  
-以下は、利用可能にするまでの、簡単なメモです。  
-なお、実行は Windows 11 Pro で行っています。  
-ここでの手順は、GitHubからForkせずにCloneするやり方になっています。  
-本来の手順は以下に詳細ドキュメントがありますので、必要に応じて参照してください。
+※現在 https://www.o3de.org/download/ からインストーラーがダウンロードできます。  
+
+以下は、インストーラーを使用せず、自分でビルドして利用可能にするまでの簡単なメモです。  
+なお、確認は Windows 11 Pro で行っています。  
+ここでは GitHub から Fork せずに Clone する手順について説明します。  
+本来の手順は以下に詳細ドキュメントがありますので、必要に応じて参照してください。  
 https://o3de.org/docs/welcome-guide/setup/setup-from-github/
 
 # ツール類のインストール
@@ -23,6 +25,7 @@ Windows ターミナル（管理者用）を起動し、以下を実行します
 git lfs install
 ```
 GitHub接続時に毎回聞かれないよう資格情報を登録しておいてください。  
+https://docs.github.com/ja/get-started/getting-started-with-git/caching-your-github-credentials-in-git 
 
 # o3de のダウンロード
 以下のバッチを実行してください。 
