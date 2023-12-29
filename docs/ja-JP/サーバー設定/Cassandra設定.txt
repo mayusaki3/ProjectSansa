@@ -1,0 +1,26 @@
+Project Sansa: Cassandraの設定
+
+■クラスタ設定１: cassandra.yaml に設定
+  cluster_name: 'SansaXR Cluster'
+  seed_provider:
+    - class_name: (既定値)
+      parameters:
+        - seeds: "192.168.33.1:7000"  ←シードのIPアドレス   各自の環境に合わせて設定
+  listen_address: 192.168.33.2        ←自ノードのIPアドレス 各自の環境に合わせて設定
+  rpc_address:: 192.168.33.2          ←自ノードのIPアドレス 各自の環境に合わせて設定
+  endpoint_snitch: SimpleSnitch       ←ノードの物理的な位置 各自の環境に合わせて設定
+
+■ここまで（以下編集中）
+
+■Cassandra Keyspace 定義: SansaXR
+
+■アカウント情報
+  Keyspace[]
+    key:    User
+    value:  ColumnFamily[]
+      key: 
+      value: SuperColumn[]
+        key: 
+        value: Column[]
+
+      
