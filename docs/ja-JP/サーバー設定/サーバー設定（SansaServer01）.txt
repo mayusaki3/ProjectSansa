@@ -55,7 +55,7 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   sudo systemctl status cassandra
   nodetool status
 
-■Cassandraの設定
+■Cassandraの設定（ノード追加）
   cqlsh
   > UPDATE system.local SET cluster_name = 'クラスタ名' where key = 'local';
   > exit
@@ -64,3 +64,20 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   → Cassandra設定.txt の「クラスタ設定」の内容を設定
   sudo systemctl restart cassandra
   nodetool status
+  cqlsh ノードのIPアドレス
+
+■Nginxのインストール
+  sudo apt update
+  sudo apt install nginx
+
+■.NET SDKのUbuntu 23.10用リポジトリ追加と.NET SDK 8.0のインストール
+  wget https://packages.microsoft.com/config/ubuntu/23.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+  sudo dpkg -i packages-microsoft-prod.deb
+  rm packages-microsoft-prod.deb
+  sudo apt-get update
+  sudo apt-get install -y apt-transport-https
+  sudo apt-get update
+  sudo apt-get install -y dotnet-sdk-8.0
+
+■SansaXRの設定
+  → 不要（同期される）
