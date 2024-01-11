@@ -1,10 +1,12 @@
-SansaServer00 設定
-------------------
-■インストール時
+SansaNode_seed 設定（node1台目）
+--------------------------------
+■Ubuntuインストール
+  https://ubuntu.com/download/server から以下をダウンロードしてインストール
+    ubuntu-23.10-live-server-amd64.iso
   ネットワーク
     インターネット : IPv4
       インターネット接続タイプ : 静的IP
-      アドレス                 : 192.168.33.1  ←各自の環境に合わせて設定
+      アドレス                 : 192.168.3.30 ←各自の環境に合わせて設定
   Mirror address
     http://jp.archive.ubuntu.com/ubuntu/  または
     http://ftp.riken.jp/Linux/ubuntu/
@@ -42,6 +44,10 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   locale
   →LANG=ja_JP.UTF-8 があればOK
 
+■Nginxのインストール
+  sudo apt update
+  sudo apt install nginx
+
 ■Javaのインストール
   sudo apt update
   sudo apt install -y openjdk-17-jdk
@@ -54,6 +60,12 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   sudo apt install cassandra
   sudo systemctl status cassandra
   nodetool status
+
+■Nginxの設定（defaultページの変更）
+  確認用にページにノード名を付ける
+  sudo nano /var/www/html/index.nginx-debian.html
+
+■ここまで（以下編集中）
 
 ■Cassandraの設定（ノード追加）
   cqlsh
@@ -69,9 +81,9 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
 ■Cassandraの設定（ノード削除）
   nodetool -h ノードのIPアドレス decommission
 
-■Nginxのインストール
-  sudo apt update
-  sudo apt install nginx
+
+
+
 
 ■.NET SDKのUbuntu 23.10用リポジトリ追加と.NET SDK 8.0のインストール
   wget https://packages.microsoft.com/config/ubuntu/23.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb

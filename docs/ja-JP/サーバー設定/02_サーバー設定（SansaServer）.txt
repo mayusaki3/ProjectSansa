@@ -1,0 +1,69 @@
+SansaServer 設定
+----------------
+■Ubuntuインストール
+  https://ubuntu.com/download/server から以下をダウンロードしてインストール
+    ubuntu-23.10-live-server-amd64.iso
+  ネットワーク
+    インターネット : IPv4
+      インターネット接続タイプ : 静的IP
+      アドレス                 : 192.168.3.30 ←各自の環境に合わせて設定
+  Mirror address
+    http://jp.archive.ubuntu.com/ubuntu/  または
+    http://ftp.riken.jp/Linux/ubuntu/
+  [X] Install OpenSSH server
+
+■SSH有効化 - SSHで接続できない場合  ssh user@ipaddress
+  状態確認
+    sudo systemctl status ssh
+  起動
+    sudo systemctl start ssh
+
+■ミラーサイト情報の変更 - sudo apt update が失敗する場合
+  sudo nano /etc/apt/sources.list
+    http://ftp.riken.jp/Linux/ubuntu
+
+cat /etc/apt/sources.list | grep -v "#"
+sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /etc/apt/sources.list
+
+■各種パッケージのアップグレード
+  sudo apt update
+  sudo apt-get upgrade
+
+■Ubuntu Server を最新に更新
+  sudo apt update
+  sudo apt dist-upgrade
+  sudo apt autoremove
+  do-release-upgrade
+
+■日本語導入 (localeは変更しない)
+  sudo apt update
+  sudo apt install -y language-pack-ja
+# sudo update-locale LANG=ja_JP.UTF-8
+  sudo timedatectl set-timezone Asia/Tokyo
+  sudo reboot
+# locale
+# →LANG=ja_JP.UTF-8 があればOK
+
+■Nginxのインストール
+  sudo apt update
+  sudo apt install nginx
+
+■SSL証明書の取得または更新
+  （SKIP）
+
+■Nginxの設定（ロードバランサー）
+  sudo nano /etc/nginx/nginx.conf
+  →http {} 内に以下を追加
+        upstream backends {
+          server 192.168.3.31:80;
+          server 192.168.3.32:80;
+          server 192.168.3.33:80;
+        }
+  sudo nano /etc/nginx/sites-available/default
+  →server {} 内のlocation / {} 内を編集
+        location / {
+          proxy_pass http://backends;
+        }
+sudo systemctl restart nginx
+
+■ここまで（以下編集中）

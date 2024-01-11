@@ -1,10 +1,12 @@
-SansaServer00 設定
-------------------
-■インストール時
+SansaNode_x01/02 設定（node2台目以降）
+--------------------------------------
+■Ubuntuインストール
+  https://ubuntu.com/download/server から以下をダウンロードしてインストール
+    ubuntu-23.10-live-server-amd64.iso
   ネットワーク
     インターネット : IPv4
       インターネット接続タイプ : 静的IP
-      アドレス                 : 192.168.33.1  ←各自の環境に合わせて設定
+      アドレス                 : 192.168.3.30 ←各自の環境に合わせて設定
   Mirror address
     http://jp.archive.ubuntu.com/ubuntu/  または
     http://ftp.riken.jp/Linux/ubuntu/
@@ -33,27 +35,37 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   sudo apt autoremove
   do-release-upgrade
 
-■日本語化（他の言語も同様）
+■日本語導入 (x01はlocaleは変更しない、x02はlocaleも変更)
   sudo apt update
   sudo apt install -y language-pack-ja
-  sudo update-locale LANG=ja_JP.UTF-8
+# sudo update-locale LANG=ja_JP.UTF-8
   sudo timedatectl set-timezone Asia/Tokyo
   sudo reboot
-  locale
-  →LANG=ja_JP.UTF-8 があればOK
+# locale
+# →LANG=ja_JP.UTF-8 があればOK
+
+■Nginxのインストール
+  sudo apt update
+  sudo apt install nginx
 
 ■Javaのインストール
   sudo apt update
-  sudo apt install -y openjdk-17-jdk
+  sudo apt install -y openjdk-11-jdk
   java -version
 
-■Cassandra 5.0-bata1のリポジトリ追加とインストール
-  echo "deb https://debian.cassandra.apache.org 50x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+■Cassandra 4.1.3のリポジトリ追加とインストール
+  echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list 
   wget -q -O - https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
   sudo apt update
   sudo apt install cassandra
   sudo systemctl status cassandra
   nodetool status
+
+■Nginxの設定（defaultページの変更）
+  確認用にページにノード名を付ける
+  sudo nano /var/www/html/index.nginx-debian.html
+
+■ここまで（以下編集中）
 
 ■Cassandraの設定（ノード追加）
   cqlsh
@@ -66,12 +78,10 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   nodetool status
   cqlsh ノードのIPアドレス
 
-■Cassandraの設定（ノード削除）
-  nodetool -h ノードのIPアドレス decommission
+■ここまで（以下編集中）
 
-■Nginxのインストール
-  sudo apt update
-  sudo apt install nginx
+
+
 
 ■.NET SDKのUbuntu 23.10用リポジトリ追加と.NET SDK 8.0のインストール
   wget https://packages.microsoft.com/config/ubuntu/23.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -83,9 +93,4 @@ sed -i -e 's/ports.ubuntu.com\/ubuntu-ports/old-releases.ubuntu.com\/ubuntu/g' /
   sudo apt-get install -y dotnet-sdk-8.0
 
 ■SansaXRの設定
-  cqlsh ノードのIPアドレス
-  → Cassandra設定.txt の「クラスタ設定」のcluster_nameを設定
-
-■ここまで（以下編集中）
-
- 
+  → 不要（同期される）

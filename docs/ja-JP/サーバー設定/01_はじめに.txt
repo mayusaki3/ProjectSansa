@@ -1,0 +1,19 @@
+はじめに
+--------
+この資料は、SansaXRサービス環境の構築資料です。
+なお、検証は Hyper-V 上で実施しました。
+
+サーバー構成として、以下を想定しています。
+
+■SansaServer
+概要： SansaServerサービスサイト（ロードバランサー）
+       ブラウザでアクセスすると、各ノードにリクエストを転送します。
+手順： 「02_サーバー設定（SansaServer）.txt」参照
+
+■SansaNode_seed
+概要： SansaServerサービスノード01（Seed）
+手順： 「03_サーバー設定（SansaNode_seed）.txt」参照
+
+■SansaNode_x01 / SansaNode_x02 
+概要： SansaServerサービスノード02, 03
+手順： 「04_サーバー設定（SansaNode_xnn）.txt」参照
