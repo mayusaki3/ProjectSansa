@@ -47,6 +47,9 @@ SSHの設定時に秘密キーを例えば sansa-dev-proxy_key.pem で保存し�
        listen 80;
        server_name dev.sansa.com;
    
+       # HTTPからHTTPSへのリダイレクト
+       # return 301 https://$server_name$request_uri;
+
        location / {
            proxy_pass http://localhost:8080;
            proxy_set_header Host $host;
