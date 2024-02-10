@@ -60,6 +60,11 @@
    ```shell
    sudo nano /var/www/html/index.nginx-debian.html
    ```
+   アクセスログとエラーログを表示できます。（ctrl-cで終了）
+   ```shell
+   tail -f /var/log/nginx/access.log;
+   tail -f /var/log/nginx/error.log;
+   ```
 
 ***
 [目次](../目次.md) > サーバ環境構築 UbuntuとNginxのインストール

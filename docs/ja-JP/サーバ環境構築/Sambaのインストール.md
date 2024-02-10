@@ -14,7 +14,7 @@
 1. SansaXRディレクトリを作成します。  
    既存のusernameを使用します。usernameは実際のものに読み替えてください。
    ```shell
-   mkdir /home/username/SansaXR
+   mkdir /home/username/shared
    ```
 1. SanbaでSansaXRディレクトリをフルコントロールで共有します。  
    smb.conf ファイルを開きます。
@@ -23,9 +23,9 @@
    ```
 1. 以下の内容を追加して保存します。
    usernameは実際のものに読み替えてください。
-   ```yaml
-   [SansaXR]
-   path = /home/username/SansaXR
+   ```ini
+   [shared]
+   path = /home/username/shared
    read only = no
    browsable = yes
    ```
@@ -35,8 +35,12 @@
    sudo smbpasswd -a username
    sudo systemctl restart smbd
    ```
-1. 他のWindowsPCから、エクスプローラでこのノードにアクセスします。
-   SansaXRディレクトリが共有されていればOKです。
+1. Windowsのエクスプローラで表示されるようにします。
+   ```shell
+   sudo apt install wsdd
+   ```
+1. 他のWindowsPCから、エクスプローラでこのノードにアクセスします。  
+   sharedディレクトリが共有されていればOKです。
 
 ***
 [目次](../目次.md) > サーバ環境構築 smbのインストール

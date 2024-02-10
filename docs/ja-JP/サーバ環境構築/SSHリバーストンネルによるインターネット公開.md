@@ -37,7 +37,7 @@ SSHの設定時に秘密キーを例えば sansa-dev-proxy_key.pem で保存し�
    ここの「Nginxのインストール」の項を参照してください。  
    [UbuntuとNginxのインストール](UbuntuとNginxのインストール.md)
 
-1. Nginxのリバースプロキシ設定ファイルを作成します。
+1. Nginxのサイト設定ファイルをリバースプロキシ用に作成します。
    ```shell
    sudo nano /etc/nginx/sites-available/dev.sansa.com
    ```
@@ -123,7 +123,7 @@ SSHリバーストンネルとNginxのリバースプロキシの動作を確認
    sudo nano /etc/systemd/system/dev-sansa.ssh-reverse-tunnel.service
    ```
 1. 以下を貼り付けて保存します。
-   ```yaml
+   ```ini
    [Unit]
    Description=dev-sansa SSH reverse tunnel service
    After=network.target
@@ -146,6 +146,9 @@ SSHリバーストンネルとNginxのリバースプロキシの動作を確認
    # journalctl -u dev-sansa.ssh-reverse-tunnel.service
    ```
 1. 再起動してもブラウザでリモートサーバ経由でローカルサーバに接続できるか確認します。
+
+1. Hyper-V上の場合、Windowsの再起動時に Ubuntu も再起動するように設定します。  
+設定 > 管理 > 自動開始アクション と 自動停止アクション
 
 ***
 [目次](../目次.md) > サーバ環境構築 SSHリバーストンネルによるインターネット公開
