@@ -6,3 +6,5 @@ src/Sansa.Model/bin/
 src/Sansa.Model.UnitTest/obj/
 src/Sansa.Model.UnitTest/bin/
 *.user
+src/wwwsite/Portal/Portal/bin/
+src/wwwsite/Portal/Portal/obj/
