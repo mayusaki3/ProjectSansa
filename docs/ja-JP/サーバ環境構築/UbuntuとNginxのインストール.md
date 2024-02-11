@@ -10,7 +10,7 @@
    https://ubuntu.com/download/server    
    ubuntu-23.10-live-server-amd64.iso  
 1. isoファイルからインストールを進めます。
-1. ネットワークの設定で、制的IPに変更します。  
+1. ネットワークの設定で、静的IPに変更します。  
     インターネット : IPv4  
       インターネット接続タイプ : 静的IP  
       アドレス                 : 192.168.3.30 ←各自の環境に合わせて設定
@@ -59,6 +59,11 @@
    デフォルトページを編集するには次のようにします。
    ```shell
    sudo nano /var/www/html/index.nginx-debian.html
+   ```
+   アクセスログとエラーログを表示できます。（ctrl-cで終了）
+   ```shell
+   tail -f /var/log/nginx/access.log;
+   tail -f /var/log/nginx/error.log;
    ```
 
 ***
