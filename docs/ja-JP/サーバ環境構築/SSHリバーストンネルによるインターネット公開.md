@@ -43,34 +43,42 @@ SSHの設定時に秘密キーを例えば sansa-dev-proxy_key.pem で保存し�
    ```
 1. 以下のように編集して保存します。
    ```yaml
+   map $http_upgrade $connection_upgrade {
+       default upgrade;
+       '' close;
+   }
+
    server {
        listen 80;
        server_name dev.sansa.com;
-   
-       # HTTPからHTTPSへのリダイレクト
-       # return 301 https://$server_name$request_uri;
 
-       location / {
-           proxy_pass http://localhost:8080;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-       }
+       # HTTPからHTTPSへのリダイレクト
+       return 301 https://$server_name$request_uri;
+
+       #location / {
+       #    proxy_pass http://localhost:8080;
+       #    proxy_set_header Host $host;
+       #    proxy_set_header X-Real-IP $remote_addr;
+       #    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       #    proxy_set_header X-Forwarded-Proto $scheme;
+       #}
    }
-   
+
    # SSLが不要な場合は、このブロックをすべてコメントアウト
    server {
        listen 443 ssl;
        server_name dev.sansa.com;
-   
+
        # SSL設定: SSL証明書と秘密鍵のパスを指定（仮のもの）
        ssl_certificate /path/to/your/certificate.pem;
        ssl_certificate_key /path/to/your/private.key;
-   
+
        location / {
            proxy_pass http://localhost:8443;
            proxy_set_header Host $host;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection $connection_upgrade;
            proxy_set_header X-Real-IP $remote_addr;
            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
            proxy_set_header X-Forwarded-Proto $scheme;
