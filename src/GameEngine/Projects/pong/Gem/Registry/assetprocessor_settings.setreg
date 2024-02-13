@@ -1,0 +1,18 @@
+{
+    "Amazon": {
+        "AssetProcessor": {
+            "Settings": {
+                "ScanFolder pong/Assets": {
+                    "watch": "@GEMROOT:pong@/Assets",
+                    "recursive": 1,
+                    "order": 101
+                },
+                "ScanFolder pong/Registry": {
+                    "watch": "@GEMROOT:pong@/Registry",
+                    "recursive": 1,
+                    "order": 102
+                }
+            }
+        }
+    }
+}
