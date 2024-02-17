@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Portal", "Portal\Portal.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JaffaCore", "..\..\..\..\JaffaFramework\src\JaffaCore\JaffaCore.csproj", "{4A275DBB-0CCD-4649-8AFA-210116AD8BD1}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JaffaDBToolForCassandra", "..\..\..\..\JaffaFramework\src\JaffaDBToolForCassandra\JaffaDBToolForCassandra.csproj", "{20BEA65D-A5A0-41D8-B60C-6CABD621AA52}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JaffaForBlazorWebApp", "..\..\..\..\JaffaFramework\src\JaffaForBlazorWebApp\JaffaForBlazorWebApp.csproj", "{C5C1751B-8AE3-41F9-8C20-9858A3F4DF12}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{4A275DBB-0CCD-4649-8AFA-210116AD8BD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A275DBB-0CCD-4649-8AFA-210116AD8BD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A275DBB-0CCD-4649-8AFA-210116AD8BD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20BEA65D-A5A0-41D8-B60C-6CABD621AA52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20BEA65D-A5A0-41D8-B60C-6CABD621AA52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20BEA65D-A5A0-41D8-B60C-6CABD621AA52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20BEA65D-A5A0-41D8-B60C-6CABD621AA52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5C1751B-8AE3-41F9-8C20-9858A3F4DF12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5C1751B-8AE3-41F9-8C20-9858A3F4DF12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5C1751B-8AE3-41F9-8C20-9858A3F4DF12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5C1751B-8AE3-41F9-8C20-9858A3F4DF12}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
