@@ -1,0 +1,53 @@
+﻿@using Blazored.Modal.Services
+@using System.ComponentModel.DataAnnotations
+<h3>Login</h3>
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="UserId">User ID:</label>
+        <InputText id="UserId" class="form-control" @bind-Value="loginModel.UserId" />
+    </div>
+
+    <div class="form-group">
+        <label for="Password">Password:</label>
+        <InputText id="Password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+<a class="nav-link" @onclick="ShowSignUpModal" style="cursor: pointer;">
+    Don't have an account? Sign up
+</a>
+
+@code {
+    @inject IModalService ModalService
+
+    private LoginModel loginModel = new LoginModel();
+
+    private async Task HandleLogin()
+    {
+        Console.WriteLine($"User {loginModel.UserId} is trying to log in");
+        // ここでログイン処理を行います
+    }
+
+    private async Task ShowSignUpModal()
+    {
+        Console.WriteLine("ShowSignUpModal method was called");
+        var result = await ModalService.Show<SignUpModal>("サインアップ").Result;
+
+        // モーダルの結果に基づいて何かをする
+    }
+
+    private class LoginModel
+    {
+        [Required]
+        public string UserId { get; set; }
+
+        [Required]
+        public string Password { get; set; }
+    }
+}

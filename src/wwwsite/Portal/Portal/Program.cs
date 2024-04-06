@@ -1,10 +1,13 @@
 using Portal.Components;
+using Blazored.Modal;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddBlazoredModal();
+builder.Services.AddScoped<SessionService>();
 
 var app = builder.Build();
 
