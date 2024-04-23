@@ -3,6 +3,9 @@
 @using Portal.Components.Pages
 @inherits LayoutComponentBase
 @inject IJSRuntime JSRuntime
+@inject IModalService ModalService
+@inject SessionService Session
+@inject CassandraService LanguageService
 
 <CascadingBlazoredModal />
 <div class="page">
@@ -13,7 +16,7 @@
     <main>
         <div class="top-row px-4">
             <a class="nav-link" @onclick="ShowLanguageSwitchModal" style="cursor: pointer;">
-                <span class="oi oi-globe" aria-hidden="true"></span>言語切替
+                <span class="oi oi-globe" aria-hidden="true"></span>@languageName
             </a>
             <a class="nav-link" @onclick="ShowLoginModal" style="cursor: pointer;">
                 <span class="oi oi-account-login" aria-hidden="true"></span>Login/SignUp
@@ -33,25 +36,45 @@
 </div>
 
 @code {
-    @inject IModalService ModalService;
+    /// <summary>
+    /// 表示言語
+    /// </summary>
+    private string languageName = "日本語";
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        languageName = await LanguageService.GetLanguageName(Session.DisplayLanguage);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     private async Task ShowLanguageSwitchModal()
     {
         var result = await ModalService.Show<LanguageSwitchModal>("言語を選択").Result;
 
         if (!result.Cancelled)
         {
-            // 認証成功後の処理
+            languageName = await LanguageService.GetLanguageName(Session.DisplayLanguage);
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     private async Task ShowLoginModal()
     {
         var result = await ModalService.Show<LoginModal>("ログイン").Result;
 
-        if (!result.Cancelled)
-        {
-            // 認証成功後の処理
-        }
+    //     if (!result.Cancelled)
+    //     {
+    //         // 認証成功後の処理
+    //     }
     }
 }

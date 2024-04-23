@@ -1,12 +1,70 @@
-﻿<h3>言語を選択</h3>
+﻿@using Blazored.Modal
+@using Blazored.Modal.Services
+@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+@inject IModalService ModalService
+@inject CassandraService LanguageService
 
+@if (languages.Count == 0)
+{
+    <div style="height: 200px; overflow-y: auto;">
+    <p>リスト読み込み中...</p>
+    </div>
+
+    <button @onclick="SwitchLanguage">言語を切り替える</button>
+}
+else
+{
+    <div style="height: 200px; overflow-y: auto;">
+        <select @bind="selectedLanguage" size="10">
+            @foreach (var language in languages)
+            {
+                <option value="@language">@language</option>
+            }
+        </select>
+    </div>
+
+    <button @onclick="SwitchLanguage">言語を切り替える</button>
+}
 
 @code {
+    /// <summary>
+    /// 
+    /// </summary>
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    /// <summary>
+    /// 
+    /// </summary>
     private string selectedLanguage = "ja-JP";
 
+    /// <summary>
+    /// 
+    /// </summary>
+    private List<string> languages = new List<string>();
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            languages = (await LanguageService.GetDisplayLanguages()).ToList();
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
     private void SwitchLanguage()
     {
         Console.WriteLine($"Switching language to {selectedLanguage}");
         // ここで言語切替処理を行います
+        // ModalReference.Close();
+        BlazoredModal.CloseAsync(ModalResult.Ok(selectedLanguage));
     }
 }

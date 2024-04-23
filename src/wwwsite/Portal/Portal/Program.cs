@@ -1,4 +1,4 @@
-using Portal.Components;
+﻿using Portal.Components;
 using Blazored.Modal;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +8,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddBlazoredModal();
 builder.Services.AddScoped<SessionService>();
+builder.Services.Configure<CassandraSettings>(builder.Configuration.GetSection("Cassandra"));
+builder.Services.AddSingleton<CassandraService>();
 
 var app = builder.Build();
 
