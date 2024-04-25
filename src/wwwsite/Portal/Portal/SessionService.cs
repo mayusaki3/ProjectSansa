@@ -14,5 +14,10 @@ public class SessionService
     /// <summary>
     /// 現在の表示言語
     /// </summary>
-    public string DisplayLanguage { get; set; }= "ja-JP";
+    public string DisplayLanguageCode { get; set; }= "ja-JP";
+
+    /// <summary>
+    /// 現在の表示言語名
+    /// </summary>
+    public string DisplayLanguageName { get; set; } = "日本語";
 }

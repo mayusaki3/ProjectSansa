@@ -4,22 +4,21 @@
 @inject IJSRuntime JSRuntime
 @inject IModalService ModalService
 @inject CassandraService LanguageService
+@inject SessionService Session
 
-@if (languages.Count == 0)
+@if (languages == default!)
 {
-    <div style="height: 200px; overflow-y: auto;">
+    <div style="overflow-y: auto;">
     <p>リスト読み込み中...</p>
     </div>
-
-    <button @onclick="SwitchLanguage">言語を切り替える</button>
 }
 else
 {
-    <div style="height: 200px; overflow-y: auto;">
+    <div style="overflow-y: auto;">
         <select @bind="selectedLanguage" size="10">
             @foreach (var language in languages)
             {
-                <option value="@language">@language</option>
+                <option value="@language.Value">@language.Value</option>
             }
         </select>
     </div>
@@ -29,42 +28,51 @@ else
 
 @code {
     /// <summary>
-    /// 
+    /// モーダルインスタンス
     /// </summary>
     [CascadingParameter]
     BlazoredModalInstance BlazoredModal { get; set; } = default!;
 
     /// <summary>
-    /// 
+    /// 選択した言語コード
     /// </summary>
-    private string selectedLanguage = "ja-JP";
+    private string selectedLanguage = default!;
 
     /// <summary>
-    /// 
+    /// 言語リスト
     /// </summary>
-    private List<string> languages = new List<string>();
+    private List<KeyValuePair<string, string>> languages = default!;
 
     /// <summary>
-    ///
+    /// 言語リスト初期化
     /// </summary>
-    /// <returns></returns>
+    /// <param name="firstRender">初回レンダリング</param>
+    /// <returns>タスク</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            selectedLanguage = Session.DisplayLanguageName;
             languages = (await LanguageService.GetDisplayLanguages()).ToList();
             StateHasChanged();
         }
     }
 
     /// <summary>
-    /// 
+    /// 言語切替処理
     /// </summary>
     private void SwitchLanguage()
     {
-        Console.WriteLine($"Switching language to {selectedLanguage}");
-        // ここで言語切替処理を行います
-        // ModalReference.Close();
+        // 選択した言語をセッションに設定
+        Session.DisplayLanguageName = selectedLanguage;
+        foreach (var language in languages)
+        {
+            if (language.Value == selectedLanguage)
+            {
+                Session.DisplayLanguageCode = language.Key;
+                break;
+            }
+        }
         BlazoredModal.CloseAsync(ModalResult.Ok(selectedLanguage));
     }
 }

@@ -16,7 +16,7 @@
     <main>
         <div class="top-row px-4">
             <a class="nav-link" @onclick="ShowLanguageSwitchModal" style="cursor: pointer;">
-                <span class="oi oi-globe" aria-hidden="true"></span>@languageName
+                <span class="oi oi-globe" aria-hidden="true"></span>@Session.DisplayLanguageName
             </a>
             <a class="nav-link" @onclick="ShowLoginModal" style="cursor: pointer;">
                 <span class="oi oi-account-login" aria-hidden="true"></span>Login/SignUp
@@ -37,20 +37,6 @@
 
 @code {
     /// <summary>
-    /// 表示言語
-    /// </summary>
-    private string languageName = "日本語";
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
-    protected override async Task OnInitializedAsync()
-    {
-        languageName = await LanguageService.GetLanguageName(Session.DisplayLanguage);
-    }
-
-    /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
@@ -60,7 +46,8 @@
 
         if (!result.Cancelled)
         {
-            languageName = await LanguageService.GetLanguageName(Session.DisplayLanguage);
+            
+
         }
     }
 
