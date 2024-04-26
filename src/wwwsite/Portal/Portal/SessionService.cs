@@ -20,4 +20,14 @@ public class SessionService
     /// 現在の表示言語名
     /// </summary>
     public string DisplayLanguageName { get; set; } = "日本語";
+
+    /// <summary>
+    /// メールアドレス
+    /// </summary>
+    public string EMail { get; set; } = default!;
+
+    /// <summary>
+    /// 認証コード確認結果
+    /// </summary>
+    public bool IsEMailChecked { get; set; } = false;
 }

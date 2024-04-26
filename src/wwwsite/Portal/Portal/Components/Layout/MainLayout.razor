@@ -18,9 +18,18 @@
             <a class="nav-link" @onclick="ShowLanguageSwitchModal" style="cursor: pointer;">
                 <span class="oi oi-globe" aria-hidden="true"></span>@Session.DisplayLanguageName
             </a>
-            <a class="nav-link" @onclick="ShowLoginModal" style="cursor: pointer;">
-                <span class="oi oi-account-login" aria-hidden="true"></span>Login/SignUp
-            </a>
+            @if(Session.IsLoggedIn)
+            {
+                <a class="nav-link" @onclick="ShowLogoutModal" style="cursor: pointer;">
+                    <span class="oi oi-account-login" aria-hidden="true"></span>ログアウト
+                </a>
+            }
+            else
+            {
+                <a class="nav-link" @onclick="ShowLoginModal" style="cursor: pointer;">
+                    <span class="oi oi-account-login" aria-hidden="true"></span>ログイン/新規登録
+                </a>
+            }
         </div>
 
         <article class="content px-4">
@@ -37,6 +46,26 @@
 
 @code {
     /// <summary>
+    /// 言語リスト初期化
+    /// </summary>
+    /// <param name="firstRender">初回レンダリング</param>
+    /// <returns>タスク</returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // LocalStorageから前回の言語を取得
+            var name = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "displayLanguageName");
+            if(name != null)
+            {
+                Session.DisplayLanguageName = name;
+                Session.DisplayLanguageCode = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "displayLanguageCode");
+            }
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
@@ -46,8 +75,9 @@
 
         if (!result.Cancelled)
         {
-            
-
+            // LocalStorageに現在の言語を保存
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "displayLanguageName", Session.DisplayLanguageName);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "displayLanguageCode", Session.DisplayLanguageCode);
         }
     }
 
@@ -57,11 +87,33 @@
     /// <returns></returns>
     private async Task ShowLoginModal()
     {
-        var result = await ModalService.Show<LoginModal>("ログイン").Result;
+        var result = await ModalService.Show<LoginModal>("ログイン/新規登録").Result;
 
-    //     if (!result.Cancelled)
-    //     {
-    //         // 認証成功後の処理
-    //     }
+        if (!result.Cancelled)
+        {
+            if (result.Data != null && result.Data.ToString() == "SignUp")
+            {
+                result = await ModalService.Show<SignUpModal>("サインアップ").Result;
+            }
+
+
+
+            // 認証成功後の処理
+        }
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <returns></returns>
+    private async Task ShowLogoutModal()
+    {
+        var result = await ModalService.Show<LogoutModal>("ログアウト").Result;
+
+
+        //     if (!result.Cancelled)
+        //     {
+        //         // 認証成功後の処理
+        //     }
     }
 }

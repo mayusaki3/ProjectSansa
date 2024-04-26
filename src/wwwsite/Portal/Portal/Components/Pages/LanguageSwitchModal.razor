@@ -61,7 +61,7 @@ else
     /// <summary>
     /// 言語切替処理
     /// </summary>
-    private void SwitchLanguage()
+    private async Task SwitchLanguage()
     {
         // 選択した言語をセッションに設定
         Session.DisplayLanguageName = selectedLanguage;
@@ -73,6 +73,6 @@ else
                 break;
             }
         }
-        BlazoredModal.CloseAsync(ModalResult.Ok(selectedLanguage));
+        await BlazoredModal.CloseAsync(ModalResult.Ok());
     }
 }

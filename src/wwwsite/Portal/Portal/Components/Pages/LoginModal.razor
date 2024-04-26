@@ -1,53 +1,102 @@
 ﻿@using Blazored.Modal.Services
 @using System.ComponentModel.DataAnnotations
-<h3>Login</h3>
+@inject IJSRuntime JSRuntime
+@inject IModalService ModalService
+@inject SessionService Session
 
-<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+    <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-    <div class="form-group">
-        <label for="UserId">User ID:</label>
-        <InputText id="UserId" class="form-control" @bind-Value="loginModel.UserId" />
-    </div>
+        <div class="form-group">
+            <label for="UserId">アカウントID</label>
+            <InputText id="UserId" class="form-control" @bind-Value="loginModel.UserId" />
+        </div>
 
-    <div class="form-group">
-        <label for="Password">Password:</label>
-        <InputText id="Password" type="password" class="form-control" @bind-Value="loginModel.Password" />
-    </div>
+        <div class="form-group">
+            <label for="Password">パスワード</label>
+            <InputText id="Password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+        </div>
 
-    <button type="submit" class="btn btn-primary">Login</button>
-</EditForm>
+        <div class="form-group form-check">
+            <InputCheckbox class="form-check-input" id="AutoLogin" @bind-Value="loginModel.IsAutoLogin" />
+            <label class="form-check-label" for="AutoLogin">ログイン状態を維持</label>
+        </div>
 
-<a class="nav-link" @onclick="ShowSignUpModal" style="cursor: pointer;">
-    Don't have an account? Sign up
-</a>
+        <button type="submit" class="btn btn-primary">ログイン</button>
+    </EditForm>
+
+    <a class="nav-link" @onclick="ShowSignUpModal" style="cursor: pointer;">
+        新規登録はこちらをクリック
+    </a>
 
 @code {
-    @inject IModalService ModalService
+    /// <summary>
+    /// モーダルインスタンス
+    /// </summary>
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
 
+    /// <summary>
+    /// 初期化処理
+    /// </summary>
+    /// <returns></returns>
+    protected override Task OnInitializedAsync()
+    {
+        Session.IsEMailChecked = false;
+        return base.OnInitializedAsync();
+    }
+
+    /// <summary>
+    /// ログイン入力情報
+    /// </summary>
     private LoginModel loginModel = new LoginModel();
 
+    /// <summary>
+    /// ログイン処理
+    /// </summary>
+    /// <returns></returns>
     private async Task HandleLogin()
     {
-        Console.WriteLine($"User {loginModel.UserId} is trying to log in");
-        // ここでログイン処理を行います
+
+
+
+        Session.IsLoggedIn = true;
+
+        // ログイン状態を維持する
+        if(loginModel.IsAutoLogin)
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "autoLogin", "on");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "autoLogin", "off");
+        }
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok());
     }
 
+    /// <summary>
+    /// 新規登録画面に切り替え
+    /// </summary>
+    /// <returns></returns>
     private async Task ShowSignUpModal()
     {
-        Console.WriteLine("ShowSignUpModal method was called");
-        var result = await ModalService.Show<SignUpModal>("サインアップ").Result;
-
-        // モーダルの結果に基づいて何かをする
+        await BlazoredModal.CloseAsync(ModalResult.Ok("SignUp"));
     }
 
+    /// <summary>
+    /// ログイン入力情報
+    /// </summary>
     private class LoginModel
     {
         [Required]
-        public string UserId { get; set; }
+        public string UserId { get; set; }=default!;
 
         [Required]
-        public string Password { get; set; }
+        public string Password { get; set; }=default!;
+
+        [Required]
+        public bool IsAutoLogin { get; set; } = false;
     }
 }

@@ -22,5 +22,4 @@ public partial class CassandraService
             .WithPort(settings.Value.Port)
             .Build();
     }
-
 }
