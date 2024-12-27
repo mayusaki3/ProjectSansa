@@ -26,6 +26,9 @@
          - seeds: "192.168.3.31:7000"  #シードノードのIPアドレス
    listen_address: 192.168.3.31        #自ノードのIPアドレス
    endpoint_snitch: SimpleSnitch       #ノードの物理的な位置 リリース時は環境に合わせて変更
+
+   rpc_address: 192.168.3.31           #開発用PCから接続する場合/cqlshでIPアドレス指定が必要
+   rpc_address: localhost              #開発用PCから接続しない場合
    ```
 1. Cassandraを再起動してクラスタ状態を確認します。
    また、cqlshの起動時に表示されるクラスタ名を確認します。
