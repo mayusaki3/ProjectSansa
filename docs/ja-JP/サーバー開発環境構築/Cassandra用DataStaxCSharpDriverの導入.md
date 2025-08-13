@@ -1,15 +1,15 @@
-[目次](../目次.md) > サーバ環境構築 Cassandra用 DataStax C# Driverの導入
+[目次](../目次.md) > サーバー環境構築 Cassandra用 DataStax C# Driverの導入
 
 ## はじめに
 この手順で、SansaXRサイトで使用している Cassandra にアクセスするためのドライバの設定を行います。  
 
 ## DataStax C# Driverのインストール
 DataStax C# Driverをインストールします。
-1. メニュー > ツール > NuGet パッケージマネージャー
-   ```shell
-   sudo apt-get updateメニュ
-   sudo apt-get install -y aspnetcore-runtime-8.0
-   ```
+1. インストール先のプロジェクトを開きます。
+1. メニューの ツール > NuGet パッケージ マネージャー > ソリューションの NuGet パッケージの管理 を開きます。
+1. 参照で「CassandraCSharpDriver」を検索して、インストールします。
+
+# 以下、記述中
 
 ## 開発環境の準備
 SansaXRサイトはBlazorをメインで使用しています。ここを参考に各自の環境に合わせて構築してください。  
@@ -35,7 +35,7 @@ Windows上の Visual Studio の Blazor Web App でプロジェクト（ここで
 以下の説明は、Sanbaで共有設定ができている前提です。
 1. ビルドすると、プロジェクトディレクトリ\bin\Release\net8.0\linux-x64 にデプロイされます。
 
-1. 配置先のサーバで、配置先のディレクトリを作成します。
+1. 配置先のサーバーで、配置先のディレクトリを作成します。
    ```shell
    sudo mkdir /etc/SansaXR
    sudo mkdir /etc/SansaXR/wwwroot
@@ -138,4 +138,4 @@ Windows上の Visual Studio の Blazor Web App でプロジェクト（ここで
    ```
 
 ***
-[目次](../目次.md) > サーバ環境構築 Cassandra用 DataStax C# Driverの導入
+[目次](../目次.md) > サーバー環境構築 Cassandra用 DataStax C# Driverの導入
