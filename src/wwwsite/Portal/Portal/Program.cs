@@ -1,4 +1,4 @@
-﻿using Portal.Components;
+using Portal.Components;
 using Blazored.Modal;
 
 var builder = WebApplication.CreateBuilder(args);
