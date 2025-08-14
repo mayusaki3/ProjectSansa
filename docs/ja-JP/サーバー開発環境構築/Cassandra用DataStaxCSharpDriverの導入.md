@@ -1,0 +1,141 @@
+[目次](../目次.md) > サーバー環境構築 Cassandra用 DataStax C# Driverの導入
+
+## はじめに
+この手順で、SansaXRサイトで使用している Cassandra にアクセスするためのドライバの設定を行います。  
+
+## DataStax C# Driverのインストール
+DataStax C# Driverをインストールします。
+1. インストール先のプロジェクトを開きます。
+1. メニューの ツール > NuGet パッケージ マネージャー > ソリューションの NuGet パッケージの管理 を開きます。
+1. 参照で「CassandraCSharpDriver」を検索して、インストールします。
+
+# 以下、記述中
+
+## 開発環境の準備
+SansaXRサイトはBlazorをメインで使用しています。ここを参考に各自の環境に合わせて構築してください。  
+https://dotnet.microsoft.com/ja-jp/learn/aspnet/blazor-tutorial/intro
+
+## Ubuntu用パブリッシュ設定
+Windows上の Visual Studio の Blazor Web App でプロジェクト（ここではPortalとします）を作成し、テストしてからパブリッシュします。 
+1. プロジェクトのプロパティを開きます。
+テスト後、以下の手順で発行します。
+1. メニューの ビルド > Portalの発行 を開きます。
+1. 以下の設定を行い、発行します。
+   ```ini
+   構成 = Release
+   ターゲットフレームワーク = net8.0
+   配置モード = フレームワーク依存
+   ターゲットランタイム = linux-x64
+   ファイル公開オプション
+     ☐ 単一ファイル作成
+     ☑ 公開前に既存のファイルをすべて削除する
+   ```
+
+## Ubuntuへの直接配置の準備（開発用の設定）
+以下の説明は、Sanbaで共有設定ができている前提です。
+1. ビルドすると、プロジェクトディレクトリ\bin\Release\net8.0\linux-x64 にデプロイされます。
+
+1. 配置先のサーバーで、配置先のディレクトリを作成します。
+   ```shell
+   sudo mkdir /etc/SansaXR
+   sudo mkdir /etc/SansaXR/wwwroot
+   sudo chmod 777 /etc/SansaXR/wwwroot
+   ```
+1. SanbaでWebSiteディレクトリをフルコントロールで共有します。  
+   smb.conf ファイルを開きます。
+   ```shell
+   sudo nano /etc/samba/smb.conf
+   ```
+1. 以下の内容を追加して保存します。
+   ```ini
+   [wwwroot]
+   path = /etc/SansaXR/wwwroot
+   read only = no
+   browsable = yes
+   ```
+1. 設定を反映するためサービスを再起動します。
+   ```shell
+   sudo systemctl restart smbd
+   ```
+# Ubuntuへの配置
+パブリッシュされたファイル一式を、wwwrootフォルダに格納します。
+
+# Nginxの設定
+1. Nginxのサイト設定ファイルを作成します。  
+   portal_sansaxr, dev.sansa.comは自分の環境に合わせて変更してください。
+   ```shell
+   sudo mkdir /etc/SansaXR/sites-available
+   sudo nano /etc/SansaXR/sites-available/portal_sansaxr
+   ```
+1. 以下のように編集して保存します。
+   ```yaml
+   map $http_connection $connection_upgrade {
+       "~*Upgrade" $http_connection;
+       default keep-alive;
+   }
+
+   server {
+       listen 80;
+       server_name dev.sansa.com;
+
+       location / {
+           proxy_pass http://127.0.0.1:5000/; # Kestrel プロセス ポート
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection $connection_upgrade;
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+1. 設定を反映します。
+   ```shell
+   sudo ln -s /etc/SansaXR/sites-available/portal_sansaxr /etc/nginx/sites-enabled/
+   # default設定を除外（server_nameでマッチングしなければdefaultが使われるため）
+   sudo rm /etc/nginx/sites-enabled/default
+   # sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+   # エラーがなければNginxを再起動
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+# サイトを起動します。
+1. サービスの設定ファイルを作成します。
+   ```shell
+   sudo nano /etc/systemd/system/SansaXR_portal.service
+   ```
+2. 以下を貼り付けて保存します。
+   ```ini
+   [Unit]
+   Description=SansaXR Portal on Ubuntu
+
+   [Service]
+   WorkingDirectory=/etc/SansaXR/wwwroot
+   ExecStart=/usr/bin/dotnet Portal.dll
+   Restart=always
+   RestartSec=10
+   KillSignal=SIGINT
+   SyslogIdentifier=SansaXR-Portal
+   User=www-data
+   Environment=ASPNETCORE_ENVIRONMENT=Production
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+1. サービスを起動します。
+   ```shell
+   sudo systemctl start SansaXR_portal.service
+   sudo systemctl enable SansaXR_portal.service
+   ```
+1. サービスの設定ファイルを変更した場合は設定をリロードして再起動します。  
+   デプロイされたファイルを更新した場合は、再起動のみ行います。
+   ```shell
+   # 設定を変更島場合
+   sudo systemctl daemon-reload
+   # 設定変更またはパブリッシュした内容を反映
+   sudo systemctl restart SansaXR_portal.service
+   ```
+
+***
+[目次](../目次.md) > サーバー環境構築 Cassandra用 DataStax C# Driverの導入

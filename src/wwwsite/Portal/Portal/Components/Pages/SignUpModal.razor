@@ -1,0 +1,78 @@
+﻿@using Blazored.Modal.Services
+@using System.ComponentModel.DataAnnotations
+@inject IModalService ModalService
+@inject SessionService Session
+
+<EditForm Model="signUpModel">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="Email">メールアドレス</label>
+        <InputText id="Email" class="form-control" @bind-Value="signUpModel.Email" />
+    </div>
+
+    <button type="button" class="btn btn-primary" @onclick="SendCode">@buttonText</button>
+    <p>確認コードは送信後3分間有効です。</p>
+
+    <div class="form-group">
+        <label for="Code">確認コード</label>
+        <InputText id="Code" class="form-control" @bind-Value="signUpModel.Code" />
+    </div>
+
+    <button type="submit" class="btn btn-primary" @onclick="HandleSignUp">確認</button>
+</EditForm>
+
+@code {
+    /// <summary>
+    /// モーダルインスタンス
+    /// </summary>
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    /// <summary>
+    /// サインアップ入力情報
+    /// </summary>
+    private SignUpModel signUpModel = new SignUpModel();
+
+    private string buttonText = "確認コードを送信";
+
+    /// <summary>
+    /// 確認コードを送信
+    /// </summary>
+    /// <returns></returns>
+    private async Task SendCode()
+    {
+        // ここでメールアドレスに確認コードを送信する処理を行います
+
+        buttonText = "確認コードを再送";
+    }
+
+    /// <summary>
+    /// サインアップ処理
+    /// </summary>
+    /// <returns></returns>
+    private async Task HandleSignUp()
+    {
+        // 確認コードが正しい場合、モーダルを閉じてユーザー登録画面に遷移します
+
+        Session.EMail = signUpModel.Email;
+        Session.IsEMailChecked = true;
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok("UserRegistration"));
+    }
+
+    /// <summary>
+    /// メールアドレス確認情報
+    /// </summary>
+    private class SignUpModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = default!;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Code { get; set; } = default!;
+    }
+}
