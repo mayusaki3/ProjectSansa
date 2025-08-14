@@ -1,0 +1,40 @@
+﻿@inject IJSRuntime JSRuntime
+@inject IModalService ModalService
+@inject SessionService Session
+
+<div class="form-group">
+    <label for="UserId">ログアウトしますか？</label>
+</div>
+
+<button type="button" class="btn btn-primary" @onclick="HandleLogout">はい</button>
+<button type="button" class="btn btn-primary" @onclick="CloseModal">いいえ</button>
+
+@code {
+    /// <summary>
+    /// モーダルインスタンス
+    /// </summary>
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    /// <summary>
+    /// ログアウト
+    /// </summary>
+    /// <returns></returns>
+    private async Task HandleLogout()
+    {
+        // ログアウト処理
+        Session.IsLoggedIn = false;
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "autoLogin","off");
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok());
+    }
+
+    /// <summary>
+    /// キャンセル
+    /// </summary>
+    /// <returns></returns>
+    private async Task CloseModal()
+    {
+        await BlazoredModal.CloseAsync(ModalResult.Ok());
+    }
+}
