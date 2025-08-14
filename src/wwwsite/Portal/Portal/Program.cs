@@ -8,8 +8,11 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddBlazoredModal();
 builder.Services.AddScoped<SessionService>();
-builder.Services.Configure<CassandraSettings>(builder.Configuration.GetSection("Cassandra"));
-builder.Services.AddSingleton<CassandraService>();
+builder.Services.AddHttpClient("PortalApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseAddress"] ?? "http://localhost:5000");
+});
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("PortalApi"));
 
 var app = builder.Build();
 

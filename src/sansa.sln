@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sansa.Model", "Sansa.Model\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sansa.Model.UnitTest", "Sansa.Model.UnitTest\Sansa.Model.UnitTest.csproj", "{D70A76D4-B6DE-4D7B-ABB4-E7181C5B2A78}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Portal.Api", "Portal.Api\Portal.Api.csproj", "{4A067A53-A83F-4C71-B739-00D4CE3622BB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D70A76D4-B6DE-4D7B-ABB4-E7181C5B2A78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D70A76D4-B6DE-4D7B-ABB4-E7181C5B2A78}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D70A76D4-B6DE-4D7B-ABB4-E7181C5B2A78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A067A53-A83F-4C71-B739-00D4CE3622BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A067A53-A83F-4C71-B739-00D4CE3622BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A067A53-A83F-4C71-B739-00D4CE3622BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A067A53-A83F-4C71-B739-00D4CE3622BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

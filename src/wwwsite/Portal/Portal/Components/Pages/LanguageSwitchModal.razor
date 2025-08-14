@@ -3,7 +3,8 @@
 @inherits LayoutComponentBase
 @inject IJSRuntime JSRuntime
 @inject IModalService ModalService
-@inject CassandraService LanguageService
+@using System.Net.Http.Json
+@inject HttpClient Http
 @inject SessionService Session
 
 @if (languages == default!)
@@ -53,7 +54,8 @@ else
         if (firstRender)
         {
             selectedLanguage = Session.DisplayLanguageName;
-            languages = (await LanguageService.GetDisplayLanguages()).ToList();
+            var result = await Http.GetFromJsonAsync<IEnumerable<KeyValuePair<string, string>>>("api/languages");
+            languages = result?.ToList() ?? new List<KeyValuePair<string, string>>();
             StateHasChanged();
         }
     }
