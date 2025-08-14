@@ -1,5 +1,13 @@
-﻿@inherits LayoutComponentBase
+﻿@using Blazored.Modal
+@using Blazored.Modal.Services
+@using Portal.Components.Pages
+@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+@inject IModalService ModalService
+@inject SessionService Session
+@inject CassandraService LanguageService
 
+<CascadingBlazoredModal />
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -7,7 +15,21 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <a class="nav-link" @onclick="ShowLanguageSwitchModal" style="cursor: pointer;">
+                <span class="oi oi-globe" aria-hidden="true"></span>@Session.DisplayLanguageName
+            </a>
+            @if(Session.IsLoggedIn)
+            {
+                <a class="nav-link" @onclick="ShowLogoutModal" style="cursor: pointer;">
+                    <span class="oi oi-account-login" aria-hidden="true"></span>ログアウト
+                </a>
+            }
+            else
+            {
+                <a class="nav-link" @onclick="ShowLoginModal" style="cursor: pointer;">
+                    <span class="oi oi-account-login" aria-hidden="true"></span>ログイン/新規登録
+                </a>
+            }
         </div>
 
         <article class="content px-4">
@@ -21,3 +43,77 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    /// <summary>
+    /// 言語リスト初期化
+    /// </summary>
+    /// <param name="firstRender">初回レンダリング</param>
+    /// <returns>タスク</returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // LocalStorageから前回の言語を取得
+            var name = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "displayLanguageName");
+            if(name != null)
+            {
+                Session.DisplayLanguageName = name;
+                Session.DisplayLanguageCode = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "displayLanguageCode");
+            }
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    private async Task ShowLanguageSwitchModal()
+    {
+        var result = await ModalService.Show<LanguageSwitchModal>("言語を選択").Result;
+
+        if (!result.Cancelled)
+        {
+            // LocalStorageに現在の言語を保存
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "displayLanguageName", Session.DisplayLanguageName);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "displayLanguageCode", Session.DisplayLanguageCode);
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    private async Task ShowLoginModal()
+    {
+        var result = await ModalService.Show<LoginModal>("ログイン/新規登録").Result;
+
+        if (!result.Cancelled)
+        {
+            if (result.Data != null && result.Data.ToString() == "SignUp")
+            {
+                result = await ModalService.Show<SignUpModal>("サインアップ").Result;
+            }
+
+
+
+            // 認証成功後の処理
+        }
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <returns></returns>
+    private async Task ShowLogoutModal()
+    {
+        var result = await ModalService.Show<LogoutModal>("ログアウト").Result;
+
+
+        //     if (!result.Cancelled)
+        //     {
+        //         // 認証成功後の処理
+        //     }
+    }
+}

@@ -1,4 +1,4 @@
-[目次](../目次.md) > サーバ環境構築 UbuntuとNginxのインストール
+[目次](../目次.md) > サーバー環境構築 UbuntuとNginxのインストール
 
 ## はじめに
 この手順では Ubuntu Server 23.10 と Nginx をインストールします。  
@@ -30,10 +30,12 @@
 1. 各種パッケージと Ubuntu Server を最新に更新します。
    ```shell
    sudo apt update
+   sudo apt upgrade
    sudo apt-get upgrade
    sudo apt update
    sudo apt dist-upgrade
    sudo apt autoremove
+   sudo apt install update-manager-core
    do-release-upgrade
    ```
 1. 日本語を使用できるようにします。  
@@ -67,4 +69,4 @@
    ```
 
 ***
-[目次](../目次.md) > サーバ環境構築 UbuntuとNginxのインストール
+[目次](../目次.md) > サーバー環境構築 UbuntuとNginxのインストール
