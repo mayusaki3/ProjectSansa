@@ -1,0 +1,29 @@
+### register
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+    "username": "dev1",
+    "password": "dev1"
+}
+
+### login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+    "username": "dev1",
+    "password": "dev1"
+}
+
+### post (手で {{token}} を貼り付け)
+POST http://localhost:8080/posts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "text": "hello from http file"
+}
+
+### list
+GET http://localhost:8080/posts?limit=5

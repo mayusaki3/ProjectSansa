@@ -1,0 +1,24 @@
+name: backend-java CI
+on:
+  push:
+    branches: [ develop ]
+  paths:
+    - 'backend-java/**'
+    - '.github/workflows/backend-java-ci.yml'
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Build & Test
+        working-directory: backend-java
+        run: |
+          ./mvnw -q -DskipTests=false test
