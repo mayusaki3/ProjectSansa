@@ -20,5 +20,4 @@ jobs:
           java-version: '21'
       - name: Build & Test
         working-directory: backend-java
-        run: |
-          ./mvnw -q -DskipTests=false test
+        run: mvn -B -ntp -DskipTests=false test
