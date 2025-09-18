@@ -18,4 +18,15 @@ public void beforeAll(ExtensionContext context) {
         // init schema (簡易): CQL を流す or アプリ起動時の IF NOT EXISTS に依存
         }
     }
+    try (var s = com.datastax.oss.driver.api.core.CqlSession.builder()
+            .addContactPoint(new java.net.InetSocketAddress(
+                cassandra.getHost(), cassandra.getFirstMappedPort()))
+            .withLocalDatacenter("datacenter1").build()) {
+        var cql = java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/test/resources/init.cql"));
+        for (var stmt : cql.split(";")) {
+            var trimmed = stmt.trim();
+            if (!trimmed.isEmpty()) s.execute(trimmed);
+        }
+    }
 }
