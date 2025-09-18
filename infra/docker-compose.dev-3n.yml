@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+cass-seed:
+image: cassandra:5
+container_name: sansa-cass-seed
+environment:
+CASSANDRA_CLUSTER_NAME: SansaLocal
+CASSANDRA_SEEDS: cass-seed
+MAX_HEAP_SIZE: 1G
+HEAP_NEWSIZE: 256M
+ports: ["9042:9042"]
+healthcheck:
+test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' || exit 1"]
+interval: 10s
+timeout: 5s
+retries: 60
+cass-2:
+image: cassandra:5
+container_name: sansa-cass-2
+environment:
+CASSANDRA_CLUSTER_NAME: SansaLocal
+CASSANDRA_SEEDS: cass-seed
+MAX_HEAP_SIZE: 1G
+HEAP_NEWSIZE: 256M
+depends_on: [cass-seed]
+cass-3:
+image: cassandra:5
+container_name: sansa-cass-3
+environment:
+CASSANDRA_CLUSTER_NAME: SansaLocal
+CASSANDRA_SEEDS: cass-seed
+MAX_HEAP_SIZE: 1G
+HEAP_NEWSIZE: 256M
+depends_on: [cass-seed]
+cassandra-init:
+image: cassandra:5
+depends_on:
+cass-seed:
+condition: service_healthy
+volumes:
+- ./cassandra/init.cql:/init.cql:ro
+entrypoint: ["/bin/bash","-lc","cqlsh cass-seed -f /init.cql && echo CQL-init-done"]
