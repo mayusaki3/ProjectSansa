@@ -28,15 +28,18 @@ public class PostResource {
     }
 
     @GET
-    public List<Map<String,Object>> latest(@QueryParam("limit") @DefaultValue("50") int limit){
-        limit = Math.min(Math.max(limit,1), 200);
+    public List<Map<String, Object>> latest(@QueryParam("limit") @DefaultValue("50") int limit){
+        limit = Math.min(Math.max(limit, 1), 200);
         List<Row> rows = posts.latestToday(limit);
-        return rows.stream().map(r -> Map.of(
-            "post_id", r.getUuid("post_id").toString(),
-            "author_id", r.getString("author_id"),
-            "text", r.getString("text"),
-            "created_at", r.getInstant("created_at").toString(),
-            "lang", r.getString("lang")
-        )).collect(Collectors.toList());
+        return rows.stream().map(r -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("post_id", r.getUuid("post_id").toString());
+            m.put("author_id", r.getString("author_id"));
+            m.put("text", r.getString("text"));
+            // Instant のまま入れると Jackson が ISO-8601 で出力します
+            m.put("created_at", r.getInstant("created_at"));
+            m.put("lang", r.getString("lang"));
+            return m;
+        }).collect(java.util.stream.Collectors.toList());
     }
 }
