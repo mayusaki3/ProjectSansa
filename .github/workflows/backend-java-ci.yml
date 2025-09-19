@@ -1,23 +1,48 @@
 name: backend-java CI
+
 on:
   push:
     branches: [ develop ]
-  paths:
-    - 'backend-java/**'
-    - '.github/workflows/backend-java-ci.yml'
+    paths:
+      - 'backend-java/**'
+      - '.github/workflows/backend-java-ci.yml'
   pull_request:
     branches: [ develop ]
 
+concurrency:
+  group: backend-java-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK
+
+      - name: Set up JDK 21 (with Maven cache)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-      - name: Build & Test
+          cache: 'maven'
+
+      - name: Unit tests (fast)
         working-directory: backend-java
-        run: mvn -B -ntp -DskipTests=false test
+        run: mvn -B -ntp -DskipITs=true test
+
+  it:
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (with Maven cache)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Integration tests (Testcontainers)
+        working-directory: backend-java
+        run: mvn -B -ntp -DskipITs=false verify
