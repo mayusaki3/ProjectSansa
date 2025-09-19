@@ -23,13 +23,13 @@ import java.util.stream.Collectors;
 @Path("/posts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@JwtSecured  // ← このリソース全体にJWT必須をかける
 public class PostResource {
 
   @Inject PostRepo posts;
   @Context SecurityContext sec;
 
   @POST
+  @JwtSecured
   public Response create(PostReq req){
     // JwtAuthFilter が SecurityContext に uid を入れる
     String author = (sec != null && sec.getUserPrincipal() != null)
@@ -42,7 +42,7 @@ public class PostResource {
   }
 
   @GET
-  @Path("") // 既存の latest() はそのまま。JWT 要求だが閲覧だけなら外したければ @PermitAll などに変更可
+  @Path("")
   public List<Map<String, Object>> latest(@QueryParam("limit") @DefaultValue("50") int limit){
     limit = Math.min(Math.max(limit, 1), 200);
     List<Row> rows = posts.latestToday(limit);
