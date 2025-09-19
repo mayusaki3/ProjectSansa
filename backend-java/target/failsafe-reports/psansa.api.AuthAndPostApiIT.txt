@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: psansa.api.AuthAndPostApiIT
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 22.90 s <<< FAILURE! -- in psansa.api.AuthAndPostApiIT
-psansa.api.AuthAndPostApiIT.postAndList -- Time elapsed: 0.171 s <<< FAILURE!
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 22.11 s <<< FAILURE! -- in psansa.api.AuthAndPostApiIT
+psansa.api.AuthAndPostApiIT.postAndList -- Time elapsed: 0.144 s <<< FAILURE!
 java.lang.AssertionError: 
 1 expectation failed.
 Expected status code <200> but was <500>.
