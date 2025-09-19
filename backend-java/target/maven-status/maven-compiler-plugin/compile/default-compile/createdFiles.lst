@@ -1,3 +1,4 @@
+psansa\api\resources\PostResource.class
 psansa\api\config\CassandraProvider.class
 psansa\api\repo\PostRepo.class
 psansa\api\dto\LoginReq.class
@@ -5,6 +6,5 @@ psansa\api\dto\RegisterReq.class
 psansa\api\security\JwtService.class
 psansa\api\security\PasswordService.class
 psansa\api\web\AuthResource.class
-psansa\api\web\PostResource.class
 psansa\api\dto\PostReq.class
 psansa\api\repo\UserRepo.class
