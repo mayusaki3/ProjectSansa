@@ -1,0 +1,3 @@
+psansa\api\CassandraResource.class
+psansa\api\AuthAndPostApiIT.class
+psansa\api\PostRepoTest.class
