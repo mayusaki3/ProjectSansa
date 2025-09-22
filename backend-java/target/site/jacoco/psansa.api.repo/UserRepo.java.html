@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ja"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserRepo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend-java</a> &gt; <a href="index.source.html" class="el_package">psansa.api.repo</a> &gt; <span class="el_source">UserRepo.java</span></div><h1>UserRepo.java</h1><pre class="source lang-java linenums">package psansa.api.repo;
+
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.*;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import java.time.Instant;
+import java.util.Optional;
+
+@ApplicationScoped
+<span class="nc" id="L12">public class UserRepo {</span>
+    @Inject CqlSession db;
+
+    public Optional&lt;Row&gt; findByUsername(String username){
+<span class="nc" id="L16">        ResultSet rs = db.execute(SimpleStatement.newInstance(</span>
+            &quot;SELECT user_id, password_hash, display_name FROM users_by_username WHERE username=?&quot;, username));
+<span class="nc" id="L18">        Row row = rs.one();</span>
+<span class="nc" id="L19">        return Optional.ofNullable(row);</span>
+    }
+
+    public void insert(String userId, String username, String hash, String display){
+<span class="nc" id="L23">        Instant ts = Instant.now();</span>
+<span class="nc" id="L24">        BatchStatement bs = BatchStatement.builder(DefaultBatchType.LOGGED)</span>
+<span class="nc" id="L25">            .addStatement(SimpleStatement.newInstance(</span>
+                &quot;INSERT INTO users (user_id, username, password_hash, display_name, created_at) VALUES (?,?,?,?,?)&quot;,
+                userId, username, hash, display, ts))
+<span class="nc" id="L28">            .addStatement(SimpleStatement.newInstance(</span>
+                &quot;INSERT INTO users_by_username (username, user_id, password_hash, display_name, created_at) VALUES (?,?,?,?,?)&quot;,
+                username, userId, hash, display, ts))
+<span class="nc" id="L31">            .build();</span>
+<span class="nc" id="L32">        db.execute(bs);</span>
+<span class="nc" id="L33">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

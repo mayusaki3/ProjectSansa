@@ -157,20 +157,6 @@
         <version>3.2.5</version>
       </plugin>
 
-      <!-- IT レポート -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <version>3.2.5</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <!-- カバレッジ（任意だが強く推奨） -->
       <plugin>
         <groupId>org.jacoco</groupId>
