@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ja"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PostResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend-java</a> &gt; <a href="index.source.html" class="el_package">psansa.api.resources</a> &gt; <span class="el_source">PostResource.java</span></div><h1>PostResource.java</h1><pre class="source lang-java linenums">package psansa.api.resources;
+
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+
+import psansa.api.dto.PostReq;
+import psansa.api.repo.PostRepo;
+import psansa.api.security.JwtSecured;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Path(&quot;/posts&quot;)
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+<span class="fc" id="L26">public class PostResource {</span>
+
+  @Inject PostRepo posts;
+  @Context SecurityContext sec;
+
+  @POST
+  @JwtSecured
+  public Response create(PostReq req){
+    // JwtAuthFilter が SecurityContext に uid を入れる
+<span class="pc bpc" id="L35" title="2 of 4 branches missed.">    String author = (sec != null &amp;&amp; sec.getUserPrincipal() != null)</span>
+<span class="fc" id="L36">        ? sec.getUserPrincipal().getName()</span>
+<span class="pc" id="L37">        : null;</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">    if (author == null) return Response.status(401).build();</span>
+
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">    var id = posts.insert(author, req.text(), req.lang() != null ? req.lang() : &quot;ja&quot;);</span>
+<span class="fc" id="L41">    return Response.ok(Map.of(&quot;post_id&quot;, id.toString())).build();</span>
+  }
+
+  @GET
+  @Path(&quot;&quot;)
+  public List&lt;Map&lt;String, Object&gt;&gt; latest(@QueryParam(&quot;limit&quot;) @DefaultValue(&quot;50&quot;) int limit){
+<span class="fc" id="L47">    limit = Math.min(Math.max(limit, 1), 200);</span>
+<span class="fc" id="L48">    List&lt;Row&gt; rows = posts.latestToday(limit);</span>
+
+<span class="fc" id="L50">    return rows.stream().map(r -&gt; {</span>
+<span class="fc" id="L51">      Map&lt;String, Object&gt; m = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L52">      m.put(&quot;post_id&quot;, r.getUuid(&quot;post_id&quot;).toString());</span>
+<span class="fc" id="L53">      m.put(&quot;author_id&quot;, r.getString(&quot;author_id&quot;));</span>
+<span class="fc" id="L54">      m.put(&quot;text&quot;, r.getString(&quot;text&quot;));</span>
+<span class="fc" id="L55">      UUID ts = r.getUuid(&quot;created_at&quot;);</span>
+<span class="fc" id="L56">      Instant created = Instant.ofEpochMilli(Uuids.unixTimestamp(ts));</span>
+<span class="fc" id="L57">      m.put(&quot;created_at&quot;, created);</span>
+<span class="fc" id="L58">      m.put(&quot;lang&quot;, r.getString(&quot;lang&quot;));</span>
+<span class="fc" id="L59">      return m;</span>
+<span class="fc" id="L60">    }).collect(Collectors.toList());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
