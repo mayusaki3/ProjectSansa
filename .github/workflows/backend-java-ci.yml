@@ -2,12 +2,12 @@ name: backend-java CI
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ master, develop ]
     paths:
       - 'backend-java/**'
       - '.github/workflows/backend-java-ci.yml'
   pull_request:
-    branches: [ develop ]
+    branches: [ master, develop ]
 
 concurrency:
   group: backend-java-${{ github.ref }}
