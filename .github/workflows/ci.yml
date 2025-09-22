@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ develop, main ]
+  push:
+    branches: [ develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # もし Repository Secrets に PSANSA_JWT_SECRET を入れた場合は、ここで環境変数へ
+      # - name: Export secrets
+      #   run: echo "PSANSA_JWT_SECRET=${{ secrets.PSANSA_JWT_SECRET }}" >> $GITHUB_ENV
+
+      - name: Build & Test (unit + IT)
+        working-directory: backend-java
+        run: |
+          mvn -B -ntp -DskipITs=false verify surefire-report:report-only failsafe-report:report-only
+
+      - name: Upload test reports (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            backend-java/target/site/**
+            backend-java/target/surefire-reports/**
+            backend-java/target/failsafe-reports/**
