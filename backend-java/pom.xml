@@ -160,7 +160,6 @@
       <!-- IT レポート -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.2.5</version>
         <executions>
           <execution>
