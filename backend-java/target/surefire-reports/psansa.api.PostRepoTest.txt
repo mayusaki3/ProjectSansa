@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
-Test set: psansa.api.AuthAndPostApiIT
+Test set: psansa.api.PostRepoTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 109.0 s -- in psansa.api.AuthAndPostApiIT
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.304 s -- in psansa.api.PostRepoTest
