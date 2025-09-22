@@ -30,7 +30,7 @@ jobs:
       - name: Build & Test (unit + IT)
         working-directory: backend-java
         run: |
-          mvn -B -ntp -DskipITs=false verify surefire-report:report-only failsafe-report:report-only
+          mvn -B -ntp -DskipITs=false verify surefire-report:report-only surefire-report:failsafe-report-only
 
       - name: Upload test reports (always)
         if: always()
