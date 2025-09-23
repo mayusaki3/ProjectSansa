@@ -46,3 +46,33 @@ jobs:
       - name: Integration tests (Testcontainers)
         working-directory: backend-java
         run: mvn -B -ntp -DskipITs=false verify
+
+  it-cluster:
+    name: backend-java CI / it-cluster
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >
+      (github.event_name == 'pull_request' && github.base_ref == 'master') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Maven verify against external 3-node cluster
+        env:
+          # 外部クラスタの接続情報はリポジトリ/Organization Secretsに入れる
+          PSANSA_CASS_CONTACT_POINTS: ${{ secrets.PSANSA_CASS_CONTACT_POINTS }}  # 例: "10.0.0.11:9042,10.0.0.12:9042,10.0.0.13:9042"
+          PSANSA_CASS_DC:             ${{ secrets.PSANSA_CASS_DC }}             # 例: "dc1"
+          PSANSA_CASS_KEYSPACE:       ${{ secrets.PSANSA_CASS_KEYSPACE }}       # 例: "sansa_prod"
+          PSANSA_CASS_CONSISTENCY:    ${{ secrets.PSANSA_CASS_CONSISTENCY }}    # "LOCAL_QUORUM"
+          PSANSA_CASS_TIMEOUT:        ${{ secrets.PSANSA_CASS_TIMEOUT }}        # "10s" など
+          # JWT等アプリ側で必要ならここで渡す
+          PSANSA_JWT_SECRET:          ${{ secrets.PSANSA_JWT_SECRET }}
+        run: |
+          mvn -B -ntp -Dquarkus.profile=it-cluster -DskipITs=false verify
