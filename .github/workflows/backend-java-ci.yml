@@ -73,7 +73,7 @@ jobs:
         # ここだけリポジトリルートで実行したいので working-directory を一時上書き
         working-directory: .
         run: |
-          docker compose -f infra/docker-compose.dev-3n.yml up -d --remove-orphans
+          docker compose -f infra/docker-compose.dev-3n.yml --project-name sansa up -d --remove-orphans
 
           # ↓ compose の services 名に合わせて “必ず置換”してください
           #    例: cass-seed / cass-2 / cass-3
