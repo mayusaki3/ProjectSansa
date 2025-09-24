@@ -46,3 +46,50 @@ jobs:
       - name: Integration tests (Testcontainers)
         working-directory: backend-java
         run: mvn -B -ntp -DskipITs=false verify
+
+  it-cluster:
+    name: backend-java CI / it-cluster
+    if: >
+      (github.event_name == 'pull_request' && github.base_ref == 'master') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: it
+    defaults:
+      run:
+        working-directory: backend-java
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Start Cassandra 3-node (compose)
+        # ここだけリポジトリルートで実行したいので working-directory を一時上書き
+        working-directory: .
+        run: |
+          docker compose -f infra/docker-compose.dev-3n.yml --project-name sansa up -d --remove-orphans --wait --wait-timeout 420
+          # ヘルス直後の安定化待ち
+          sleep 15
+
+      - name: Run IT against local 3-node
+        env:
+          # ↓ compose の “ホスト公開ポート”に合わせて置換
+          #   *あなたの dev-3n.yml で cass-seed/cass-2/cass-3 に割り当てた 9042 の公開ポート*
+          PSANSA_CASS_CONTACT_POINTS: "127.0.0.1:19042, 127.0.0.1:29042, 127.0.0.1:39042"
+          PSANSA_CASS_DC: "dc1"
+          PSANSA_CASS_KEYSPACE: "sansa"
+          PSANSA_CASS_CONSISTENCY: "LOCAL_QUORUM"
+          PSANSA_CASS_TIMEOUT: "15s"
+        run: |
+          mvn -B -ntp -Dquarkus.profile=it-cluster -DskipITs=false verify
+
+      - name: Shutdown cluster
+        if: always()
+        working-directory: .
+        run: docker compose -f infra/docker-compose.dev-3n.yml down -v
