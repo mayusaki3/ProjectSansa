@@ -51,6 +51,10 @@ services:
     depends_on:
       cass-seed:
         condition: service_healthy
+      cass-2:
+        condition: service_healthy
+      cass-3:
+        condition: service_healthy
     volumes:
       - ./cassandra/init.cql:/init.cql:ro
     entrypoint: ["/bin/bash","-lc","cqlsh cass-seed -f /init.cql && echo CQL-init-done"]
