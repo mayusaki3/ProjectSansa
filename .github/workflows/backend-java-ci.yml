@@ -78,7 +78,7 @@ jobs:
           # ↓ compose の services 名に合わせて “必ず置換”してください
           #    例: cass-seed / cass-2 / cass-3
           timeout 180s bash -c '
-            for s in <cass-seed> <cass-2> <cass-3>; do
+            for s in cass-seed cass-2 cass-3; do
               echo "waiting for $s to be healthy..."
               while true; do
                 st=$(docker inspect -f {{.State.Health.Status}} $s 2>/dev/null || echo "starting")
@@ -92,7 +92,7 @@ jobs:
         env:
           # ↓ compose の “ホスト公開ポート”に合わせて置換
           #   *あなたの dev-3n.yml で cass-seed/cass-2/cass-3 に割り当てた 9042 の公開ポート*
-          PSANSA_CASS_CONTACT_POINTS: "<127.0.0.1:19042>,<127.0.0.1:29042>,<127.0.0.1:39042>"
+          PSANSA_CASS_CONTACT_POINTS: "127.0.0.1:19042, 127.0.0.1:29042, 127.0.0.1:39042"
           PSANSA_CASS_DC: "dc1"
           PSANSA_CASS_KEYSPACE: "sansa"
           PSANSA_CASS_CONSISTENCY: "LOCAL_QUORUM"
