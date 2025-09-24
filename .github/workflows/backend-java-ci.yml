@@ -77,16 +77,11 @@ jobs:
 
           # ↓ compose の services 名に合わせて “必ず置換”してください
           #    例: cass-seed / cass-2 / cass-3
-          timeout 180s bash -c '
-            for s in cass-seed cass-2 cass-3; do
-              echo "waiting for $s to be healthy..."
-              while true; do
-                st=$(docker inspect -f {{.State.Health.Status}} $s 2>/dev/null || echo "starting")
-                [ "$st" = "healthy" ] && break
-                sleep 3
-              done
-            done
+          timeout 420s bash -c '
+            docker compose -f infra/docker-compose.dev-3n.yml --project-name sansa wait cass-seed cass-2 cass-3
           '
+          # ヘルス直後の安定化待ち
+          sleep 15
 
       - name: Run IT against local 3-node
         env:
