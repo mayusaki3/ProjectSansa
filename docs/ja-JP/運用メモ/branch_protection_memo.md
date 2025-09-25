@@ -62,6 +62,13 @@ JSON テンプレートは `infra/` 配下に配置（`protection.json` / `prote
 > 事前に `gh auth login` を実施。
 
 ```powershell
+winget install -e --id GitHub.cli
+gh --version
+gh auth login
+gh auth status
+```
+
+```powershell
 # develop に適用
 gh api -X PUT repos/mayusaki3/ProjectSansa/branches/develop/protection `
   --input infra/protection.json `
