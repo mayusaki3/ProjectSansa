@@ -41,10 +41,10 @@ JSON テンプレートは `infra/` 配下に配置（`protection.json` / `prote
   "required_status_checks": {
     "strict": true,
     "contexts": [
-      "backend-java CI / unit",
-      "backend-java CI / it",
-      "CI / build",
-      "backend-java CI / it-cluster"
+      "backend-java CI / unit (pull_request)",
+      "backend-java CI / it (pull_request)",
+      "CI / build (pull_request)",
+      "backend-java CI / it-cluster (pull_request)"
     ]
   },
   "enforce_admins": false,
