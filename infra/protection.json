@@ -5,7 +5,8 @@
       "backend-java CI / unit",
       "backend-java CI / it",
       "CI / build"
-    ]
+    ],
+    "checks": []
   },
   "enforce_admins": false,
   "required_pull_request_reviews": null,
