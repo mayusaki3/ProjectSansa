@@ -25,7 +25,8 @@ JSON テンプレートは `infra/` 配下に配置（`protection.json` / `prote
       "backend-java CI / unit",
       "backend-java CI / it",
       "CI / build"
-    ]
+    ],
+    "checks": []
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
@@ -45,7 +46,8 @@ JSON テンプレートは `infra/` 配下に配置（`protection.json` / `prote
       "backend-java CI / it",
       "CI / build",
       "backend-java CI / it-cluster"
-    ]
+    ],
+    "checks": []
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
