@@ -1,12 +1,11 @@
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": [
-      "backend-java CI / unit",
-      "backend-java CI / it",
-      "CI / build"
-    ],
-    "checks": []
+    "checks": [
+      { "context": "backend-java CI / unit (pull_request)" },
+      { "context": "backend-java CI / it (pull_request)" },
+      { "context": "CI / build (pull_request)" }
+    ]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": null,
