@@ -14,20 +14,20 @@
       "type": "pull_request",
       "parameters": {
         "required_approving_review_count": 0,
-        "dismiss_stale_reviews": false,
+        "dismiss_stale_reviews_on_push": false,
         "require_code_owner_review": false,
         "require_last_push_approval": false,
-        "required_conversation_resolution": false
+        "required_review_thread_resolution": false
       }
     },
     {
       "type": "required_status_checks",
       "parameters": {
         "strict_required_status_checks_policy": true,
-        "required_checks": [
-          { "context": "backend-java CI / unit (pull_request)",  "integration_id": null },
-          { "context": "backend-java CI / it (pull_request)",    "integration_id": null },
-          { "context": "CI / build (pull_request)",               "integration_id": null }
+        "required_status_checks": [
+          { "context": "backend-java CI / unit (pull_request)", "integration_id": null },
+          { "context": "backend-java CI / it (pull_request)",   "integration_id": null },
+          { "context": "CI / build (pull_request)",              "integration_id": null }
         ]
       }
     }
