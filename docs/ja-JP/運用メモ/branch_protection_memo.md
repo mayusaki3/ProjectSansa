@@ -71,24 +71,37 @@ gh auth status
 ```
 
 ```powershell
-# develop に適用
-gh api -X PUT repos/mayusaki3/ProjectSansa/branches/develop/protection `
-  --input infra/protection.json `
-  -H "Accept: application/vnd.github+json"
+# 既存 Classic 保護（develop/master）があれば先に外す（Rulesetsと二重適用を避ける）
+gh api -X DELETE repos/mayusaki3/ProjectSansa/branches/develop/protection
+gh api -X DELETE repos/mayusaki3/ProjectSansa/branches/master/protection
 
-# master に適用
-gh api -X PUT repos/mayusaki3/ProjectSansa/branches/master/protection `
-  --input infra/protection_it-cluster.json `
-  -H "Accept: application/vnd.github+json"
+# Ruleset 作成
+gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
+  -H "Accept: application/vnd.github+json" `
+  --input ruleset-default.json
+
+gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
+  -H "Accept: application/vnd.github+json" `
+  --input ruleset-master.json
+
+# 確認
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].{id:id,name:name,priority:enforcement,branches:(.conditions.ref_name.include)}'
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].rules[].parameters.required_checks[].context' | sort
 ```
 
-**現在の設定を確認**
+もし後から修正したい場合は、ruleset_id を取得して：
 ```powershell
-gh api repos/mayusaki3/ProjectSansa/branches/develop/protection | jq
-gh api repos/mayusaki3/ProjectSansa/branches/master/protection  | jq
-```
+# 一覧（ID取得）
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].{id:id,name:name,priority:priority}'
 
-UI: Settings → Branches → Branch protection rules → Required status checks に **固定ラベル**が出ていること。
+# 更新（例：default の JSON を修正して PUT）
+gh api -X PUT repos/mayusaki3/ProjectSansa/rulesets/<RULESET_ID> `
+  -H "Accept: application/vnd.github+json" `
+  --input ruleset-default.json
+
+# 削除
+gh api -X DELETE repos/mayusaki3/ProjectSansa/rulesets/<RULESET_ID>
+```
 
 ---
 
