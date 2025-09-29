@@ -71,22 +71,22 @@ gh auth status
 ```
 
 ```powershell
-# 既存 Classic 保護（develop/master）があれば先に外す（Rulesetsと二重適用を避ける）
+# Classic保護が残っていたら削除（無ければスキップでOK）
 gh api -X DELETE repos/mayusaki3/ProjectSansa/branches/develop/protection
 gh api -X DELETE repos/mayusaki3/ProjectSansa/branches/master/protection
 
-# Ruleset 作成
+# Ruleset作成
 gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
   -H "Accept: application/vnd.github+json" `
-  --input ruleset-default.json
+  --input infra/ruleset-default.json
 
 gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
   -H "Accept: application/vnd.github+json" `
-  --input ruleset-master.json
+  --input infra/ruleset-master.json
 
 # 確認
-gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].{id:id,name:name,priority:enforcement,branches:(.conditions.ref_name.include)}'
-gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].rules[].parameters.required_checks[].context' | sort
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].{id:id,name:name,priority:priority,include:(.conditions.ref_name.include)}'
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].rules[]?.parameters?.required_status_checks[]?.context' | sort
 ```
 
 もし後から修正したい場合は、ruleset_id を取得して：
