@@ -16,45 +16,14 @@ JSON テンプレートは `infra/` 配下に配置（`protection.json` / `prote
 
 ## 2) JSON（テンプレート抜粋）
 
-**develop（infra/protection.json）**:
+**efault（infra/ruleset-default.json）**:
 ```json
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": [
-      "backend-java CI / unit",
-      "backend-java CI / it",
-      "CI / build"
-    ],
-    "checks": []
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 1
-  },
-  "restrictions": null
-}
+
 ```
 
-**master（infra/protection_it-cluster.json）**:
+**master（infra/ruleset-master.json）**:
 ```json
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": [
-      "backend-java CI / unit",
-      "backend-java CI / it",
-      "CI / build",
-      "backend-java CI / it-cluster"
-    ],
-    "checks": []
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 1
-  },
-  "restrictions": null
-}
+
 ```
 
 ---
@@ -85,8 +54,22 @@ gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
   --input infra/ruleset-master.json
 
 # 確認
-gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].{id:id,name:name,priority:priority,include:(.conditions.ref_name.include)}'
-gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].rules[]?.parameters?.required_status_checks[]?.context' | sort
+
+# 一覧（id/name/priority/enforcement/target）
+gh api repos/mayusaki3/ProjectSansa/rulesets `
+  --jq '.[] | {id, name, priority, enforcement, target}'
+
+# 各ルールセットの詳細（ref 条件と required checks の context を抽出）
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].id' | %{
+  gh api repos/mayusaki3/ProjectSansa/rulesets/$_ `
+    --jq '{ id, name,
+            include: (.conditions.ref_name.include // []),
+            exclude: (.conditions.ref_name.exclude // []),
+            required_checks: ([ .rules[]?
+                                 | select(.type=="required_status_checks")
+                                 | .parameters.required_status_checks[]?
+                                 | .context ] // []) }'
+}
 ```
 
 もし後から修正したい場合は、ruleset_id を取得して：
