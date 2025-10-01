@@ -2,10 +2,10 @@
   "name": "master-only",
   "target": "branch",
   "enforcement": "active",
+  "priority": 100,
   "conditions": {
     "ref_name": {
-      "include": ["refs/heads/master"],
-      "exclude": []
+      "include": ["refs/heads/master"]
     }
   },
   "rules": [
