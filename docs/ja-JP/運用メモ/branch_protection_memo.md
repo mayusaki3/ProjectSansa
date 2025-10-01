@@ -1,86 +1,238 @@
-# メモ: ブランチ保護 & 必須チェック（ProjectSansa）
+# メモ: ブランチ保護 & 必須チェック（rulesets・ProjectSansa）
 
-このメモは **develop / master** のブランチ保護を CLI（`gh api`）で適用・確認する手順です。  
-JSON テンプレートは `infra/` 配下に配置（`protection.json` / `protection_it-cluster.json`）。
+> **目的**  
+> GitHub **Rulesets**（クラシック保護ではなく新方式）で、`develop`/`master` の必須チェックを機械的に再現できるようにする。
+
+## 方針（結論）
+
+- **default**（全ブランチ・ただし `master` 除外）  
+  必須: `CI / build`、`backend-java CI / unit`、`backend-java CI / it`
+- **master-only**（`refs/heads/master` のみ）  
+  必須: 上3つ + **`backend-java CI / it-cluster`**
+
+> Required checks の **context 名は _Actions の表示名_ と完全一致**させること。  
+> 例: `backend-java CI / unit`, `backend-java CI / it`, `backend-java CI / it-cluster`, `CI / build`  
+> （`(pull_request)` 等の接尾辞は **不要**。Rulesets は **ラベル(=context)** を見る）
 
 ---
 
-## 1) 目的
+## 1) JSON 置き場
 
-- **develop**: 通常開発用。必須チェック = `CI / build`、`backend-java CI / unit`、`backend-java CI / it`  
-- **master**: リリース前の厳格検証。上記に **`backend-java CI / it-cluster`** を追加
+- `infra/ruleset-default.json`
+- `infra/ruleset-master-only.json`
 
-> これらのラベルは **ブランチ保護の Required checks** に手入力する“固定ジョブ名”です。
+### 1.1 `infra/ruleset-default.json`（そのまま保存）
 
----
-
-## 2) JSON（テンプレート抜粋）
-
-**efault（infra/ruleset-default.json）**:
 ```json
-
+{
+  "name": "default",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/*"],
+      "exclude": ["refs/heads/master"]
+    }
+  },
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false,
+        "automatic_copilot_code_review_enabled": false,
+        "allowed_merge_methods": ["merge", "squash", "rebase"]
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          { "context": "backend-java CI / unit" },
+          { "context": "backend-java CI / it" },
+          { "context": "CI / build" }
+        ]
+      }
+    }
+  ]
+}
 ```
 
-**master（infra/ruleset-master.json）**:
-```json
+### 1.2 `infra/ruleset-master-only.json`（そのまま保存）
 
+```json
+{
+  "name": "master-only",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/master"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false,
+        "automatic_copilot_code_review_enabled": false,
+        "allowed_merge_methods": ["merge", "squash", "rebase"]
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          { "context": "backend-java CI / unit" },
+          { "context": "backend-java CI / it" },
+          { "context": "CI / build" },
+          { "context": "backend-java CI / it-cluster" }
+        ]
+      }
+    }
+  ]
+}
 ```
 
 ---
 
-## 3) 適用コマンド
+## 2) 適用手順（**差し替え = remove → add**）
 
-> 事前に `gh auth login` を実施。
+> 事前に `gh auth login` 済みであること。
+
+### 2.1 Classic 保護が残っていれば削除（無ければ 404 でOK）
 
 ```powershell
-winget install -e --id GitHub.cli
-gh --version
-gh auth login
-gh auth status
-```
-
-```powershell
-# Classic保護が残っていたら削除（無ければスキップでOK）
 gh api -X DELETE repos/mayusaki3/ProjectSansa/branches/develop/protection
 gh api -X DELETE repos/mayusaki3/ProjectSansa/branches/master/protection
+```
 
-# Ruleset作成
+### 2.2 既存 Ruleset を**名前一致で削除**（remove）
+
+```powershell
+# 既存 rulesets 一覧を取得
+$all = gh api repos/mayusaki3/ProjectSansa/rulesets | ConvertFrom-Json
+
+# 削除対象（あれば）
+$targets = @("default","master-only")
+$all | Where-Object { $targets -contains $_.name } | ForEach-Object {
+  gh api -X DELETE "repos/mayusaki3/ProjectSansa/rulesets/$($_.id)"
+}
+```
+
+（bash の場合）
+```bash
+for id in $(gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[] | select(.name=="default" or .name=="master-only") | .id'); do
+  gh api -X DELETE "repos/mayusaki3/ProjectSansa/rulesets/$id"
+done
+```
+
+### 2.3 新規作成（add）
+
+```powershell
 gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
   -H "Accept: application/vnd.github+json" `
   --input infra/ruleset-default.json
 
 gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
   -H "Accept: application/vnd.github+json" `
-  --input infra/ruleset-master.json
+  --input infra/ruleset-master-only.json
+```
 
-# 確認
+---
 
-# 一覧（id/name/priority/enforcement/target）
+## 3) 検証（一覧 → 詳細）
+
+### 3.1 一覧（id / name / enforcement / target）
+
+```powershell
 gh api repos/mayusaki3/ProjectSansa/rulesets `
-  --jq '.[] | {id, name, priority, enforcement, target}'
+  --jq '.[] | {id, name, enforcement, target}'
+```
 
-# 各ルールセットの詳細（ref 条件と required checks の context を抽出）
-gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].id' | %{
-  gh api repos/mayusaki3/ProjectSansa/rulesets/$_ `
-    --jq '{ id, name,
-            include: (.conditions.ref_name.include // []),
-            exclude: (.conditions.ref_name.exclude // []),
-            required_checks: ([ .rules[]?
-                                 | select(.type=="required_status_checks")
-                                 | .parameters.required_status_checks[]?
-                                 | .context ] // []) }'
+### 3.2 詳細（include/exclude と Required checks を抽出）
+
+```powershell
+$all = gh api repos/mayusaki3/ProjectSansa/rulesets | ConvertFrom-Json
+$all.id | ForEach-Object {
+  $r = gh api "repos/mayusaki3/ProjectSansa/rulesets/$_" | ConvertFrom-Json
+
+  $includes = @()
+  if ($r.conditions -and $r.conditions.ref_name -and $r.conditions.ref_name.include) {
+    $includes = @($r.conditions.ref_name.include)
+  }
+
+  $excludes = @()
+  if ($r.conditions -and $r.conditions.ref_name -and $r.conditions.ref_name.exclude) {
+    $excludes = @($r.conditions.ref_name.exclude)
+  }
+
+  $reqChecks = @()
+  if ($r.rules) {
+    $rc = $r.rules | Where-Object { $_.type -eq 'required_status_checks' }
+    if ($rc -and $rc.parameters -and $rc.parameters.required_status_checks) {
+      $reqChecks = @($rc.parameters.required_status_checks | ForEach-Object { $_.context })
+    }
+  }
+
+  [pscustomobject]@{
+    id              = $r.id
+    name            = $r.name
+    include         = $includes
+    exclude         = $excludes
+    required_checks = $reqChecks
+  }
 }
 ```
 
-もし後から修正したい場合は、ruleset_id を取得して：
-```powershell
-# 一覧（ID取得）
-gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[].{id:id,name:name,priority:priority}'
+**期待結果（例）**
+- `default`: include=`refs/heads/*`, exclude=`refs/heads/master`, required_checks=`unit,it,build`
+- `master-only`: include=`refs/heads/master`, required_checks=`unit,it,build,it-cluster`
 
-# 更新（例：default の JSON を修正して PUT）
+---
+
+## 4) よくある詰まりと対処
+
+- **PR で “Expected — Waiting for status to be reported” が出続ける**  
+  - Rulesets の `required_status_checks[].context` が **表示名と完全一致していない**。  
+    → Actions 実行履歴から **ラベル（context）をコピペ**して JSON を修正し、PUT/再作成。  
+  - 対象ブランチで **直近実行がない**と UI 候補に出にくい。**ダミーPRで一度回す**。
+
+- **`it-cluster` だけ Pending 長い / 失敗**  
+  - 3ノード Cassandra 起動～ヘルス待ちの**時間切れ**や **Secrets 未設定**。  
+  - CI ログで `docker compose ... wait cass-seed cass-2 cass-3` の成否を確認。
+
+- **`422 Unprocessable Entity`（作成/更新エラー）**  
+  - JSON スキーマ不一致。`required_status_checks` は配列で `context` キー必須。  
+  - `checks: []` や `checks: null` は **Classic API 用**の概念。Rulesets では **使わない**。
+
+- **Classic と Rulesets の二重管理**  
+  - 片方だけ残ると表示/挙動が紛らわしい。**Classic は削除**して Rulesets のみ運用。
+
+---
+
+## 5) 変更（PUT）・削除（DELETE）
+
+```powershell
+# id を確認
+gh api repos/mayusaki3/ProjectSansa/rulesets --jq '.[] | {id,name}'
+
+# 例: default を更新
 gh api -X PUT repos/mayusaki3/ProjectSansa/rulesets/<RULESET_ID> `
   -H "Accept: application/vnd.github+json" `
-  --input ruleset-default.json
+  --input infra/ruleset-default.json
 
 # 削除
 gh api -X DELETE repos/mayusaki3/ProjectSansa/rulesets/<RULESET_ID>
@@ -88,33 +240,8 @@ gh api -X DELETE repos/mayusaki3/ProjectSansa/rulesets/<RULESET_ID>
 
 ---
 
-## 4) よくある詰まりポイント
+## 6) 運用メモ
 
-- **チェック名が UI に出ない**  
-  → 直近 1 週間でそのチェックが実行されていない可能性。**対象ブランチ宛 PR を1回実行**。
-
-- **`it-cluster` が Pending のまま**  
-  → 外部 3 ノード Cassandra に到達不可／Secrets 未設定／`local-datacenter` 不一致。  
-  → Actions ログで `CONTACT_POINTS` / `DC` / `KEYSPACE` / `CONSISTENCY` / `TIMEOUT` を確認。
-
-- **`422 Unprocessable Entity`（PUT 失敗）**  
-  → JSON の `contexts` のジョブ名ミス。**実行ログの表示名をコピペ**して修正。
-
-- **自己承認したい**  
-  → `required_approving_review_count: 1` のまま、オーナー自己承認（B案）の運用で可。  
-  → 一時的に緩める場合は `0` にして再適用（戻し忘れ注意）。
-
----
-
-## 5) Required checks（手入力するジョブ名・再掲）
-
-- `CI / build`  
-- `backend-java CI / unit`  
-- `backend-java CI / it`  
-- `backend-java CI / it-cluster`（master 限定で必須化）
-
-> `.github/workflows/backend-java-ci.yml` の `jobs.<id>.name` に一致。名前変更時は JSON も更新する。
-
----
-
-_Last updated: 2025-09-24_
+- `backend-java-ci.yml` の **表示名（`jobs.<id>.name`）を変えたら必ず ruleset JSON も更新**。  
+- ルールは **`default`（全体）** と **`master-only`（厳格）** の **2本**でシンプル運用。  
+- 例外が必要になったら `exclude` / 追加 ruleset で調整（優先度は UI 側で設定可能）。
