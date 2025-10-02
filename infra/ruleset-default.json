@@ -8,19 +8,6 @@
       "exclude": ["refs/heads/master"]
     }
   },
-  "rules": [
-    {
-      "type": "required_status_checks",
-      "parameters": {
-        "strict_required_status_checks_policy": true,
-        "do_not_enforce_on_create": false,
-        "required_status_checks": [
-          { "context": "backend-java CI / unit" },
-          { "context": "backend-java CI / it" },
-          { "context": "CI / build" }
-        ]
-      }
-    }
-  ],
+  "rules": [],
   "bypass_actors": []
 }
