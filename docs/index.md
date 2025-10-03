@@ -1,3 +1,3 @@
-# Progect Sansa ver 0.0.4
+# Progect Sansa ver 0.2.0
 
 [目次](ja-JP/目次.md)
