@@ -1,0 +1,22 @@
+name: Docs Check
+
+on:
+  push:
+    paths:
+      - 'docs/ja-JP/**/*.md'
+  pull_request:
+    paths:
+      - 'docs/ja-JP/**/*.md'
+
+jobs:
+  link-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Run link checker
+        run: |
+          python scripts/check_links.py docs/ja-JP
