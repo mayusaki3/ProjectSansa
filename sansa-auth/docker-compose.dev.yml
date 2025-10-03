@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  api:
+    build: .
+    ports: ["8080:8080"]
+    environment:
+      - SANSA_ENV=dev
+  cassandra:
+    image: cassandra:5
+    expose: ["9042"]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  mailhog:
+    image: mailhog/mailhog
+    ports: ["8025:8025","1025:1025"]
