@@ -4,5 +4,10 @@ D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\aut
 D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\controller\WebAuthnController.java
 D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\dto\Dtos.java
 D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\model\Models.java
+D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\repo\cassandra\CassandraConfig.java
+D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\repo\cassandra\CassandraRepos.java
 D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\repo\InMemoryRepos.java
+D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\repo\RepoInterfaces.java
+D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\AuthService.java
 D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\Services.java
+D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\ServicesCassandra.java

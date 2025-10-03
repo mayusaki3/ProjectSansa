@@ -2,15 +2,15 @@ package com.sansa.auth.controller;
 
 import com.sansa.auth.dto.Dtos.LoginResponse;
 import com.sansa.auth.model.Models.Session;
-import com.sansa.auth.service.Services;
+import com.sansa.auth.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/webauthn")
 public class WebAuthnController {
-    private final Services svc;
-    public WebAuthnController(Services svc) { this.svc = svc; }
+    private final AuthService svc;
+    public WebAuthnController(AuthService svc) { this.svc = svc; }
 
     @GetMapping("/challenge")
     public ResponseEntity<?> challenge() {

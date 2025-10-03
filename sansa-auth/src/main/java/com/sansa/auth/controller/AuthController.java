@@ -4,7 +4,7 @@ import com.sansa.auth.dto.Dtos.PreRegisterRequest;
 import com.sansa.auth.dto.Dtos.VerifyEmailRequest;
 import com.sansa.auth.dto.Dtos.RegisterRequest;
 
-import com.sansa.auth.service.Services;
+import com.sansa.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +15,9 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final Services svc;
+    private final AuthService svc;
 
-    public AuthController(Services svc) { this.svc = svc; }
+    public AuthController(AuthService svc) { this.svc = svc; }
 
     @PostMapping("/pre-register")
     public ResponseEntity<?> preRegister(@Valid @RequestBody PreRegisterRequest req) {

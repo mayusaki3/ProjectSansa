@@ -2,7 +2,7 @@ package com.sansa.auth.service;
 
 import com.sansa.auth.model.Models.*;
 import com.sansa.auth.repo.RepoInterfaces.*;
-import com.sansa.auth.repo.InMemoryRepos;
+import com.sansa.auth.repo.cassandra.CassandraRepos;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -17,16 +17,21 @@ import java.time.Instant;
 import java.util.*;
 
 @Service
-@Profile("inmem")
-public class Services implements AuthService {
-    private final IUserRepo users = new InMemoryRepos.UserRepo();
-    private final ISessionRepo sessions = new InMemoryRepos.SessionRepo();
+@Profile("cassandra")
+public class ServicesCassandra implements AuthService {
+    private final IUserRepo users;
+    private final ISessionRepo sessions;
 
     private static final byte[] SECRET = Decoders.BASE64.decode("c2Fuc2EtZGV2LXNlY3JldC1kby1ub3QtdXNlLWluLXByb2Q=");
     private final Key key = Keys.hmacShaKeyFor(Arrays.copyOf(SECRET, 32));
 
     private final Map<String, String> emailCodes = new HashMap<>();
     private final Map<String, Instant> emailCodeExp = new HashMap<>();
+
+    public ServicesCassandra(CassandraRepos.UserRepo userRepo, CassandraRepos.SessionRepo sessionRepo) {
+        this.users = userRepo;
+        this.sessions = sessionRepo;
+    }
 
     public Map<String, Object> preRegister(String email) {
         String code = String.format("%06d", new Random().nextInt(1_000_000));
