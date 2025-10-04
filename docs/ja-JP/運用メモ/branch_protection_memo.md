@@ -1,4 +1,5 @@
-# Branch protection / Rulesets 運用メモ（ProjectSansa）
+[目次](../目次.md) > 運用メモ > Branch protection / Rulesets 運用メモ
+# Branch protection / Rulesets 運用メモ
 
 このメモは **GitHub Rulesets** を用いたブランチ保護運用の手順とトラブル対処をまとめたものです。
 
@@ -214,3 +215,5 @@ gh api -X POST repos/mayusaki3/ProjectSansa/rulesets `
 
 以上。必要に応じて、`unit` / `it` / `build` を default 側に追加する場合は、push への影響を踏まえチーム合意の上で実施すること。
 
+---
+[目次](../目次.md) > 運用メモ > Branch protection / Rulesets 運用メモ
