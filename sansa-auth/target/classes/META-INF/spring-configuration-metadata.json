@@ -1,0 +1,36 @@
+{
+  "groups": [
+    {
+      "name": "sansa.cassandra",
+      "type": "com.sansa.auth.repo.cassandra.CassandraProps",
+      "sourceType": "com.sansa.auth.repo.cassandra.CassandraProps"
+    }
+  ],
+  "properties": [
+    {
+      "name": "sansa.cassandra.contact-point",
+      "type": "java.lang.String",
+      "sourceType": "com.sansa.auth.repo.cassandra.CassandraProps",
+      "defaultValue": "127.0.0.1"
+    },
+    {
+      "name": "sansa.cassandra.datacenter",
+      "type": "java.lang.String",
+      "sourceType": "com.sansa.auth.repo.cassandra.CassandraProps",
+      "defaultValue": "datacenter1"
+    },
+    {
+      "name": "sansa.cassandra.keyspace",
+      "type": "java.lang.String",
+      "sourceType": "com.sansa.auth.repo.cassandra.CassandraProps",
+      "defaultValue": "sansa_auth"
+    },
+    {
+      "name": "sansa.cassandra.port",
+      "type": "java.lang.Integer",
+      "sourceType": "com.sansa.auth.repo.cassandra.CassandraProps",
+      "defaultValue": 9042
+    }
+  ],
+  "hints": []
+}

@@ -1,11 +1,13 @@
 com\sansa\auth\controller\WebAuthnController.class
 com\sansa\auth\dto\Dtos$MfaRequiredResponse.class
+com\sansa\auth\repo\cassandra\CassandraProps.class
 com\sansa\auth\model\Models$User.class
 com\sansa\auth\repo\InMemoryRepos.class
 com\sansa\auth\dto\Dtos$EmailOtpVerifyRequest.class
 com\sansa\auth\dto\Dtos$LoginResponse.class
 com\sansa\auth\model\Models$Session.class
 com\sansa\auth\dto\Dtos$WebAuthnChallengeResponse.class
+META-INF\spring-configuration-metadata.json
 com\sansa\auth\repo\RepoInterfaces$IUserRepo.class
 com\sansa\auth\service\AuthService.class
 com\sansa\auth\repo\InMemoryRepos$SessionRepo.class

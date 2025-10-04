@@ -1,0 +1,10 @@
+# Created at 2025-10-04T15:27:57.897
+Boot Manifest-JAR contains absolute paths in classpath 'D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+
+# Created at 2025-10-04T15:28:02.250
+Boot Manifest-JAR contains absolute paths in classpath 'D:\WORKPLACE\M1SH\DEV\GitHub\ProjectSansa\sansa-auth\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+

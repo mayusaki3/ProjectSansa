@@ -1,68 +1,33 @@
-// src/main/java/com/sansa/auth/repo/cassandra/CassandraConfig.java
 package com.sansa.auth.repo.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.*;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
 
 @Configuration
-@Profile("cassandra")
+@EnableConfigurationProperties(CassandraProps.class)
 public class CassandraConfig {
+    private final CassandraProps p;
+    public CassandraConfig(CassandraProps p) { this.p = p; }
 
-  @Value("${sansa.cassandra.contactPoint:127.0.0.1}")
-  private String contactPoint;
-
-  @Value("${sansa.cassandra.port:9042}")
-  private int port;
-
-  @Value("${sansa.cassandra.datacenter:datacenter1}")
-  private String datacenter;
-
-  @Value("${sansa.cassandra.keyspace:sansa_auth}")
-  private String keyspace;
-
-  @Bean
-  public CqlSession cqlSession() {
-    // 1) 一時セッションで keyspace 作成
-    try (CqlSession tmp = CqlSession.builder()
-        .addContactPoint(new InetSocketAddress(contactPoint, port))
-        .withLocalDatacenter(datacenter)
-        .build()) {
-      tmp.execute("CREATE KEYSPACE IF NOT EXISTS " + keyspace +
-          " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
-    }
-
-    // 2) keyspace を選択したセッション
-    CqlSession session = CqlSession.builder()
-        .addContactPoint(new InetSocketAddress(contactPoint, port))
-        .withLocalDatacenter(datacenter)
-        .withKeyspace(keyspace)
-        .build();
-
-    // 3) スキーマ適用（classpath: cassandra/schema.cql）
-    applySchema(session);
-    return session;
-  }
-
-  private void applySchema(CqlSession session) {
-    try {
-      var res = new ClassPathResource("cassandra/schema.cql");
-      if (res.exists()) {
-        try (Scanner sc = new Scanner(res.getInputStream(), StandardCharsets.UTF_8)) {
-          sc.useDelimiter(";");
-          while (sc.hasNext()) {
-            String stmt = sc.next().trim();
-            if (!stmt.isEmpty()) session.execute(stmt);
-          }
+    @Bean
+    public CqlSession cqlSession() {
+        // 1) system セッション（keyspace なし）で KS を作成
+        try (var sys = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(p.getContactPoint(), p.getPort()))
+                .withLocalDatacenter(p.getDatacenter())
+                .build()) {
+            sys.execute("CREATE KEYSPACE IF NOT EXISTS " + p.getKeyspace() +
+                    " WITH replication = {'class':'SimpleStrategy','replication_factor':1}");
         }
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to apply schema.cql", e);
+        // 2) keyspace を指定して本セッション（Bean）を返す
+        return CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(p.getContactPoint(), p.getPort()))
+                .withLocalDatacenter(p.getDatacenter())
+                .withKeyspace(p.getKeyspace())
+                .build();
     }
-  }
 }

@@ -9,21 +9,12 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
 @SpringBootConfiguration
-@EnableAutoConfiguration(exclude = {
-        // Webサーバ系は不要（Tomcat 等を起動しない）
-        ServletWebServerFactoryAutoConfiguration.class
-})
+@EnableAutoConfiguration(exclude = { ServletWebServerFactoryAutoConfiguration.class })
 @ComponentScan(
-        basePackageClasses = {
-                CassandraConfig.class,  // CqlSession の bean
-                CassandraRepos.class    // UserRepo / SessionRepo
-        },
-        excludeFilters = {
-                // Controller / Service 層はテスト対象外にする
-                @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.sansa\\.auth\\.controller\\..*"),
-                @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.sansa\\.auth\\.service\\..*")
-        }
+    basePackageClasses = { CassandraConfig.class, CassandraRepos.class },
+    excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.sansa\\.auth\\.controller\\..*"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.sansa\\.auth\\.service\\..*")
+    }
 )
-public class TestCassandraSlice {
-    // 何も書かなくてOK。スキャン設定だけ持つクラス。
-}
+public class TestCassandraSlice { }
