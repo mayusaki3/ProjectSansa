@@ -1,143 +1,252 @@
 package com.sansa.auth.repo.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.sansa.auth.model.Models;
 import com.sansa.auth.model.Models.User;
-import com.sansa.auth.model.Models.Session;
-import com.sansa.auth.repo.RepoInterfaces.*;
-
+import com.sansa.auth.repo.RepoInterfaces.IUserRepo;
+import com.sansa.auth.repo.RepoInterfaces.ISessionRepo;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.*;
 
+/**
+ * Cassandra repositories (cassandra profile)
+ */
 @Repository
 @Profile("cassandra")
 public class CassandraRepos {
 
+    static void retry(String label, Runnable r) {
+        long deadline = System.currentTimeMillis() + 30_000; // 30s
+        int attempt = 0;
+        while (true) {
+            try {
+                r.run();
+                return;
+            } catch (InvalidQueryException | AllNodesFailedException e) {
+                attempt++;
+                if (System.currentTimeMillis() > deadline) {
+                    throw new RuntimeException("Retry timeout: " + label + " (attempts=" + attempt + ")", e);
+                }
+                try { Thread.sleep(500L); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            }
+        }
+    }
+
+    static void waitTableVisible(com.datastax.oss.driver.api.core.CqlSession session,
+                                String keyspace, String table, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (true) {
+            try {
+                var rs = session.execute(
+                    "SELECT table_name FROM system_schema.tables WHERE keyspace_name=? AND table_name=?",
+                    keyspace, table);
+                if (rs.one() != null) return;
+            } catch (Exception ignore) {
+                // 起動直後の system_schema 参照失敗を無視して再試行
+            }
+            if (System.currentTimeMillis() > deadline) {
+                throw new RuntimeException("Timeout waiting table visible: " + keyspace + "." + table);
+            }
+            try { Thread.sleep(300L); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+        }
+    }
+
+    // -----------------------------
+    // UserRepo
+    // -----------------------------
     @Repository
     @Profile("cassandra")
     public static class UserRepo implements IUserRepo {
         private final CqlSession session;
 
-        private final PreparedStatement selByAccount;
-        private final PreparedStatement selByEmail;
-        private final PreparedStatement upsert;
+        private PreparedStatement psFindByAccount;
+        private PreparedStatement psFindByEmail;
+        private PreparedStatement psInsertUser;
+        private PreparedStatement psInsertUserByEmail;
 
         public UserRepo(CqlSession session) {
             this.session = session;
-            this.selByAccount = session.prepare(
-                "SELECT user_id, account_id, email, email_verified, mfa_enabled, language, token_version, created_at, last_login_at " +
-                "FROM users WHERE account_id = ?");
-            this.selByEmail = session.prepare(
-                "SELECT user_id, account_id, email, email_verified, mfa_enabled, language, token_version, created_at, last_login_at " +
-                "FROM users_by_email WHERE email = ?");
-            this.upsert = session.prepare(
-                "INSERT INTO users (user_id, account_id, email, email_verified, mfa_enabled, language, token_version, created_at, last_login_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )");
+        }
+
+        @PostConstruct
+        void init() {
+          try {
+            retry("create users tables", () -> {
+                session.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                      user_id uuid PRIMARY KEY,
+                      account_id text,
+                      email text,
+                      email_verified boolean,
+                      token_version bigint
+                    )""");
+                session.execute("""
+                    CREATE TABLE IF NOT EXISTS users_by_email (
+                      email text PRIMARY KEY,
+                      user_id uuid,
+                      account_id text,
+                      email_verified boolean,
+                      token_version bigint
+                    )""");
+            });
+
+            waitTableVisible(session, session.getKeyspace().orElseThrow().asInternal(), "users", 30_000);
+            waitTableVisible(session, session.getKeyspace().orElseThrow().asInternal(), "users_by_email", 30_000);
+
+            retry("prepare users statements", () -> {
+                psFindByAccount = session.prepare(
+                    "SELECT user_id, account_id, email, email_verified, token_version FROM users WHERE account_id=?");
+                psFindByEmail = session.prepare(
+                    "SELECT user_id, account_id, email, email_verified, token_version FROM users_by_email WHERE email=?");
+                psInsertUser = session.prepare(
+                    "INSERT INTO users (user_id, account_id, email, email_verified, token_version) VALUES (?,?,?,?,?)");
+                psInsertUserByEmail = session.prepare(
+                    "INSERT INTO users_by_email (email, user_id, account_id, email_verified, token_version) VALUES (?,?,?,?,?)");
+            });
+          } catch (Throwable e) {
+              System.err.println("[UserRepo.init] FAILED: " + e.getClass().getName() + ": " + e.getMessage());
+              throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
+          }
         }
 
         @Override
         public Optional<User> findByAccountId(String accountId) {
-            Row r = session.execute(selByAccount.bind(accountId)).one();
+            Row r = session.execute(psFindByAccount.bind(accountId)).one();
             return Optional.ofNullable(mapUser(r));
         }
 
         @Override
         public Optional<User> findByEmail(String email) {
-            Row r = session.execute(selByEmail.bind(email.toLowerCase(Locale.ROOT))).one();
+            Row r = session.execute(psFindByEmail.bind(email.toLowerCase(Locale.ROOT))).one();
             return Optional.ofNullable(mapUser(r));
         }
 
         @Override
         public User save(User u) {
-            session.execute(upsert.bind(
-                u.userId, u.accountId, u.email, u.emailVerified, u.mfaEnabled, u.language, u.tokenVersion,
-                Date.from(u.createdAt), u.lastLoginAt == null ? null : Date.from(u.lastLoginAt)
-            ));
-            // also maintain users_by_email
-            session.execute(SimpleStatement.newInstance(
-                "INSERT INTO users_by_email (email, user_id, account_id) VALUES (?,?,?)",
-                u.email.toLowerCase(Locale.ROOT), u.userId, u.accountId
-            ));
+            if (u.userId == null) u.userId = UUID.randomUUID();
+            if (u.tokenVersion == 0L) u.tokenVersion = 1L;
+            if (u.email != null) u.email = u.email.toLowerCase(Locale.ROOT);
+
+            session.execute(psInsertUser.bind(
+                    u.userId, u.accountId, u.email, u.emailVerified, u.tokenVersion));
+            session.execute(psInsertUserByEmail.bind(
+                    u.email, u.userId, u.accountId, u.emailVerified, u.tokenVersion));
             return u;
         }
 
-        private User mapUser(Row r) {
+        private static User mapUser(Row r) {
             if (r == null) return null;
             User u = new User();
             u.userId = r.getUuid("user_id");
             u.accountId = r.getString("account_id");
             u.email = r.getString("email");
             u.emailVerified = r.getBoolean("email_verified");
-            u.mfaEnabled = r.getBoolean("mfa_enabled");
-            u.language = r.getString("language");
             u.tokenVersion = r.getLong("token_version");
-            Date ca = r.get("created_at", Date.class);
-            if (ca != null) u.createdAt = ca.toInstant();
-            Date ll = r.get("last_login_at", Date.class);
-            if (ll != null) u.lastLoginAt = ll.toInstant();
             return u;
         }
     }
 
+    // -----------------------------
+    // SessionRepo
+    // -----------------------------
     @Repository
     @Profile("cassandra")
     public static class SessionRepo implements ISessionRepo {
         private final CqlSession session;
 
-        private final PreparedStatement upsert;
-        private final PreparedStatement byUser;
-        private final PreparedStatement delete;
+        private PreparedStatement psInsertSession;          // sessions
+        private PreparedStatement psInsertById;             // sessions_by_id
+        private PreparedStatement psFindByUser;             // sessions
+        private PreparedStatement psFindById;               // sessions_by_id
+        private PreparedStatement psDeleteByUserDevice;     // sessions
+        private PreparedStatement psDeleteById;             // sessions_by_id
 
         public SessionRepo(CqlSession session) {
             this.session = session;
-            this.upsert = session.prepare(
-                "INSERT INTO sessions (session_id, user_id, device_id, token_version, created_at, last_seen_at, mfa_last_ok_at) " +
-                "VALUES (?,?,?,?,?,?,?)");
-            this.byUser = session.prepare(
-                "SELECT session_id, user_id, device_id, token_version, created_at, last_seen_at, mfa_last_ok_at " +
-                "FROM sessions_by_user WHERE user_id = ?");
-            this.delete = session.prepare("DELETE FROM sessions WHERE session_id = ?");
+        }
+
+        @PostConstruct
+        void init() {
+          try {
+            retry("create sessions tables", () -> {
+                session.execute("""
+                    CREATE TABLE IF NOT EXISTS sessions (
+                      user_id uuid,
+                      device_id text,
+                      token_version bigint,
+                      created_at timestamp,
+                      PRIMARY KEY (user_id, device_id)
+                    )""");
+                session.execute("""
+                    CREATE TABLE IF NOT EXISTS sessions_by_id (
+                      session_id uuid PRIMARY KEY,
+                      user_id uuid,
+                      device_id text
+                    )""");
+            });
+
+            var ks = session.getKeyspace().orElseThrow().asInternal();
+            waitTableVisible(session, ks, "sessions", 30_000);
+            waitTableVisible(session, ks, "sessions_by_id", 30_000);
+
+            retry("prepare sessions statements", () -> {
+                psInsertSession = session.prepare(
+                    "INSERT INTO sessions (user_id, device_id, token_version, created_at) VALUES (?,?,?,toTimestamp(now()))");
+                psInsertById = session.prepare(
+                    "INSERT INTO sessions_by_id (session_id, user_id, device_id) VALUES (?,?,?)");
+                psFindByUser = session.prepare(
+                    "SELECT user_id, device_id, token_version, created_at FROM sessions WHERE user_id=?");
+                psFindById = session.prepare(
+                    "SELECT user_id, device_id FROM sessions_by_id WHERE session_id=?");
+                psDeleteByUserDevice = session.prepare(
+                    "DELETE FROM sessions WHERE user_id=? AND device_id=?");
+                psDeleteById = session.prepare(
+                    "DELETE FROM sessions_by_id WHERE session_id=?");
+            });
+          } catch (Throwable e) {
+              System.err.println("[SessionRepo.init] FAILED: " + e.getClass().getName() + ": " + e.getMessage());
+              throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
+          }
         }
 
         @Override
-        public Session save(Session s) {
-            session.execute(upsert.bind(
-                s.sessionId, s.userId, s.deviceId, s.tokenVersion,
-                Date.from(s.createdAt), Date.from(s.lastSeenAt),
-                s.mfaLastOkAt == null ? null : Date.from(s.mfaLastOkAt)
-            ));
-            session.execute(SimpleStatement.newInstance(
-                "INSERT INTO sessions_by_user (user_id, session_id, device_id, token_version, created_at, last_seen_at) VALUES (?,?,?,?,?,?)",
-                s.userId, s.sessionId, s.deviceId, s.tokenVersion, Date.from(s.createdAt), Date.from(s.lastSeenAt)
-            ));
+        public Models.Session save(Models.Session s) {
+            // sessionId は逆引きテーブル用に生成（モデルに持たせない最小実装）
+            UUID sid = UUID.randomUUID();
+            session.execute(psInsertSession.bind(s.userId, s.deviceId, s.tokenVersion));
+            session.execute(psInsertById.bind(sid, s.userId, s.deviceId));
             return s;
         }
 
         @Override
-        public List<Session> findByUserId(UUID userId) {
-            List<Session> out = new ArrayList<>();
-            ResultSet rs = session.execute(byUser.bind(userId));
-            for (Row r : rs) {
-                Session s = new Session();
-                s.sessionId = r.getUuid("session_id");
+        public List<Models.Session> findByUserId(UUID userId) {
+            List<Models.Session> list = new ArrayList<>();
+            for (Row r : session.execute(psFindByUser.bind(userId))) {
+                var s = new Models.Session();
                 s.userId = r.getUuid("user_id");
                 s.deviceId = r.getString("device_id");
                 s.tokenVersion = r.getLong("token_version");
-                Date ca = r.get("created_at", Date.class);
-                if (ca != null) s.createdAt = ca.toInstant();
-                Date ls = r.get("last_seen_at", Date.class);
-                if (ls != null) s.lastSeenAt = ls.toInstant();
-                out.add(s);
+                s.createdAt = r.getInstant("created_at");
+                list.add(s);
             }
-            return out;
+            return list;
         }
 
         @Override
         public void delete(UUID sessionId) {
-            session.execute(delete.bind(sessionId));
+            Row r = session.execute(psFindById.bind(sessionId)).one();
+            if (r == null) return;
+            UUID userId = r.getUuid("user_id");
+            String deviceId = r.getString("device_id");
+            session.execute(psDeleteByUserDevice.bind(userId, deviceId));
+            session.execute(psDeleteById.bind(sessionId));
         }
     }
 }

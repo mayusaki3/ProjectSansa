@@ -1,3 +1,10 @@
 spring:
   profiles:
     default: inmem
+
+sansa:
+  cassandra:
+    contactPoint: 127.0.0.1
+    port: 9042
+    datacenter: datacenter1
+    keyspace: sansa_auth

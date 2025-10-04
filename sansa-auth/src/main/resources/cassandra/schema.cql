@@ -37,3 +37,9 @@ CREATE TABLE IF NOT EXISTS sessions_by_user (
   last_seen_at timestamp,
   PRIMARY KEY (user_id, session_id)
 ) WITH CLUSTERING ORDER BY (session_id DESC);
+
+CREATE TABLE IF NOT EXISTS sessions_by_id (
+  session_id uuid PRIMARY KEY,
+  user_id uuid,
+  device_id text
+);
