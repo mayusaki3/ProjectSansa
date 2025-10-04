@@ -1,4 +1,4 @@
-[目次](../../../目次.md) > 単体テスト > Webサービス> [認証・セッション 単体テスト 目次](目次.md) > 02. Service 登録フロー
+[目次](../../../目次.md) > 単体テスト > Webサービス > [認証・セッション 単体テスト 目次](目次.md) > 02. Service 登録フロー
 # 02. Service 登録フロー（start→verify→complete）
 
 **対象**: `AuthService` 登録フロー `start → verify → complete` の状態遷移
@@ -21,4 +21,4 @@
   **Assert**: それぞれ `DuplicatedEmailException` / `DuplicatedAccountIdException`
 
 ---
-[目次](../../../目次.md) > 単体テスト > Webサービス> [認証・セッション 単体テスト 目次](目次.md) > 02. Service 登録フロー
+[目次](../../../目次.md) > 単体テスト > Webサービス > [認証・セッション 単体テスト 目次](目次.md) > 02. Service 登録フロー
