@@ -5,32 +5,44 @@ on:
     branches: [ develop ]
     paths: [ 'sansa-auth/**' ]
   pull_request:
+    branches: [ develop ]
     paths: [ 'sansa-auth/**' ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   it-matrix:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compose_file: [ infra/docker-compose.dev.yml, infra/docker-compose.dev-3n.yml ]
-
     defaults:
       run:
         working-directory: sansa-auth
+    strategy:
+      fail-fast: false
+      matrix:
+        compose_file: [ infra/docker-compose.dev.yml, infra/docker-compose.dev-3n.yml ]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
+          cache: 'maven'
 
-      - name: Docker Compose up (${{ matrix.compose_file }})
+      - name: Maven compile (skip tests)
+        run: mvn -q -DskipTests clean package
+
+      - name: Docker Compose up
         run: |
           docker compose -f ${{ matrix.compose_file }} up -d
-          # wait for CQL port
+          # show status
+          docker compose -f ${{ matrix.compose_file }} ps
+          # wait for CQL port (9042 on host)
           for i in {1..60}; do (echo > /dev/tcp/127.0.0.1/9042) >/dev/null 2>&1 && break || sleep 2; done
 
       - name: Run IT (cassandra profile)
@@ -44,3 +56,7 @@ jobs:
       - name: Compose logs (on failure)
         if: failure()
         run: docker compose -f ${{ matrix.compose_file }} logs --no-color
+
+      - name: Docker Compose down
+        if: always()
+        run: docker compose -f ${{ matrix.compose_file }} down -v
