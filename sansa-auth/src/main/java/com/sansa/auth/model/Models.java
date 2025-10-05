@@ -1,29 +1,62 @@
 package com.sansa.auth.model;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.UUID;
 
-public class Models {
+/**
+ * Domain models as simple JavaBeans.
+ */
+public final class Models {
+
+    private Models() {}
+
     public static class User {
-        public UUID userId = UUID.randomUUID();
-        public String accountId;
-        public String email;
-        public boolean emailVerified;
-        public boolean mfaEnabled = true;
-        public Set<String> mfaMethods = new HashSet<>(List.of("totp","email_otp"));
-        public String language = "ja-JP";
-        public long tokenVersion = 0L;
-        public Instant createdAt = Instant.now();
-        public Instant lastLoginAt = null;
+        private UUID id;
+        private String email;
+        private String loginId;
+        private String passwordHash;
+        private boolean emailVerified;
+        private Instant createdAt;
+
+        public User() { }
+
+        public UUID getId() { return id; }
+        public void setId(UUID id) { this.id = id; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getLoginId() { return loginId; }
+        public void setLoginId(String loginId) { this.loginId = loginId; }
+
+        public String getPasswordHash() { return passwordHash; }
+        public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+        public boolean isEmailVerified() { return emailVerified; }
+        public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+
+        public Instant getCreatedAt() { return createdAt; }
+        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     }
 
     public static class Session {
-        public UUID sessionId = UUID.randomUUID();
-        public UUID userId;
-        public String deviceId;
-        public long tokenVersion;
-        public Instant createdAt = Instant.now();
-        public Instant lastSeenAt = Instant.now();
-        public Instant mfaLastOkAt = null;
+        private UUID id;
+        private UUID userId;
+        private String deviceId;
+        private Instant createdAt;
+
+        public Session() { }
+
+        public UUID getId() { return id; }
+        public void setId(UUID id) { this.id = id; }
+
+        public UUID getUserId() { return userId; }
+        public void setUserId(UUID userId) { this.userId = userId; }
+
+        public String getDeviceId() { return deviceId; }
+        public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
+
+        public Instant getCreatedAt() { return createdAt; }
+        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     }
 }

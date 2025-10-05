@@ -1,100 +1,98 @@
 package com.sansa.auth.service;
 
-import com.sansa.auth.model.Models.*;
-import com.sansa.auth.repo.RepoInterfaces.*;
-import com.sansa.auth.repo.cassandra.CassandraRepos;
-
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-
-import org.springframework.context.annotation.Profile;
+import com.sansa.auth.dto.Dtos.AuthResult;
+import com.sansa.auth.dto.Dtos.LoginRequest;
+import com.sansa.auth.dto.Dtos.RegisterRequest;
+import com.sansa.auth.dto.Dtos.TokenPair;
+import com.sansa.auth.model.Models;
+import com.sansa.auth.repo.RepoInterfaces.IUserRepo;
+import com.sansa.auth.repo.RepoInterfaces.ISessionRepo;
+import com.sansa.auth.util.JwtProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
-import java.security.Key;
 import java.time.Instant;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
-@Service
-@Profile("cassandra")
-public class ServicesCassandra implements AuthService {
-    private final IUserRepo users;
-    private final ISessionRepo sessions;
+@Service("servicesCassandra")
+public class ServicesCassandra implements Services {
 
-    private static final byte[] SECRET = Decoders.BASE64.decode("c2Fuc2EtZGV2LXNlY3JldC1kby1ub3QtdXNlLWluLXByb2Q=");
-    private final Key key = Keys.hmacShaKeyFor(Arrays.copyOf(SECRET, 32));
+    private final IUserRepo userRepo;
+    private final ISessionRepo sessionRepo;
+    private final JwtProvider jwt;
 
-    private final Map<String, String> emailCodes = new HashMap<>();
-    private final Map<String, Instant> emailCodeExp = new HashMap<>();
-
-    public ServicesCassandra(CassandraRepos.UserRepo userRepo, CassandraRepos.SessionRepo sessionRepo) {
-        this.users = userRepo;
-        this.sessions = sessionRepo;
+    public ServicesCassandra(IUserRepo userRepo, ISessionRepo sessionRepo, JwtProvider jwt) {
+        this.userRepo = userRepo;
+        this.sessionRepo = sessionRepo;
+        this.jwt = jwt;
     }
 
-    public Map<String, Object> preRegister(String email) {
-        String code = String.format("%06d", new Random().nextInt(1_000_000));
-        emailCodes.put(email.toLowerCase(), code);
-        emailCodeExp.put(email.toLowerCase(), Instant.now().plusSeconds(600));
-        return Map.of("sent", true);
+    @Override
+    public AuthResult register(RegisterRequest req) {
+        if (req.getUserId() == null || req.getUserId().isBlank()) return AuthResult.error("userId.required");
+        if (req.getEmail() == null || !req.getEmail().contains("@")) return AuthResult.error("email.invalid");
+        if (req.getPassword() == null || req.getPassword().length() < 8) return AuthResult.error("password.weak");
+
+        if (userRepo.existsById(req.getUserId())) return AuthResult.error("userId.duplicate");
+        if (userRepo.existsByEmail(req.getEmail())) return AuthResult.error("email.duplicate");
+
+        String pwHash = BCrypt.hashpw(req.getPassword(), BCrypt.gensalt());
+        UUID uid = UUID.randomUUID();
+        Models.User user = new Models.User(uid, req.getUserId(), req.getEmail(), pwHash, Instant.now());
+        userRepo.save(user);
+        return AuthResult.ok("registered");
     }
 
-    public Map<String, Object> verifyEmail(String email, String code) {
-        String k = email.toLowerCase();
-        if (!Objects.equals(emailCodes.get(k), code) || Instant.now().isAfter(emailCodeExp.getOrDefault(k, Instant.EPOCH))) {
-            throw new RuntimeException("invalid_code");
+    @Override
+    public AuthResult login(LoginRequest req) {
+        Optional<Models.User> u = userRepo.findByLoginId(req.getUserId());
+        if (u.isEmpty()) return AuthResult.error("login.failed");
+        if (!BCrypt.checkpw(req.getPassword(), u.get().getPasswordHash())) return AuthResult.error("login.failed");
+
+        UUID sessionId = UUID.randomUUID();
+        Models.Session s = new Models.Session(sessionId, u.get().id(), req.getDeviceId(), Instant.now(), null);
+        sessionRepo.save(s);
+
+        Map<String, Object> claims = Map.of("uid", u.get().id().toString(), "did", req.getDeviceId());
+        String at = jwt.createAccessToken(u.get().id().toString(), claims);
+        String rt = jwt.createRefreshToken(sessionId.toString(), u.get().id().toString());
+        return AuthResult.ok(new TokenPair(at, rt));
+    }
+
+    @Override
+    public TokenPair rotateTokens(String refreshJwt) {
+        var claims = jwt.parse(refreshJwt);
+        if (!"refresh".equals(claims.get("typ"))) throw new IllegalArgumentException("invalid.token");
+        UUID sessionId = UUID.fromString((String) claims.get("sid"));
+        Optional<Models.Session> s = sessionRepo.findById(sessionId);
+        if (s.isEmpty()) throw new IllegalStateException("session.notfound");
+
+        String userId = claims.getSubject();
+        Map<String, Object> newClaims = Map.of("uid", userId, "did", s.get().getDeviceId());
+        String at = jwt.createAccessToken(userId, newClaims);
+        String rt = jwt.createRefreshToken(sessionId.toString(), userId);
+        return new TokenPair(at, rt);
+    }
+
+    @Override
+    public void logoutSession(UUID sessionId) {
+        sessionRepo.delete(sessionId);
+    }
+
+    @Override
+    public void logoutAll(UUID userId) {
+        sessionRepo.findByUserId(userId).forEach(s -> sessionRepo.delete(s.getId()));
+    }
+
+    @Override
+    public Optional<UUID> verifyAccess(String accessJwt) {
+        try {
+            var c = jwt.parse(accessJwt);
+            return Optional.of(UUID.fromString((String) c.get("uid")));
+        } catch (Exception e) {
+            return Optional.empty();
         }
-        String preRegId = UUID.randomUUID().toString();
-        emailCodes.put("pre:"+preRegId, k);
-        return Map.of("preRegId", preRegId, "expiresIn", 600);
-    }
-
-    public User register(String preRegId, String accountId, String language) {
-        String email = emailCodes.get("pre:"+preRegId);
-        if (email == null) throw new RuntimeException("expired");
-        if (users.findByAccountId(accountId).isPresent()) throw new RuntimeException("account_exists");
-        if (users.findByEmail(email).isPresent()) throw new RuntimeException("email_exists");
-        User u = new User();
-        u.accountId = accountId;
-        u.email = email;
-        u.emailVerified = true;
-        if (language != null) u.language = language;
-        users.save(u);
-        emailCodes.remove("pre:"+preRegId);
-        return u;
-    }
-
-    public Map<String, Object> webAuthnChallenge() {
-        String challenge = Base64.getUrlEncoder().withoutPadding().encodeToString(UUID.randomUUID().toString().getBytes());
-        return Map.of("challenge", challenge, "rpId", "auth.sansa.local", "userVerification", "preferred", "timeout", 60000);
-    }
-
-    public Session loginWithAssertion(String accountId) {
-        User u = users.findByAccountId(accountId).orElseThrow(() -> new RuntimeException("user_not_found"));
-        Session s = new Session();
-        s.userId = u.userId;
-        s.deviceId = "dev-" + UUID.randomUUID();
-        s.tokenVersion = u.tokenVersion;
-        sessions.save(s);
-        return s;
-    }
-
-    public String signAccess(UUID userId, long tv, long ttlSec) {
-        Instant now = Instant.now();
-        return Jwts.builder()
-                .setSubject(userId.toString())
-                .claim("tv", tv)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusSeconds(ttlSec)))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    public Map<String, Object> logoutAll(String accountId) {
-        User u = users.findByAccountId(accountId).orElseThrow();
-        u.tokenVersion += 1;
-        users.save(u);
-        return Map.of("ok", true, "tokenVersion", u.tokenVersion);
     }
 }

@@ -27,8 +27,6 @@
     <maven.compiler.release>21</maven.compiler.release>
   </properties>
 
-  <!-- ★ ここにあった jjwt-bom の dependencyManagement は削除しました -->
-
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -58,18 +56,24 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- ▼ JJWT はバージョン直指定に変更 -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
       <version>0.12.5</version>
     </dependency>
+
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
       <version>0.12.5</version>
       <scope>runtime</scope>
     </dependency>
+
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-jackson</artifactId>

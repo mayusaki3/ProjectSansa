@@ -3,34 +3,37 @@ package com.sansa.auth.controller;
 import com.sansa.auth.dto.Dtos.TotpVerifyRequest;
 import com.sansa.auth.dto.Dtos.EmailOtpRequest;
 import com.sansa.auth.dto.Dtos.EmailOtpVerifyRequest;
-
+import com.sansa.auth.dto.Dtos.AuthResult;
+import com.sansa.auth.service.MfaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
-@RequestMapping("/auth/mfa")
+@RequestMapping("/mfa")
 public class MfaController {
-    @PostMapping("/totp/verify")
-    public ResponseEntity<?> totpVerify(@Valid @RequestBody TotpVerifyRequest req) {
-        if (!"000000".equals(req.code())) {
-            return ResponseEntity.status(401).body(Map.of("error","mfa_invalid"));
-        }
-        return ResponseEntity.ok(Map.of("ok", true));
+
+    private final MfaService service;
+
+    public MfaController(MfaService service) {
+        this.service = service;
     }
 
-    @PostMapping("/email/request")
-    public ResponseEntity<?> emailRequest(@Valid @RequestBody EmailOtpRequest req) {
-        return ResponseEntity.ok(Map.of("sent", true));
+    @PostMapping("/totp/verify")
+    public ResponseEntity<AuthResult> verifyTotp(@Valid @RequestBody TotpVerifyRequest req) {
+        var res = service.verifyTotp(req.getCode());
+        return ResponseEntity.ok(res);
+    }
+
+    @PostMapping("/email/send")
+    public ResponseEntity<AuthResult> sendEmailOtp(@Valid @RequestBody EmailOtpRequest req) {
+        var res = service.sendEmailOtp(req.getEmail());
+        return ResponseEntity.ok(res);
     }
 
     @PostMapping("/email/verify")
-    public ResponseEntity<?> emailVerify(@Valid @RequestBody EmailOtpVerifyRequest req) {
-        if (!"000000".equals(req.code())) {
-            return ResponseEntity.status(401).body(Map.of("error","mfa_invalid"));
-        }
-        return ResponseEntity.ok(Map.of("ok", true));
+    public ResponseEntity<AuthResult> verifyEmailOtp(@Valid @RequestBody EmailOtpVerifyRequest req) {
+        var res = service.verifyEmailOtp(req.getEmail(), req.getCode());
+        return ResponseEntity.ok(res);
     }
 }
