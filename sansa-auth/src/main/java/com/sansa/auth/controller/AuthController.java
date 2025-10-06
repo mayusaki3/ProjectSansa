@@ -1,16 +1,13 @@
 package com.sansa.auth.controller;
 
-import com.sansa.auth.dto.Dtos.PreRegisterRequest;
-import com.sansa.auth.dto.Dtos.VerifyEmailRequest;
-import com.sansa.auth.dto.Dtos.RegisterRequest;
-import com.sansa.auth.dto.Dtos.AuthResult;
+import com.sansa.auth.dto.Dtos;
 import com.sansa.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService service;
@@ -19,22 +16,21 @@ public class AuthController {
         this.service = service;
     }
 
+    // 事前登録（メールアドレスで開始）
     @PostMapping("/pre-register")
-    public ResponseEntity<AuthResult> preRegister(@Valid @RequestBody PreRegisterRequest req) {
-        // Dtos はレコード風アクセサを仮定（getEmail() ではなく email()）
-        var res = service.preRegister(req.getEmail());
-        return ResponseEntity.ok(res);
+    public ResponseEntity<Dtos.AuthResult> preRegister(@Valid @RequestBody Dtos.PreRegisterRequest req) {
+        return ResponseEntity.ok(service.preRegister(req));
     }
 
+    // メールコード検証
     @PostMapping("/verify-email")
-    public ResponseEntity<AuthResult> verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
-        var res = service.verifyEmail(req.getEmail(), req.getCode());
-        return ResponseEntity.ok(res);
+    public ResponseEntity<Dtos.AuthResult> verifyEmail(@Valid @RequestBody Dtos.VerifyEmailRequest req) {
+        return ResponseEntity.ok(service.verifyEmail(req));
     }
 
+    // 本登録
     @PostMapping("/register")
-    public ResponseEntity<AuthResult> register(@Valid @RequestBody RegisterRequest req) {
-        var res = service.register(req.getPreRegId(), req.getAccountId(), req.getLanguage());
-        return ResponseEntity.ok(res);
+    public ResponseEntity<Dtos.AuthResult> register(@Valid @RequestBody Dtos.RegisterRequest req) {
+        return ResponseEntity.ok(service.register(req));
     }
 }
