@@ -35,32 +35,18 @@ public class ServicesInmem implements AuthService {
     }
 
     @Override
-    public Map<String, Object> preRegister(String email) {
+    public Dtos.AuthResult preRegister(String email, String language) {
         // 実際はメール送信などを行うが、inmem ではダミーで preRegId を返す
         String preRegId = UUID.randomUUID().toString();
-        preRegStore.put(preRegId, email);
-
-        return Map.of(
-                "ok", true,
-                "preRegId", preRegId,
-                "email", email
-        );
+        // 既存の PreReg エンティティに合わせて保存
+        preRegRepo.save(new Models.PreReg(preRegId, email, language, Instant.now()));
+        Dtos.AuthResult res = Dtos.AuthResult.ok("pre-registered");
+        return res;
     }
 
     @Override
-    public Map<String, Object> verifyEmail(String email, String code) {
+    public Dtos.AuthResult verifyEmail(String preRegId, String code) {
         // 本来は code 検証。inmem では常に成功扱い。
-        // 既存の preRegId のうち email が一致するものを返す（なければ新規に採番）
-        String preRegId = preRegStore.entrySet().stream()
-                .filter(e -> Objects.equals(e.getValue(), email))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElseGet(() -> {
-                    String id = UUID.randomUUID().toString();
-                    preRegStore.put(id, email);
-                    return id;
-                });
-
         return Map.of(
                 "ok", true,
                 "preRegId", preRegId,
@@ -69,7 +55,7 @@ public class ServicesInmem implements AuthService {
     }
 
     @Override
-    public User register(String preRegId, String accountId, String language) {
+    public Dtos.AuthResult register(String preRegId, String accountId, String language) {
         // preRegId が存在しない/メール不一致でも inmem では許容（実運用ではチェックして 4xx 返す）
         String email = preRegStore.getOrDefault(preRegId, accountId + "@example.com");
 

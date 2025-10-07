@@ -18,23 +18,24 @@ public class AuthController {
     }
 
     // 事前登録（メールアドレスで開始）
-    @PostMapping("/api/auth/pre-register")
+    @PostMapping("/pre-register")
     public ResponseEntity<Dtos.AuthResult> preRegister(@RequestBody @Valid Dtos.PreRegisterRequest req) {
-        var res = service.preRegister(req.getEmail(), req.getLanguage());
+        Dtos.AuthResult  res = service.preRegister(req.getEmail(), req.getLanguage());
         return ResponseEntity.ok(res);
     }
 
     // メールコード検証
-    @PostMapping("/api/auth/verify-email")
+    @PostMapping("/verify-email")
     public ResponseEntity<Dtos.AuthResult> verifyEmail(@RequestBody @Valid Dtos.VerifyEmailRequest req) {
-        var res = service.verifyEmail(req.getPreRegId(), req.getCode());
+        Dtos.AuthResult  res = service.verifyEmail(req.getPreRegId(), req.getCode());
         return ResponseEntity.ok(res);
     }
 
     // 本登録
-    @PostMapping("/api/auth/register")
-    public ResponseEntity<Models.User> register(@RequestBody @Valid Dtos.RegisterRequest req) {
-        var user = service.register(req.getPreRegId(), req.getAccountId(), req.getLanguage());
-        return ResponseEntity.ok(user);     // ★ ここは User を返す
+    @PostMapping("/register")
+    public ResponseEntity<Dtos.AuthResult> register(@RequestBody @Valid Dtos.RegisterRequest req) {
+        // いまは RegisterRequest に preRegId/accountId/email/language を持たせています
+        Dtos.AuthResult res = service.register(req.getPreRegId(), req.getAccountId(), req.getLanguage());
+        return ResponseEntity.ok(res);
     }
 }

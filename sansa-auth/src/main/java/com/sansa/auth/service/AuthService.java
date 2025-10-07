@@ -8,7 +8,7 @@ public interface AuthService {
     // 実装クラスがオーバーライドする“本体”
     Dtos.AuthResult preRegister(String email, String language);
     Dtos.AuthResult verifyEmail(String preRegId, String code);
-    Models.User     register(String preRegId, String accountId, String language);
+    Dtos.AuthResult register(String preRegId, String accountId, String language);
 
     // DTO からの変換だけを担当（実処理なし）
     default AuthResult preRegister(Dtos.PreRegisterRequest req) {
@@ -17,7 +17,7 @@ public interface AuthService {
     default AuthResult verifyEmail(Dtos.VerifyEmailRequest req) {
         return verifyEmail(req.getPreRegId(), req.getCode());
     }
-    default Models.User register(Dtos.RegisterRequest req) {
+    default AuthResult register(Dtos.RegisterRequest req) {
         return register(req.getPreRegId(), req.getAccountId(), req.getLanguage());
     }
 }
