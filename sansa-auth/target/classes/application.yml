@@ -8,3 +8,15 @@ sansa:
     port: 9042
     datacenter: datacenter1
     keyspace: sansa_auth
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
