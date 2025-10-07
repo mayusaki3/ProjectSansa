@@ -15,4 +15,5 @@ C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\s
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\MfaService.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\Services.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\ServicesCassandra.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\ServicesInmem.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\util\JwtProvider.java

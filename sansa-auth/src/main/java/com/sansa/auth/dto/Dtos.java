@@ -1,265 +1,139 @@
-package com.sansa.auth.dto;
+// apps/web/src/lib/db.ts
+import { Dexie, Table } from 'dexie';
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-/**
- * DTO classes used by controllers/services.
- * JavaBeans style: getters start with getX, setters with setX.
- */
-public final class Dtos {
-
-    private Dtos() {}
-
-    // ---------- Auth flows ----------
-    public static class PreRegisterRequest {
-        @NotBlank @Email
-        private String email;
-
-        public PreRegisterRequest() { }
-        public PreRegisterRequest(String email) { this.email = email; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-    }
-
-    public static class VerifyEmailRequest {
-        @NotBlank @Email
-        private String email;
-        @NotBlank
-        private String code;
-
-        public VerifyEmailRequest() { }
-        public VerifyEmailRequest(String email, String code) {
-            this.email = email;
-            this.code = code;
-        }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getCode() { return code; }
-        public void setCode(String code) { this.code = code; }
-    }
-
-    public static class RegisterRequest {
-        // values used by different layers; some may be optional depending on flow
-        @NotBlank
-        private String preRegId;
-        @NotBlank
-        private String accountId;
-        @NotBlank
-        private String language;
-
-        @Email
-        private String email;
-        private String password;
-
-        @NotNull
-        private UUID userId; // some code paths expect this
-
-        public RegisterRequest() { }
-
-        public String getPreRegId() { return preRegId; }
-        public void setPreRegId(String preRegId) { this.preRegId = preRegId; }
-
-        public String getAccountId() { return accountId; }
-        public void setAccountId(String accountId) { this.accountId = accountId; }
-
-        public String getLanguage() { return language; }
-        public void setLanguage(String language) { this.language = language; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-
-        public UUID getUserId() { return userId; }
-        public void setUserId(UUID userId) { this.userId = userId; }
-    }
-
-    public static class LoginRequest {
-        @NotNull
-        private UUID userId;
-        @NotBlank
-        private String password;
-        private String deviceId;
-
-        public LoginRequest() { }
-
-        public UUID getUserId() { return userId; }
-        public void setUserId(UUID userId) { this.userId = userId; }
-
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-
-        public String getDeviceId() { return deviceId; }
-        public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
-    }
-
-    // ---------- MFA ----------
-    public static class TotpVerifyRequest {
-        private int code;
-
-        public TotpVerifyRequest() { }
-        public TotpVerifyRequest(int code) { this.code = code; }
-
-        public int getCode() { return code; }
-        public void setCode(int code) { this.code = code; }
-    }
-
-    public static class EmailOtpRequest {
-        @NotBlank @Email
-        private String email;
-
-        public EmailOtpRequest() { }
-        public EmailOtpRequest(String email) { this.email = email; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-    }
-
-    public static class EmailOtpVerifyRequest {
-        @NotBlank @Email
-        private String email;
-        private int code;
-
-        public EmailOtpVerifyRequest() { }
-        public EmailOtpVerifyRequest(String email, int code) {
-            this.email = email;
-            this.code = code;
-        }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        public int getCode() { return code; }
-        public void setCode(int code) { this.code = code; }
-    }
-
-    // ---------- Responses ----------
-    public static class TokenPair {
-        private String accessToken;
-        private String refreshToken;
-        private long expiresIn; // seconds
-
-        public TokenPair() { }
-
-        public TokenPair(String accessToken, String refreshToken) {
-            this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
-        }
-
-        public TokenPair(String accessToken, String refreshToken, long expiresIn) {
-            this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
-            this.expiresIn = expiresIn;
-        }
-
-        public String getAccessToken() { return accessToken; }
-        public void setAccessToken(String accessToken) { this.accessToken = accessToken; }
-
-        public String getRefreshToken() { return refreshToken; }
-        public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
-
-        public long getExpiresIn() { return expiresIn; }
-        public void setExpiresIn(long expiresIn) { this.expiresIn = expiresIn; }
-    }
-
-    public static class LoginResponse {
-        private String status;
-        private boolean success;
-        private String userId;
-        private TokenPair tokens;
-        private long challengeTimeout;
-
-        public LoginResponse() { }
-
-        public LoginResponse(String status, boolean success, String userId, TokenPair tokens) {
-            this.status = status;
-            this.success = success;
-            this.userId = userId;
-            this.tokens = tokens;
-        }
-
-        public LoginResponse(String status, String userId, long challengeTimeout) {
-            this.status = status;
-            this.userId = userId;
-            this.challengeTimeout = challengeTimeout;
-        }
-
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
-
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-
-        public TokenPair getTokens() { return tokens; }
-        public void setTokens(TokenPair tokens) { this.tokens = tokens; }
-
-        public long getChallengeTimeout() { return challengeTimeout; }
-        public void setChallengeTimeout(long challengeTimeout) { this.challengeTimeout = challengeTimeout; }
-    }
-
-    public static class AuthResult {
-        private boolean success;
-        private String message;
-        private Map<String, Object> data;
-        private TokenPair tokens;
-        private Instant timestamp = Instant.now();
-
-        public AuthResult() { }
-
-        public static AuthResult ok(String message) {
-            AuthResult r = new AuthResult();
-            r.success = true;
-            r.message = message;
-            return r;
-        }
-
-        public static AuthResult ok(TokenPair tokens) {
-            AuthResult r = new AuthResult();
-            r.success = true;
-            r.tokens = tokens;
-            return r;
-        }
-
-        public static AuthResult ok(Map<String, Object> data) {
-            AuthResult r = new AuthResult();
-            r.success = true;
-            r.data = new HashMap<>(data);
-            return r;
-        }
-
-        public static AuthResult error(String message) {
-            AuthResult r = new AuthResult();
-            r.success = false;
-            r.message = message;
-            return r;
-        }
-
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
-
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-
-        public Map<String, Object> getData() { return data; }
-        public void setData(Map<String, Object> data) { this.data = data; }
-
-        public TokenPair getTokens() { return tokens; }
-        public void setTokens(TokenPair tokens) { this.tokens = tokens; }
-
-        public Instant getTimestamp() { return timestamp; }
-        public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }
-    }
+export interface Box {
+  id: string;
+  code: string;
+  name: string;
+  location?: string | null;
+  tags?: string[] | null;
+  thumbs?: string[];           // dataURL or blob url (thumb only)
+  createdAt: string;           // ISO string
+  updatedAt: string;           // ISO string
 }
+
+export interface Item {
+  id: string;
+  boxId: string;
+  name: string;
+  tags?: string[] | null;
+  note?: string | null;
+  thumbs?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BoxLocation {
+  id: string;
+  boxId: string;               // 1:1 を想定（ユニークに）
+  thumbs?: string[];           // 置き場所サムネのみ（元画像は保持しない）
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 任意: 画面フロー用の下書きテーブル（必要なければ削除可）
+export interface Draft {
+  id: string;
+  type: 'box' | 'item' | 'location';
+  boxId?: string | null;
+  itemId?: string | null;
+  payload?: any;
+  updatedAt: string;
+}
+
+const DB_NAME = 'hakomokuroku';
+// 既存より必ず「大きい番号」にしてください。以前のバージョンが不明でもこのままでOKです。
+const DB_VERSION = 5;
+
+export class HKDB extends Dexie {
+  boxes!: Table<Box, string>;
+  items!: Table<Item, string>;
+  boxLocations!: Table<BoxLocation, string>;
+  drafts!: Table<Draft, string>;
+
+  constructor() {
+    super(DB_NAME);
+
+    // v5: インデックス整備 & thumbs 統一
+    this.version(DB_VERSION)
+      .stores({
+        // id 主キー, code ユニーク検索, updatedAt 差分PULL, tags は multiEntry
+        boxes: 'id, &code, updatedAt, *tags',
+        // boxId 参照, updatedAt 差分PULL, tags multiEntry
+        items: 'id, boxId, updatedAt, *tags',
+        // 1箱1レコードを想定 → boxId をユニーク化
+        boxLocations: 'id, &boxId, updatedAt',
+        // 任意の下書き
+        drafts: 'id, type, boxId, itemId, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        // 旧スキーマからの移行（あれば）
+        // photos -> thumbs への移行、tags の型を string[] に正規化など。
+        const normalizeTags = (val: any): string[] | null => {
+          if (val == null) return null;
+          if (Array.isArray(val)) return val.map(String);
+          if (typeof val === 'string' && val.trim() !== '') return [val];
+          return null;
+        };
+
+        const migrateTable = async (name: string, opts: { hasPhotos?: boolean; hasTags?: boolean }) => {
+          const tbl = tx.table(name) as Table<any, string>;
+          try {
+            const rows = await tbl.toArray();
+            for (const r of rows) {
+              let changed = false;
+
+              // photos → thumbs へ移行
+              if (opts.hasPhotos && r.photos && !r.thumbs) {
+                r.thumbs = Array.isArray(r.photos) ? r.photos : [String(r.photos)];
+                delete r.photos;
+                changed = true;
+              }
+
+              // tags 正規化
+              if (opts.hasTags) {
+                const normalized = normalizeTags(r.tags);
+                // Dexie の multiEntry インデックスを壊さないよう空配列にもできるが、
+                // サーバー側(JSON)と整合を取り null で統一
+                if (normalized !== r.tags) {
+                  r.tags = normalized;
+                  changed = true;
+                }
+              }
+
+              if (changed) {
+                await tbl.put(r);
+              }
+            }
+          } catch {
+            // テーブルがまだ無い等は無視（初回導入時など）
+          }
+        };
+
+        await migrateTable('boxes', { hasPhotos: true, hasTags: true });
+        await migrateTable('items', { hasPhotos: true, hasTags: true });
+        await migrateTable('boxLocations', { hasPhotos: true, hasTags: false });
+      });
+  }
+}
+
+// HMR/SSRでも単一インスタンスに
+declare global {
+  // eslint-disable-next-line no-var
+  var __hkdb: HKDB | undefined;
+  interface Window {
+    __hkdb?: HKDB;
+  }
+}
+
+export const db: HKDB = globalThis.__hkdb ?? new HKDB();
+if (typeof window !== 'undefined') {
+  (window as any).__hkdb = db;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.__hkdb = db;
+}
+
+// 便宜 export
+export type { Table };

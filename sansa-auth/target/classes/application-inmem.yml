@@ -21,7 +21,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info"
+        include: "health,info,mappings,metrics"
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
   health:
     cassandra:
       enabled: false   # ★ Cassandra のヘルスチェック無効化
+
