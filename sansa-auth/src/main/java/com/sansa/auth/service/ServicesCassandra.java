@@ -3,6 +3,7 @@ package com.sansa.auth.service;
 import com.sansa.auth.dto.Dtos;
 import com.sansa.auth.model.Models;
 import com.sansa.auth.repo.RepoInterfaces;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -10,7 +11,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ServicesCassandra {
+@Profile({"inmem","cassandra"})
+public class ServicesCassandra implements AuthService {
 
     private final RepoInterfaces.IUserRepo userRepo;
     private final RepoInterfaces.ISessionRepo sessionRepo;
@@ -21,7 +23,6 @@ public class ServicesCassandra {
         this.sessionRepo = sessionRepo;
     }
 
-    // 例：登録処理の抜粋（実際のエンドポイント呼び出しは AuthService 実装から）
     public Dtos.AuthResult registerInternal(UUID preRegId, String email, String passwordHash) {
         if (preRegId == null) {
             return Dtos.AuthResult.error("preRegId is required");
@@ -52,5 +53,27 @@ public class ServicesCassandra {
         return Dtos.AuthResult.ok("registered");
     }
 
-    // 以降の箇所も、User/Session の getter/setter を getXxx()/setXxx() に統一して利用すること
+    @Override
+    public Dtos.AuthResult verifyEmail(String email, String code) {
+        Dtos.VerifyEmailRequest req = new Dtos.VerifyEmailRequest();
+        req.setEmail(email);
+        req.setCode(code);
+        return verifyEmail(req);
+    }
+
+    @Override
+    public Dtos.AuthResult preRegister(String email) {
+        Dtos.PreRegisterRequest req = new Dtos.PreRegisterRequest();
+        req.setEmail(email);
+        return preRegister(req); // 既存の DTO 版メソッドに委譲
+    }
+
+    @Override
+    public Dtos.AuthResult register(String preRegId, String accountId, String language) {
+        Dtos.RegisterRequest req = new Dtos.RegisterRequest();
+        req.setPreRegId(preRegId);
+        req.setAccountId(accountId);
+        req.setLanguage(language);
+        return register(req);
+    }
 }

@@ -13,11 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Repository
-@Profile("inmemory")
+@Profile("inmem")
 public class InMemoryRepos {
 
     @Repository
-    @Profile("inmemory")
+    @Profile("inmem")
     public static class UserRepo implements IUserRepo {
 
         private final Map<UUID, User> store = new ConcurrentHashMap<>();
@@ -60,7 +60,7 @@ public class InMemoryRepos {
     }
 
     @Repository
-    @Profile("inmemory")
+    @Profile("inmem")
     public static class SessionRepo implements ISessionRepo {
 
         private final Map<UUID, Session> store = new ConcurrentHashMap<>();
