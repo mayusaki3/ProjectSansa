@@ -1,197 +1,325 @@
 package com.sansa.auth.dto;
 
-import com.sansa.auth.model.Models;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * 集約DTO。Jackson 用にデフォルトコンストラクタ必須。
- * getter/setter は「getX / setX」に統一。
- */
 public final class Dtos {
-
     private Dtos() {}
 
-    // --------- 認証フロー DTO ---------
-
-    /** /api/auth/pre-register */
-    public static class PreRegisterRequest {
-        private String email;
-        private String language;
-
-        public PreRegisterRequest() {}
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getLanguage() { return language; }
-        public void setLanguage(String language) { this.language = language; }
-    }
-
-    /** /api/auth/verify-email */
-    public static class VerifyEmailRequest {
-        private String preRegId;
-        private String code;
-
-        public VerifyEmailRequest() {}
-
-        public String getPreRegId() { return preRegId; }
-        public void setPreRegId(String preRegId) { this.preRegId = preRegId; }
-
-        public String getCode() { return code; }
-        public void setCode(String code) { this.code = code; }
-    }
-
-    /** /api/auth/register */
-    public static class RegisterRequest {
-        private String preRegId;
-        private String accountId;
-        private String email;
-        private String language;
-
-        public RegisterRequest() {}
-
-        public String getPreRegId() { return preRegId; }   // ★追加
-        public void setPreRegId(String preRegId) { this.preRegId = preRegId; } // ★追加
-
-        public String getAccountId() { return accountId; }
-        public void setAccountId(String accountId) { this.accountId = accountId; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getLanguage() { return language; }
-        public void setLanguage(String language) { this.language = language; }
-    }
-
-    // --------- MFA DTO ---------
-
-    public static class TotpVerifyRequest {
-        private String code;
-
-        public TotpVerifyRequest() {}
-
-        public String getCode() { return code; }
-        public void setCode(String code) { this.code = code; }
-    }
-
-    public static class EmailOtpSendRequest {
-        private String email;
-
-        public EmailOtpSendRequest() {}
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-    }
-
-    public static class EmailOtpVerifyRequest {
-        private String email;
-        private String code;
-
-        public EmailOtpVerifyRequest() {}
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getCode() { return code; }
-        public void setCode(String code) { this.code = code; }
-    }
-
-    // --------- WebAuthn / Login DTO（将来用） ---------
-
-    public static class LoginRequest {
-        private String username;
-        private String password;
-
-        public LoginRequest() {}
-
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-    }
-
-    public static class TokenPair {
-        private String accessToken;
-        private String refreshToken;
-
-        public TokenPair() {}
-
-        public TokenPair(String accessToken, String refreshToken) {
-            this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
-        }
-
-        public String getAccessToken() { return accessToken; }
-        public void setAccessToken(String accessToken) { this.accessToken = accessToken; }
-
-        public String getRefreshToken() { return refreshToken; }
-        public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
-    }
-
-    public static class LoginResponse {
-        private String status;     // "ok" / "error" など
-        private boolean success;
-        private String message;
-        private TokenPair tokens;  // 任意
-
-        /** Jackson用デフォルト ctor（※呼び出し側が new LoginResponse() しても通る） */
-        public LoginResponse() {}
-
-        public LoginResponse(String status, boolean success, String message, TokenPair tokens) {
-            this.status = status;
-            this.success = success;
-            this.message = message;
-            this.tokens = tokens;
-        }
-
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
-
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-
-        public TokenPair getTokens() { return tokens; }
-        public void setTokens(TokenPair tokens) { this.tokens = tokens; }
-    }
-
-    // --------- 共通レスポンス ---------
-
+    // ---------- 共通レスポンス ----------
     public static class AuthResult {
         private boolean success;
         private String message;
-        private Models.User user;      // 必要に応じて
-        private TokenPair tokens;      // 必要に応じて
+        private Map<String, Object> details = new HashMap<>();
 
-        public AuthResult() {}
+        public AuthResult() {
+        }
 
         public AuthResult(boolean success, String message) {
             this.success = success;
             this.message = message;
         }
 
-        public static AuthResult ok() {
-            return new AuthResult(true, "ok");
+        public AuthResult(boolean success, String message, Map<String, Object> details) {
+            this.success = success;
+            this.message = message;
+            if (details != null) this.details = details;
         }
+
+        // 便利メソッド
         public static AuthResult ok(String message) {
             return new AuthResult(true, message);
         }
+
+        public static AuthResult ok(String message, Map<String, Object> details) {
+            return new AuthResult(true, message, details);
+        }
+
         public static AuthResult error(String message) {
             return new AuthResult(false, message);
         }
 
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
+        // getters / setters
+        public boolean isSuccess() {
+            return success;
+        }
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+        public String getMessage() {
+            return message;
+        }
+        public void setMessage(String message) {
+            this.message = message;
+        }
+        public Map<String, Object> getDetails() {
+            return details;
+        }
+        public void setDetails(Map<String, Object> details) {
+            this.details = details;
+        }
+    }
 
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
+    // ---------- トークン ----------
+    public static class TokenPair {
+        private String accessToken;
+        private String refreshToken;
 
-        public Models.User getUser() { return user; }
-        public void setUser(Models.User user) { this.user = user; }
+        public TokenPair() {
+        }
 
-        public TokenPair getTokens() { return tokens; }
-        public void setTokens(TokenPair tokens) { this.tokens = tokens; }
+        public TokenPair(String accessToken, String refreshToken) {
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+        }
+
+        public String getAccessToken() {
+            return accessToken;
+        }
+        public void setAccessToken(String accessToken) {
+            this.accessToken = accessToken;
+        }
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+        public void setRefreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
+        }
+    }
+
+    // ---------- 事前登録(プリレジ) ----------
+    public static class PreRegisterRequest {
+        private String email;
+        private String language; // 例: "ja", "en"
+
+        public PreRegisterRequest() {
+        }
+
+        public PreRegisterRequest(String email, String language) {
+            this.email = email;
+            this.language = language;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+        public void setEmail(String email) {
+            this.email = email;
+        }
+        public String getLanguage() {
+            return language;
+        }
+        public void setLanguage(String language) {
+            this.language = language;
+        }
+    }
+
+    public static class VerifyEmailRequest {
+        private String preRegId; // 事前登録ID
+        private String code;     // メールの確認コード
+
+        public VerifyEmailRequest() {
+        }
+
+        public VerifyEmailRequest(String preRegId, String code) {
+            this.preRegId = preRegId;
+            this.code = code;
+        }
+
+        public String getPreRegId() {
+            return preRegId;
+        }
+        public void setPreRegId(String preRegId) {
+            this.preRegId = preRegId;
+        }
+        public String getCode() {
+            return code;
+        }
+        public void setCode(String code) {
+            this.code = code;
+        }
+    }
+
+    public static class RegisterRequest {
+        private String preRegId;
+        private String accountId;
+        private String language;
+
+        public RegisterRequest() {
+        }
+
+        public RegisterRequest(String preRegId, String accountId, String language) {
+            this.preRegId = preRegId;
+            this.accountId = accountId;
+            this.language = language;
+        }
+
+        public String getPreRegId() {
+            return preRegId;
+        }
+        public void setPreRegId(String preRegId) {
+            this.preRegId = preRegId;
+        }
+        public String getAccountId() {
+            return accountId;
+        }
+        public void setAccountId(String accountId) {
+            this.accountId = accountId;
+        }
+        public String getLanguage() {
+            return language;
+        }
+        public void setLanguage(String language) {
+            this.language = language;
+        }
+    }
+
+    // ---------- ログイン ----------
+    public static class LoginRequest {
+        // ユースケースに応じて利用（パスワード/Passkey/WebAuthnなど）
+        private String accountId; // or email
+        private String password;  // パスワードログイン時
+        private String assertion; // WebAuthn等で使う場合のプレースホルダ
+
+        public LoginRequest() {
+        }
+
+        public LoginRequest(String accountId, String password, String assertion) {
+            this.accountId = accountId;
+            this.password = password;
+            this.assertion = assertion;
+        }
+
+        public String getAccountId() {
+            return accountId;
+        }
+        public void setAccountId(String accountId) {
+            this.accountId = accountId;
+        }
+        public String getPassword() {
+            return password;
+        }
+        public void setPassword(String password) {
+            this.password = password;
+        }
+        public String getAssertion() {
+            return assertion;
+        }
+        public void setAssertion(String assertion) {
+            this.assertion = assertion;
+        }
+    }
+
+    public static class LoginResponse {
+        private String message;
+        private boolean success;
+        private String userId;
+        private TokenPair tokens;
+
+        public LoginResponse() {
+        }
+
+        public LoginResponse(String message, boolean success, String userId, TokenPair tokens) {
+            this.message = message;
+            this.success = success;
+            this.userId = userId;
+            this.tokens = tokens;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+        public void setMessage(String message) {
+            this.message = message;
+        }
+        public boolean isSuccess() {
+            return success;
+        }
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+        public String getUserId() {
+            return userId;
+        }
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+        public TokenPair getTokens() {
+            return tokens;
+        }
+        public void setTokens(TokenPair tokens) {
+            this.tokens = tokens;
+        }
+    }
+
+    // ---------- MFA (メールOTP / TOTP) ----------
+    public static class EmailOtpSendRequest {
+        private String email;
+        private String language;
+
+        public EmailOtpSendRequest() {
+        }
+
+        public EmailOtpSendRequest(String email, String language) {
+            this.email = email;
+            this.language = language;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+        public void setEmail(String email) {
+            this.email = email;
+        }
+        public String getLanguage() {
+            return language;
+        }
+        public void setLanguage(String language) {
+            this.language = language;
+        }
+    }
+
+    public static class EmailOtpVerifyRequest {
+        private String email;
+        private String code;
+
+        public EmailOtpVerifyRequest() {
+        }
+
+        public EmailOtpVerifyRequest(String email, String code) {
+            this.email = email;
+            this.code = code;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+        public void setEmail(String email) {
+            this.email = email;
+        }
+        public String getCode() {
+            return code;
+        }
+        public void setCode(String code) {
+            this.code = code;
+        }
+    }
+
+    public static class TotpVerifyRequest {
+        private String code;
+
+        public TotpVerifyRequest() {
+        }
+
+        public TotpVerifyRequest(String code) {
+            this.code = code;
+        }
+
+        public String getCode() {
+            return code;
+        }
+        public void setCode(String code) {
+            this.code = code;
+        }
     }
 }

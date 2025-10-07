@@ -1,80 +1,100 @@
 package com.sansa.auth.service;
 
-import com.sansa.auth.dto.Dtos;
-import com.sansa.auth.model.Models;
+import com.sansa.auth.dto.Dtos.AuthResult;
 import com.sansa.auth.model.Models.User;
-import com.sansa.auth.repo.RepoInterfaces;
-import com.sansa.auth.util.JwtProvider;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 
-/**
- * inmem プロファイル用のシンプルな AuthService 実装。
- * 事前登録やメール検証はダミー挙動（必ず成功）にしておき、登録だけ UserRepo に保存します。
- */
-@Service
 @Profile("inmem")
-public class ServicesInmem implements AuthService {
+@Service
+public class ServicesInmem extends AuthService {  // implements → extends に修正
 
-    private final RepoInterfaces.IUserRepo userRepo;
-    private final RepoInterfaces.ISessionRepo sessionRepo;
-    private final JwtProvider jwtProvider;
+    // 簡易 In-memory ストア
+    private final Map<UUID, User> users = new ConcurrentHashMap<>();
+    private final Map<String, PreReg> preRegs = new ConcurrentHashMap<>();
 
-    // inmem 用の簡易プリレジストリ（preRegId -> email）
-    private final Map<String, String> preRegStore = new HashMap<>();
+    // 簡易 PreReg 定義（Models.PreReg 参照をやめ、ここで完結）
+    private static class PreReg {
+        private final String preRegId;
+        private final String email;
+        private final String language;
+        private boolean verified;
 
-    public ServicesInmem(RepoInterfaces.IUserRepo userRepo,
-                         RepoInterfaces.ISessionRepo sessionRepo,
-                         JwtProvider jwtProvider) {
-        this.userRepo = userRepo;
-        this.sessionRepo = sessionRepo;
-        this.jwtProvider = jwtProvider;
+        private PreReg(String preRegId, String email, String language) {
+            this.preRegId = preRegId;
+            this.email = email;
+            this.language = language;
+            this.verified = false;
+        }
+        public String getPreRegId() { return preRegId; }
+        public String getEmail() { return email; }
+        public String getLanguage() { return language; }
+        public boolean isVerified() { return verified; }
+        public void setVerified(boolean verified) { this.verified = verified; }
     }
 
     @Override
-    public Dtos.AuthResult preRegister(String email, String language) {
-        // 実際はメール送信などを行うが、inmem ではダミーで preRegId を返す
+    public AuthResult preRegister(String email, String language) {
         String preRegId = UUID.randomUUID().toString();
-        // 既存の PreReg エンティティに合わせて保存
-        preRegRepo.save(new Models.PreReg(preRegId, email, language, Instant.now()));
-        Dtos.AuthResult res = Dtos.AuthResult.ok("pre-registered");
-        return res;
+        preRegs.put(preRegId, new PreReg(preRegId, email, language));
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("preRegId", preRegId);
+        details.put("email", email);
+        details.put("language", language);
+        return AuthResult.ok("pre-register accepted", details);
     }
 
     @Override
-    public Dtos.AuthResult verifyEmail(String preRegId, String code) {
-        // 本来は code 検証。inmem では常に成功扱い。
-        return Map.of(
-                "ok", true,
-                "preRegId", preRegId,
-                "email", email
-        );
+    public AuthResult verifyEmail(String preRegId, String code) {
+        PreReg pr = preRegs.get(preRegId);
+        if (pr == null) {
+            return AuthResult.error("preRegId not found");
+        }
+        pr.setVerified(true);
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("preRegId", preRegId);
+        details.put("verified", true);
+        details.put("email", pr.getEmail());
+        return AuthResult.ok("email verified", details);
     }
 
     @Override
-    public Dtos.AuthResult register(String preRegId, String accountId, String language) {
-        // preRegId が存在しない/メール不一致でも inmem では許容（実運用ではチェックして 4xx 返す）
-        String email = preRegStore.getOrDefault(preRegId, accountId + "@example.com");
-
-        // 既存ユーザならそのまま返す
-        if (userRepo.existsByEmail(email)) {
-            // findByLoginId は userId ベースっぽいので email 既存時は簡易に新規検索/保存をスキップ
-            // ここでは一旦新規作成せず、適当に id を生成して返す必要があるなら保存結果で返す
+    public AuthResult register(String preRegId, String accountId, String language) {
+        PreReg pr = preRegs.get(preRegId);
+        if (pr == null || !pr.isVerified()) {
+            return AuthResult.error("email not verified");
         }
 
-        User u = new Models.User();
-        u.id = UUID.randomUUID();
-        u.accountId = UUID.randomUUID(); // 簡易に採番（要求仕様に合わせて accountId を使うならここで変える）
-        u.email = email;
-        u.createdAt = Instant.now();
+        UUID uid = UUID.randomUUID();
+        UUID acc;
+        try {
+            acc = UUID.fromString(accountId);
+        } catch (Exception e) {
+            return AuthResult.error("invalid accountId: " + accountId);
+        }
 
-        // 保存
-        u = userRepo.save(u);
+        // User は引数なしコンストラクタのみ → setter で設定
+        User u = new User();
+        u.setId(uid);
+        u.setAccountId(acc);
+        u.setEmail(pr.getEmail());
+        u.setCreatedAt(Instant.now());
+        users.put(uid, u);
 
-        // セッションを張るならここで作成してもよいが、inmem では省略
-        return u;
+        Map<String, Object> details = new HashMap<>();
+        details.put("userId", u.getId().toString());
+        details.put("accountId", u.getAccountId().toString());
+        details.put("email", u.getEmail());
+        details.put("createdAt", u.getCreatedAt().toString());
+        details.put("language", language);
+
+        return AuthResult.ok("registered", details);
     }
 }
