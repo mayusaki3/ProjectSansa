@@ -42,7 +42,7 @@ public class ServicesCassandra implements AuthService {
     }
 
     @Override
-    public Map<String, Object> register(String preRegId, String language) {
+    public Map<String, Object> register(UUID preRegId, String language) {
         Optional<Models.PreReg> prOpt = preRegRepo.findById(preRegId);
         if (prOpt.isEmpty()) {
             return ng("preReg not found");

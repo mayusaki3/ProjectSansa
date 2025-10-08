@@ -1,6 +1,7 @@
 package com.sansa.auth.service;
 
 import java.util.Map;
+import java.util.UUID;
 
 public interface AuthService {
 
@@ -11,5 +12,5 @@ public interface AuthService {
     Map<String, Object> verifyEmail(String email, String code);
 
     /** 本登録: preRegId + language を受け取り、結果を返す（details.user にユーザー情報） */
-    Map<String, Object> register(String preRegId, String language);
+    Map<String, Object> register(UUID preRegId, String language);
 }

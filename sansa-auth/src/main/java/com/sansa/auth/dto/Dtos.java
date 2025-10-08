@@ -2,6 +2,7 @@ package com.sansa.auth.dto;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public final class Dtos {
     private Dtos() {}
@@ -87,6 +88,10 @@ public final class Dtos {
         }
     }
 
+    // --------------------
+    // ユーザー登録
+    // --------------------
+
     // ---------- 事前登録(プリレジ) ----------
     public static class PreRegisterRequest {
         private String email;
@@ -95,9 +100,8 @@ public final class Dtos {
         public PreRegisterRequest() {
         }
 
-        public PreRegisterRequest(String email, String language) {
+        public PreRegisterRequest(String email) {
             this.email = email;
-            this.language = language;
         }
 
         public String getEmail() {
@@ -114,6 +118,7 @@ public final class Dtos {
         }
     }
 
+    // ---------- メール検証(プリレジ) ---------
     public static class VerifyEmailRequest {
         private String email; // 事前登録メール
         private String code;  // メールの確認コード
@@ -140,30 +145,32 @@ public final class Dtos {
         }
     }
 
+    // ---------- ユーザー登録 --------------
     public static class RegisterRequest {
-        private String preRegId;
-        private String accountId;
+        private UUID preRegId;
+        private UUID accountId;
         private String language;
+        private String password; // 将来の拡張用（パスワード登録など）
 
         public RegisterRequest() {
         }
 
-        public RegisterRequest(String preRegId, String accountId, String language) {
+        public RegisterRequest(UUID preRegId, UUID accountId, String language, Optional <String> password) {
             this.preRegId = preRegId;
             this.accountId = accountId;
             this.language = language;
         }
 
-        public String getPreRegId() {
+        public UUID getPreRegId() {
             return preRegId;
         }
-        public void setPreRegId(String preRegId) {
+        public void setPreRegId(UUID preRegId) {
             this.preRegId = preRegId;
         }
-        public String getAccountId() {
+        public UUID getAccountId() {
             return accountId;
         }
-        public void setAccountId(String accountId) {
+        public void setAccountId(UUID accountId) {
             this.accountId = accountId;
         }
         public String getLanguage() {
@@ -172,28 +179,38 @@ public final class Dtos {
         public void setLanguage(String language) {
             this.language = language;
         }
+        public String getPassword() {
+            return password;
+        }
+        public void setPassword(String password) { 
+            this.password = password;
+        }
     }
+
+    // --------------------
+    // ログイン
+    // --------------------
 
     // ---------- ログイン ----------
     public static class LoginRequest {
         // ユースケースに応じて利用（パスワード/Passkey/WebAuthnなど）
-        private String accountId; // or email
+        private UUID accountId;
         private String password;  // パスワードログイン時
         private String assertion; // WebAuthn等で使う場合のプレースホルダ
 
         public LoginRequest() {
         }
 
-        public LoginRequest(String accountId, String password, String assertion) {
+        public LoginRequest(UUID accountId, String password, String assertion) {
             this.accountId = accountId;
             this.password = password;
             this.assertion = assertion;
         }
 
-        public String getAccountId() {
+        public UUID getAccountId() {
             return accountId;
         }
-        public void setAccountId(String accountId) {
+        public void setAccountId(UUID accountId) {
             this.accountId = accountId;
         }
         public String getPassword() {
@@ -213,13 +230,13 @@ public final class Dtos {
     public static class LoginResponse {
         private String message;
         private boolean success;
-        private String userId;
+        private UUID userId;
         private TokenPair tokens;
 
         public LoginResponse() {
         }
 
-        public LoginResponse(String message, boolean success, String userId, TokenPair tokens) {
+        public LoginResponse(String message, boolean success, UUID userId, TokenPair tokens) {
             this.message = message;
             this.success = success;
             this.userId = userId;
@@ -238,10 +255,10 @@ public final class Dtos {
         public void setSuccess(boolean success) {
             this.success = success;
         }
-        public String getUserId() {
+        public UUID getUserId() {
             return userId;
         }
-        public void setUserId(String userId) {
+        public void setUserId(UUID userId) {
             this.userId = userId;
         }
         public TokenPair getTokens() {

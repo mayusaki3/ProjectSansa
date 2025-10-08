@@ -1,6 +1,7 @@
 package com.sansa.auth.model;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -10,39 +11,9 @@ import java.util.UUID;
 public final class Models {
 
     // --------------------
-    // PreReg
-    // --------------------
-    public static class PreReg {
-        private String id;        // preRegId
-        private String email;
-        private String code;      // 例: "000000"
-        private boolean verified; // verifyEmail 済みか
-        private Instant createdAt;
-        private String language;  // 任意
-
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getCode() { return code; }
-        public void setCode(String code) { this.code = code; }
-
-        public boolean isVerified() { return verified; }
-        public void setVerified(boolean verified) { this.verified = verified; }
-
-        public Instant getCreatedAt() { return createdAt; }
-        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-        public String getLanguage() { return language; }
-        public void setLanguage(String language) { this.language = language; }
-    }
-
-    // --------------------
     // User
     // --------------------
-    public static class User {
+    public static final class User {
         private UUID id;
         private UUID accountId;
         private String email;
@@ -50,6 +21,13 @@ public final class Models {
         private Instant createdAt;
 
         public User() {}
+
+        public User(UUID id, UUID accountId, String email, Instant createdAt) {
+            this.id = id;
+            this.accountId = accountId;
+            this.email = email;
+            this.createdAt = createdAt;
+        }
 
         public UUID getId() { return id; }
         public void setId(UUID id) { this.id = id; }
@@ -65,29 +43,75 @@ public final class Models {
 
         public Instant getCreatedAt() { return createdAt; }
         public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof User)) return false;
+            User user = (User) o;
+            return Objects.equals(id, user.id);
+        }
+        @Override public int hashCode() { return Objects.hash(id); }
     }
 
     // --------------------
     // Session
     // --------------------
-    public static class Session {
-        private UUID id;
+    public static final class Session {
+        private UUID sessionId;
         private UUID userId;
-        private String deviceId;
+        private String token;
         private Instant createdAt;
 
         public Session() {}
 
-        public UUID getId() { return id; }
-        public void setId(UUID id) { this.id = id; }
+        public Session(UUID sessionId, UUID userId, String token, Instant createdAt) {
+            this.sessionId = sessionId;
+            this.userId = userId;
+            this.token = token;
+            this.createdAt = createdAt;
+        }
+
+        public UUID getSessionId() { return sessionId; }
+        public void setSessionId(UUID sessionId) { this.sessionId = sessionId; }
 
         public UUID getUserId() { return userId; }
         public void setUserId(UUID userId) { this.userId = userId; }
 
-        public String getDeviceId() { return deviceId; }
-        public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
+        public String getToken() { return token; }
+        public void setToken(String token) { this.token = token; }
 
         public Instant getCreatedAt() { return createdAt; }
         public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     }
+
+    /** Pre-registration */
+    public static final class PreReg {
+        private UUID preRegId;
+        private String email;
+        private String language;
+        private Instant createdAt;
+
+        public PreReg() {}
+
+        public PreReg(UUID preRegId, String email, String language, Instant createdAt) {
+            this.preRegId = preRegId;
+            this.email = email;
+            this.language = language;
+            this.createdAt = createdAt;
+        }
+
+        public UUID getPreRegId() { return preRegId; }
+        public void setPreRegId(UUID preRegId) { this.preRegId = preRegId; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getLanguage() { return language; }
+        public void setLanguage(String language) { this.language = language; }
+
+        public Instant getCreatedAt() { return createdAt; }
+        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    }
+
+    private Models() {}
 }

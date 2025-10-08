@@ -42,7 +42,7 @@ public class ServicesInmem implements AuthService {
     }
 
     @Override
-    public Map<String, Object> register(String preRegId, String language) {
+    public Map<String, Object> register(UUID preRegId, String language) {
         // 簡易: PreReg を拾って User を作る
         Optional<Models.PreReg> prOpt = preRegRepo.findById(preRegId);
         if (prOpt.isEmpty()) {
