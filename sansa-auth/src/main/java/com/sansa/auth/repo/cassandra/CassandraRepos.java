@@ -1,79 +1,86 @@
 package com.sansa.auth.repo.cassandra;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.sansa.auth.model.Models.User;
+import com.sansa.auth.model.Models.Session;
 import com.sansa.auth.model.Models;
 import com.sansa.auth.repo.RepoInterfaces.IUserRepo;
 import com.sansa.auth.repo.RepoInterfaces.ISessionRepo;
 import com.sansa.auth.repo.RepoInterfaces.IPreRegRepo;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 import java.util.UUID;
 
-/**
- * ひとまずコンパイルを通すためのダミー実装。
- * 実DB 実装時に中身を置き換えてください。
- */
+@Repository
+@Profile("cassandra")
 public class CassandraRepos {
 
+    // DI想定。実装はあとで詰める。
+    private final CqlSession session = null;
+
+    // ===== User =====
+    @Repository
+    @Profile("cassandra")
     public static class UserRepo implements IUserRepo {
+
         @Override
-        public Models.User save(Models.User user) {
-            // TODO: 実装（Cassandra driver に差し替え）
+        public User save(User user) {
+            // TODO: INSERT/UPDATE users
             return user;
         }
 
         @Override
-        public Models.User findById(UUID userId) {
-            // TODO
-            return null;
+        public Optional<User> findById(UUID id) {
+            // TODO: SELECT ... WHERE id=?
+            return Optional.empty();
         }
 
         @Override
-        public Models.User findByEmail(String email) {
-            // TODO
-            return null;
+        public Optional<User> findByEmail(String email) {
+            // TODO: SELECT ... WHERE email=?
+            return Optional.empty();
         }
 
         @Override
-        public Models.User findByAccountId(UUID accountId) {
-            // TODO
-            return null;
-        }
-
-        @Override
-        public void deleteById(UUID userId) {
-            // TODO
+        public Optional<User> findByAccountId(String accountId) {
+            // TODO: SELECT ... WHERE account_id=?
+            return Optional.empty();
         }
     }
 
+    // ===== Session =====
+    @Repository
+    @Profile("cassandra")
     public static class SessionRepo implements ISessionRepo {
+
         @Override
-        public Models.Session save(Models.Session session) {
-            // TODO
-            return session;
+        public Session save(Session s) {
+            // TODO: INSERT/UPDATE sessions
+            return s;
         }
 
         @Override
-        public Models.Session findById(UUID sessionId) {
-            // TODO
-            return null;
+        public Optional<Session> findById(UUID sessionId) {
+            // TODO: SELECT ... WHERE id=?
+            return Optional.empty();
         }
 
         @Override
-        public void deleteById(UUID sessionId) {
-            // TODO
+        public void delete(UUID sessionId) {
+            // TODO: DELETE FROM sessions WHERE id=?; 他のインデックスも削除
         }
 
         @Override
-        public Models.Session findByToken(String token) {
-            // TODO
-            return null;
-        }
-
-        @Override
-        public Models.Session findByUserId(UUID userId) {
-            // TODO
-            return null;
+        public void deleteAllByUserId(UUID userId) {
+            // TODO: ユーザー関連のセッションを全削除
         }
     }
 
+    // ===== PreReg =====（必要なら追加で）
+    @Repository
+    @Profile("cassandra")
     public static class PreRegRepo implements IPreRegRepo {
         @Override
         public Models.PreReg save(Models.PreReg preReg) {
@@ -82,13 +89,13 @@ public class CassandraRepos {
         }
 
         @Override
-        public Models.PreReg findById(UUID preRegId) {
+        public Optional<Models.PreReg> findById(String preRegId) {
             // TODO
-            return null;
+            return Optional.empty();
         }
 
         @Override
-        public void deleteById(UUID preRegId) {
+        public void deleteById(String preRegId) {
             // TODO
         }
     }

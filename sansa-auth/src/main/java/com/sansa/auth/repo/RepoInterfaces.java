@@ -1,32 +1,40 @@
 package com.sansa.auth.repo;
 
 import com.sansa.auth.model.Models;
+import com.sansa.auth.model.Models.User;
+import com.sansa.auth.model.Models.Session;
+import java.util.Optional;
 import java.util.UUID;
 
-public class RepoInterfaces {
+/**
+ * Repository interface declarations.
+ * - User/Session は UUID をキーに統一
+ * - PreReg は仕様通り preRegId(String) のまま
+ */
+public final class RepoInterfaces {
 
-    /** ユーザーリポジトリ */
+    /** ユーザー用リポジトリ */
     public interface IUserRepo {
-        Models.User save(Models.User user);
-        Models.User findById(UUID userId);
-        Models.User findByEmail(String email);
-        Models.User findByAccountId(UUID accountId);
-        void deleteById(UUID userId);
+        User save(User user);
+        Optional<User> findById(UUID id);
+        Optional<User> findByEmail(String email);
+        Optional<User> findByAccountId(String accountId);
     }
 
-    /** セッションリポジトリ */
+    /** セッション用リポジトリ */
     public interface ISessionRepo {
-        Models.Session save(Models.Session session);
-        Models.Session findById(UUID sessionId);
-        void deleteById(String sessionId);
-        Models.Session findByToken(String token);
-        Models.Session findByUserId(UUID userId);
+        Session save(Session session);
+        Optional<Session> findById(UUID sessionId);
+        void delete(UUID sessionId);
+        void deleteAllByUserId(UUID userId);
     }
 
     /** 事前登録（PreReg）用リポジトリ */
     public interface IPreRegRepo {
         Models.PreReg save(Models.PreReg preReg);
-        Models.PreReg findById(UUID preRegId);
-        void deleteById(UUID preRegId);
+        Optional<Models.PreReg> findById(String preRegId);
+        void deleteById(String preRegId);
     }
+
+    private RepoInterfaces() {}
 }
