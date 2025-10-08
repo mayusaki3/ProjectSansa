@@ -1,105 +1,95 @@
 package com.sansa.auth.repo.cassandra;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.sansa.auth.model.Models;
-import com.sansa.auth.model.Models.User;
-import com.sansa.auth.model.Models.Session;
 import com.sansa.auth.repo.RepoInterfaces.IUserRepo;
 import com.sansa.auth.repo.RepoInterfaces.ISessionRepo;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Repository;
+import com.sansa.auth.repo.RepoInterfaces.IPreRegRepo;
+import java.util.UUID;
 
-import java.util.*;
-
-@Repository
-@Profile("cassandra")
+/**
+ * ひとまずコンパイルを通すためのダミー実装。
+ * 実DB 実装時に中身を置き換えてください。
+ */
 public class CassandraRepos {
 
-    @Repository
-    @Profile("cassandra")
     public static class UserRepo implements IUserRepo {
-
-        private final CqlSession session;
-
-        public UserRepo(CqlSession session) {
-            this.session = session;
+        @Override
+        public Models.User save(Models.User user) {
+            // TODO: 実装（Cassandra driver に差し替え）
+            return user;
         }
 
         @Override
-        public boolean existsById(UUID id) {
-            // TODO: SELECT 1 FROM users WHERE id = ?
-            throw new UnsupportedOperationException("existsById not implemented yet.");
+        public Models.User findById(UUID userId) {
+            // TODO
+            return null;
         }
 
         @Override
-        public boolean existsByEmail(String email) {
-            // TODO: SELECT 1 FROM users_by_email WHERE email = ?
-            throw new UnsupportedOperationException("existsByEmail not implemented yet.");
+        public Models.User findByEmail(String email) {
+            // TODO
+            return null;
         }
 
         @Override
-        public Optional<User> findById(UUID id) {
-            // TODO: SELECT * FROM users WHERE id = ?
-            throw new UnsupportedOperationException("findById not implemented yet.");
+        public Models.User findByAccountId(UUID accountId) {
+            // TODO
+            return null;
         }
 
         @Override
-        public Optional<User> findByEmail(String email) {
-            // TODO: SELECT * FROM users_by_email WHERE email = ?
-            throw new UnsupportedOperationException("findByEmail not implemented yet.");
-        }
-
-        @Override
-        public User save(User user) {
-            // TODO: INSERT/UPDATE users & users_by_email
-            throw new UnsupportedOperationException("save not implemented yet.");
+        public void deleteById(UUID userId) {
+            // TODO
         }
     }
 
-    @Repository
-    @Profile("cassandra")
     public static class SessionRepo implements ISessionRepo {
-
-        private final CqlSession session;
-
-        public SessionRepo(CqlSession session) {
-            this.session = session;
+        @Override
+        public Models.Session save(Models.Session session) {
+            // TODO
+            return session;
         }
 
         @Override
-        public Optional<Session> findById(UUID id) {
-            // TODO: SELECT * FROM sessions WHERE id = ?
-            throw new UnsupportedOperationException("findById not implemented yet.");
+        public Models.Session findById(UUID sessionId) {
+            // TODO
+            return null;
         }
 
         @Override
-        public List<Session> findByUserId(UUID userId) {
-            // TODO: SELECT * FROM sessions_by_user WHERE user_id = ?
-            throw new UnsupportedOperationException("findByUserId not implemented yet.");
+        public void deleteById(UUID sessionId) {
+            // TODO
         }
 
         @Override
-        public Optional<Session> findByUserIdAndDeviceId(UUID userId, String deviceId) {
-            // TODO: SELECT * FROM sessions_by_user_device WHERE user_id = ? AND device_id = ?
-            throw new UnsupportedOperationException("findByUserIdAndDeviceId not implemented yet.");
+        public Models.Session findByToken(String token) {
+            // TODO
+            return null;
         }
 
         @Override
-        public Session save(Session sessionModel) {
-            // TODO: INSERT/UPDATE sessions / sessions_by_user / sessions_by_user_device
-            throw new UnsupportedOperationException("save not implemented yet.");
+        public Models.Session findByUserId(UUID userId) {
+            // TODO
+            return null;
+        }
+    }
+
+    public static class PreRegRepo implements IPreRegRepo {
+        @Override
+        public Models.PreReg save(Models.PreReg preReg) {
+            // TODO
+            return preReg;
         }
 
         @Override
-        public void delete(UUID sessionId) {
-            // TODO: DELETE FROM sessions WHERE id = ?; DELETE FROM sessions_by_user ...; DELETE FROM sessions_by_user_device ...
-            throw new UnsupportedOperationException("delete not implemented yet.");
+        public Models.PreReg findById(UUID preRegId) {
+            // TODO
+            return null;
         }
 
         @Override
-        public void deleteAllByUserId(UUID userId) {
-            // TODO: DELETE all rows for user_id from sessions_by_user and related tables
-            throw new UnsupportedOperationException("deleteAllByUserId not implemented yet.");
+        public void deleteById(UUID preRegId) {
+            // TODO
         }
     }
 }

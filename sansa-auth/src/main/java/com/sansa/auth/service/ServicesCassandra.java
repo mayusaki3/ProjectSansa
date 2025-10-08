@@ -5,10 +5,11 @@ import com.sansa.auth.repo.RepoInterfaces;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @Profile("prod") // 本番で Cassandra を使うなら
@@ -42,15 +43,15 @@ public class ServicesCassandra implements AuthService {
 
     @Override
     public Map<String, Object> register(String preRegId, String language) {
-        var prOpt = preRegRepo.findById(preRegId);
+        Optional<Models.PreReg> prOpt = preRegRepo.findById(preRegId);
         if (prOpt.isEmpty()) {
             return ng("preReg not found");
         }
-        var pr = prOpt.get();
+        Models.PreReg pr = prOpt.get();
 
         Models.User u = new Models.User();
-        u.setId(UUID.randomUUID().toString());
-        u.setAccountId(UUID.randomUUID().toString());
+        u.setId(UUID.randomUUID());                  // ← User の型が UUID の場合
+        u.setAccountId(UUID.randomUUID());           // ← 同上（String フィールドなら toString() を渡す）
         u.setEmail(pr.getEmail());
         u.setCreatedAt(Instant.now());
         userRepo.save(u);
@@ -76,11 +77,11 @@ public class ServicesCassandra implements AuthService {
         return res;
     }
 
-    private Map<String, Object> toUserMap(Models.User u) {
+    private Map<String,Object> toUserMap(Models.User u) {
         return Map.of(
-            "id", u.getId(),
-            "accountId", u.getAccountId(),
-            "email", u.getEmail(),
+            "id",        u.getId() instanceof UUID ? ((UUID)u.getId()).toString() : u.getId().toString(),
+            "accountId", u.getAccountId() instanceof UUID ? ((UUID)u.getAccountId()).toString() : u.getAccountId().toString(),
+            "email",     u.getEmail(),
             "createdAt", u.getCreatedAt()
         );
     }

@@ -20,35 +20,22 @@ public class AuthController {
 
     // 事前登録（メールアドレスで開始）
     @PostMapping("/pre-register")
-    public ResponseEntity<Dtos.AuthResult> preRegister(@RequestBody Dtos.PreRegisterRequest req) {
-        String preRegId = service.preRegister(req.getEmail(), req.getLanguage());
-        return ResponseEntity.ok(
-            Dtos.AuthResult.ok("pre-registered",
-                Map.of("preRegId", preRegId))
-        );
+    public ResponseEntity<Map<String,Object>> preRegister(@RequestBody Dtos.PreRegisterRequest req) {
+        Map<String,Object> body = service.preRegister(req.getEmail(), req.getLanguage());
+        return ResponseEntity.ok(body);
     }
 
     // メールコード検証
     @PostMapping("/verify-email")
-    public ResponseEntity<Dtos.AuthResult> verifyEmail(@RequestBody Dtos.VerifyEmailRequest req) {
-        boolean ok = service.verifyEmail(req.getEmail(), req.getCode());
-        return ResponseEntity.ok(
-            Dtos.AuthResult.ok("verified",
-                Map.of("email", req.getEmail()))
-        );
+    public ResponseEntity<Map<String,Object>> verifyEmail(@RequestBody Dtos.VerifyEmailRequest req) {
+        Map<String,Object> body = service.verifyEmail(req.getEmail(), req.getCode()); // ← getEmail()/getCode()
+        return ResponseEntity.ok(body);
     }
 
     // 本登録
     @PostMapping("/register")
-    public ResponseEntity<Dtos.AuthResult> register(@RequestBody Dtos.RegisterRequest req) {
-        Models.User user = service.register(req.getPreRegId(), req.getLanguage());
-        return ResponseEntity.ok(
-            Dtos.AuthResult.ok("registered",
-                Map.of(
-                    "userId", user.getId().toString(),
-                    "accountId", user.getAccountId().toString(),
-                    "email", user.getEmail()
-                ))
-        );
+    public ResponseEntity<Map<String,Object>> register(@RequestBody Dtos.RegisterRequest req) {
+        Map<String,Object> body = service.register(req.getPreRegId(), req.getLanguage());
+        return ResponseEntity.ok(body);
     }
 }

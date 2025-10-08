@@ -115,22 +115,22 @@ public final class Dtos {
     }
 
     public static class VerifyEmailRequest {
-        private String preRegId; // 事前登録ID
-        private String code;     // メールの確認コード
+        private String email; // 事前登録メール
+        private String code;  // メールの確認コード
 
         public VerifyEmailRequest() {
         }
 
-        public VerifyEmailRequest(String preRegId, String code) {
-            this.preRegId = preRegId;
+        public VerifyEmailRequest(String email, String code) {
+            this.email = email;
             this.code = code;
         }
 
-        public String getPreRegId() {
-            return preRegId;
+        public String getEmail() {
+            return email;
         }
-        public void setPreRegId(String preRegId) {
-            this.preRegId = preRegId;
+        public void setEmail(String email) {
+            this.email = email;
         }
         public String getCode() {
             return code;
