@@ -1,35 +1,33 @@
 package com.sansa.auth.repo;
 
-import com.sansa.auth.model.Models.User;
-import com.sansa.auth.model.Models.Session;
+import com.sansa.auth.model.Models;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
+/**
+ * リポジトリの契約（インターフェース）群。
+ * 実装は in-memory / Cassandra などで用意する前提。
+ */
 public final class RepoInterfaces {
 
-    private RepoInterfaces() {}
+    private RepoInterfaces() { /* no-op */ }
 
-    public interface IUserRepo {
-        boolean existsById(UUID id);
-        boolean existsByEmail(String email);
-
-        Optional<User> findById(UUID id);
-        Optional<User> findByEmail(String email);
-
-        User save(User user);
+    /** 事前登録（PreReg）用リポジトリ */
+    public interface IPreRegRepo {
+        Models.PreReg save(Models.PreReg preReg);
+        Models.PreReg findById(String preRegId);
+        void deleteById(String preRegId);
     }
 
+    /** ユーザー用リポジトリ */
+    public interface IUserRepo {
+        Models.User save(Models.User user);
+        Models.User findByEmail(String email);
+        Models.User findByAccountId(String accountId);
+    }
+
+    /** セッション用リポジトリ */
     public interface ISessionRepo {
-        Optional<Session> findById(UUID id);
-
-        List<Session> findByUserId(UUID userId);
-        Optional<Session> findByUserIdAndDeviceId(UUID userId, String deviceId);
-
-        Session save(Session session);
-
-        void delete(UUID sessionId);
-        void deleteAllByUserId(UUID userId);
+        Models.Session save(Models.Session session);
+        Models.Session findById(String sessionId);
+        void deleteById(String sessionId);
     }
 }

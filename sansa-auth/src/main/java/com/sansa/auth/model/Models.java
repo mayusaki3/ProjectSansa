@@ -10,6 +10,36 @@ import java.util.UUID;
 public final class Models {
 
     // --------------------
+    // PreReg
+    // --------------------
+    public static class PreReg {
+        private String id;        // preRegId
+        private String email;
+        private String code;      // 例: "000000"
+        private boolean verified; // verifyEmail 済みか
+        private Instant createdAt;
+        private String language;  // 任意
+
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getCode() { return code; }
+        public void setCode(String code) { this.code = code; }
+
+        public boolean isVerified() { return verified; }
+        public void setVerified(boolean verified) { this.verified = verified; }
+
+        public Instant getCreatedAt() { return createdAt; }
+        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+        public String getLanguage() { return language; }
+        public void setLanguage(String language) { this.language = language; }
+    }
+
+    // --------------------
     // User
     // --------------------
     public static class User {

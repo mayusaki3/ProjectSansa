@@ -1,12 +1,15 @@
 package com.sansa.auth.service;
 
-import com.sansa.auth.dto.Dtos;
+import java.util.Map;
 
 public interface AuthService {
 
-    Dtos.AuthResult preRegister(String email, String language);
+    /** 事前登録: email + language を受け取り、{success, message, details} を返す */
+    Map<String, Object> preRegister(String email, String language);
 
-    Dtos.AuthResult verifyEmail(String preRegId, String code);
+    /** メールコード検証: email + code を受け取り、結果を返す */
+    Map<String, Object> verifyEmail(String email, String code);
 
-    Dtos.AuthResult register(String preRegId, String language);
+    /** 本登録: preRegId + language を受け取り、結果を返す（details.user にユーザー情報） */
+    Map<String, Object> register(String preRegId, String language);
 }
