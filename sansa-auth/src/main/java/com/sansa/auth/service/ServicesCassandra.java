@@ -1,61 +1,46 @@
 package com.sansa.auth.service;
 
-import com.sansa.auth.dto.Dtos.AuthResult;
-import com.sansa.auth.model.Models.User;
-import com.sansa.auth.repo.RepoInterfaces.IUserRepo;
+import com.sansa.auth.dto.Dtos;
+import com.sansa.auth.model.Models;
+import com.sansa.auth.repo.RepoInterfaces;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
-public class ServicesCassandra extends AuthService {  // implements → extends に修正
+@Profile("cassandra")
+public class ServicesCassandra implements AuthService {
 
-    private final IUserRepo userRepo;
+    private final RepoInterfaces.IUserRepo userRepo;
 
-    public ServicesCassandra(IUserRepo userRepo) {
+    public ServicesCassandra(RepoInterfaces.IUserRepo userRepo) {
         this.userRepo = userRepo;
     }
 
     @Override
-    public AuthResult preRegister(String email, String language) {
-        // 実装は後続。今は疎通優先のダミー
-        Map<String, Object> details = new HashMap<>();
-        details.put("preRegId", UUID.randomUUID().toString());
-        details.put("email", email);
-        details.put("language", language);
-        return AuthResult.ok("pre-register accepted", details);
+    public Dtos.AuthResult preRegister(String email, String language) {
+        // TODO: Cassandra 版の事前登録実装（プリレジストア保存など）
+        return Dtos.AuthResult.ok("pre-registered");
     }
 
     @Override
-    public AuthResult verifyEmail(String preRegId, String code) {
-        Map<String, Object> details = new HashMap<>();
-        details.put("preRegId", preRegId);
-        details.put("verified", true);
-        return AuthResult.ok("email verified", details);
+    public Dtos.AuthResult verifyEmail(String preRegId, String code) {
+        // TODO: Cassandra 版のメール検証実装（プリレジの検証など）
+        return Dtos.AuthResult.ok("verified");
     }
 
     @Override
-    public AuthResult register(String preRegId, String accountId, String language) {
-        // User は引数なしコンストラクタのみ → setter で設定
-        User u = new User();
+    public Dtos.AuthResult register(String preRegId, String language) {
+        // TODO: preRegId からメールなどを引く。本実装が入るまでダミーで作成
+        Models.User u = new Models.User();
         u.setId(UUID.randomUUID());
-        try {
-            u.setAccountId(UUID.fromString(accountId));
-        } catch (Exception e) {
-            return AuthResult.error("invalid accountId: " + accountId);
-        }
-        u.setEmail("noreply@example.com");
+        u.setAccountId(UUID.randomUUID());
+        u.setEmail("user+" + preRegId + "@example.local");
         u.setCreatedAt(Instant.now());
 
-        userRepo.save(u);
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("userId", u.getId() != null ? u.getId().toString() : null);
-        details.put("accountId", u.getAccountId() != null ? u.getAccountId().toString() : null);
-        details.put("language", language);
-        return AuthResult.ok("registered", details);
+        u = userRepo.save(u);
+        return Dtos.AuthResult.ok("registered", java.util.Map.of("user", u));
     }
 }

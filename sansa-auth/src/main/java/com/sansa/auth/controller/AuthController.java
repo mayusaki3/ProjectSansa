@@ -35,7 +35,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Dtos.AuthResult> register(@RequestBody @Valid Dtos.RegisterRequest req) {
         // いまは RegisterRequest に preRegId/accountId/email/language を持たせています
-        Dtos.AuthResult res = service.register(req.getPreRegId(), req.getAccountId(), req.getLanguage());
+        Dtos.AuthResult res = service.register(req.getPreRegId(), req.getLanguage());
         return ResponseEntity.ok(res);
     }
 }
