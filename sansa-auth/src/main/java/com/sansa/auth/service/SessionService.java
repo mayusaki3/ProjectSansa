@@ -76,4 +76,21 @@ public class SessionService {
     void revokeByRefreshToken(String refreshToken) {
         // store.invalidateByRefreshToken(refreshToken);
     }
+
+    /**
+     * TEST-ONLY: リフレッシュトークンでのセッション無効化
+     */
+    @VisibleForTesting
+    boolean revokeById(String sessionId) {
+        // 既存ロジックを使って判定可能ならそれを利用
+        // 例：例外設計に依存します。ここでは一例：
+        try {
+            revokeBySessionId(sessionId);
+            // 実装上「存在しない」は例外や戻り値で分かるならそれに合わせる
+            // 今回は簡易に「削除対象が無かったら false を返すよう内部を調整」でもOK
+            return true;
+        } catch (SessionNotFoundException e) {
+            return false;
+        }
+    }
 }

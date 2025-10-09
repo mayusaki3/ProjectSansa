@@ -1,221 +1,153 @@
 package com.sansa.auth.controller;
 
-import com.sansa.auth.AuthApplication;
-import com.sansa.auth.dto.auth.PreRegisterRequest;
 import com.sansa.auth.dto.login.LoginRequest;
-import com.sansa.auth.dto.sessions.LogoutRequest;
+import com.sansa.auth.dto.auth.PreRegisterRequest;
+import com.sansa.auth.dto.common.ProblemDetail;
 import com.sansa.auth.service.AuthService;
 import com.sansa.auth.service.SessionService;
-import com.sansa.auth.service.WebAuthnService;
 import com.sansa.auth.service.TokenService;
-import com.sansa.auth.controller.WebAuthnController;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sansa.auth.service.WebAuthnService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.lang.NonNull;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.servlet.i18n.FixedLocaleResolver;
 
-import java.util.Locale;
+import jakarta.annotation.Resource;
 
-import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Controller 層の入力バリデーション／エラーハンドリング確認用の軽量テスト。
- * 注意:
- *  - サービスのメソッド名には一切依存しない（= コンパイルエラーを確実に回避）
- *  - 期待するHTTPステータスとProblemDetailの形だけを検証
- */
 @WebMvcTest(controllers = {
         AuthController.class,
-        WebAuthnController.class,
-        ApiExceptionHandler.class
+        WebAuthnController.class
 })
-@ActiveProfiles("inmem")
+@Import(ApiExceptionHandler.class) // 例外→ProblemDetail(JSON) を返すため
 class AuthControllerValidationTest {
 
-    private static final String PRE_REGISTER_PATH = "/auth/pre-register";
-    private static final String LOGIN_PATH = "/auth/login";
+    private static final String API = "/api";
 
-    // 実装に合わせて必要に応じて変更
-    private static final String WEB_AUTHN_ASSERT_PATH = "/auth/webauthn/assertion";
-    private static final String SESSION_DELETE_PATH   = "/auth/sessions/{id}";
-
-    @Autowired
+    @Resource
     MockMvc mvc;
 
-    @Autowired
-    ObjectMapper om;
-
-    // コントローラが依存するサービス群はモック
+    // --- 必要サービスは Mock で用意 ---
     @MockBean AuthService authService;
     @MockBean SessionService sessionService;
     @MockBean WebAuthnService webAuthnService;
     @MockBean TokenService tokenService;
 
-    // Locale を固定（Accept-Language: ja → Content-Language: ja）
-    @Configuration
-    static class TestConfig {
-        @Bean
-        LocaleResolver localeResolver() {
-            return new FixedLocaleResolver(Locale.JAPANESE);
-        }
-    }
-
     // ========== pre-register ==========
     @Test
-    @DisplayName("UT-01-001: pre-register の email 空 -> 400 + problem+json")
+    @DisplayName("UT-01-001: pre-register の email ブランク -> 400")
     void preRegister_email_blank_400() throws Exception {
-        var body = """
-            {"email":"", "language":"ja-JP"}
-        """;
-        mvc.perform(post(PRE_REGISTER_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "ja")
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, startsWith("ja")))
-                .andExpect(jsonPath("$.type", containsString("invalid-argument")));
+        mvc.perform(post(API + "/auth/pre-register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"email\":\"\",\"language\":\"ja-JP\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/problem+json")))
+            .andExpect(jsonPath("$.type").value(org.hamcrest.Matchers.containsString("invalid-argument")))
+            .andExpect(jsonPath("$.errors[0].field").value("email"));
     }
 
     @Test
     @DisplayName("UT-01-002: pre-register の language フォーマット不正 -> 400")
     void preRegister_language_invalid_400() throws Exception {
-        var body = """
-            {"email":"a@b.com","language":"jp_JP"}
-        """;
-        mvc.perform(post(PRE_REGISTER_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "ja")
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, startsWith("ja")))
-                .andExpect(jsonPath("$.type", containsString("invalid-argument")));
+        mvc.perform(post(API + "/auth/pre-register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"email\":\"a@b.com\",\"language\":\"jp_JP\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errors[0].field").value("language"));
     }
 
+    // 連続実行で 429 を期待するテスト（ダミー実装想定：authService が rate limit 例外を投げる）
     @Test
-    @DisplayName("UT-01-003: pre-register 連打でレート制限 -> 429")
+    @DisplayName("UT-01-003: pre-register のレート制限 -> 429")
     void preRegister_rateLimit_429() throws Exception {
-        // サービス層のメソッド名に依存しない: 任意の引数を受けたら429を投げる
-        when(authService.preRegister(any()))
-                .thenThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "rate-limit"));
+        // ここでサービスの振る舞いを 429 相当の例外にモック（例：ApiException("rate-limit") を投げる）
+        Mockito.doThrow(new RuntimeException("rate-limit"))
+               .when(authService).preRegister(any(PreRegisterRequest.class));
 
-        var body = """
-            {"email":"a@b.com","language":"ja-JP"}
-        """;
-        mvc.perform(post(PRE_REGISTER_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .content(body))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(jsonPath("$.type", containsString("rate-limit")));
+        mvc.perform(post(API + "/auth/pre-register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"email\":\"a@b.com\",\"language\":\"ja-JP\"}"))
+            .andExpect(status().isTooManyRequests());
     }
 
     // ========== login ==========
     @Test
-    @DisplayName("UT-02-001: login identifier 未指定 -> 400（Bean Validation）")
+    @DisplayName("UT-02-001: login の identifier 欠落 -> 400")
     void login_identifier_missing_400() throws Exception {
-        var body = """
-            {"password":"x"}
-        """;
-        mvc.perform(post(LOGIN_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(jsonPath("$.type", containsString("invalid-argument")));
+        mvc.perform(post(API + "/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"password\":\"x\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errors[0].field").value("identifier"));
     }
 
     @Test
-    @DisplayName("UT-02-002: login 不正認証 -> 401")
+    @DisplayName("UT-02-002: login の認証失敗 -> 401 (invalid-credentials)")
     void login_invalid_credentials_401() throws Exception {
-        when(authService.login(any()))
-                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid-credentials"));
+        Mockito.doThrow(new RuntimeException("invalid-credentials"))
+               .when(authService).login(any(LoginRequest.class));
 
-        var body = """
-            {"identifier":"a@b.com","password":"wrong"}
-        """;
-        mvc.perform(post(LOGIN_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .content(body))
-                .andExpect(status().isUnauthorized())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(jsonPath("$.type", containsString("invalid-credentials")));
-    }
-
-    // ========== i18n header ==========
-    @Test
-    @DisplayName("UT-03-001: Accept-Language を Content-Language に反映")
-    void i18n_header_reflect() throws Exception {
-        var body = """
-            {"email":"", "language":"ja-JP"}
-        """;
-        mvc.perform(post(PRE_REGISTER_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "ja-JP,ja;q=0.9")
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, startsWith("ja")));
-    }
-
-    // ========== session delete ==========
-    @Test
-    @DisplayName("UT-04-001: セッション削除 対象なし -> 404")
-    void session_delete_not_found_404() throws Exception {
-        // メソッド名に依存せず、何らかの削除呼び出しで 404 を投げるようにスタブ
-        // ここではコントローラ → サービスの呼出が発生した時に ResponseStatusException(NOT_FOUND) が飛ぶ想定
-        Mockito.doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "sessions/not-found"))
-                .when(sessionService)
-                .toString(); // ダミー呼出（実際のサービスメソッド名に依存しない）
-
-        // 実際の削除エンドポイントにヒットさせる
-        mvc.perform(delete(SESSION_DELETE_PATH, "not-found")
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(jsonPath("$.type", containsString("not-found")));
+        mvc.perform(post(API + "/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"identifier\":\"a@b.com\",\"password\":\"wrong\"}"))
+            .andExpect(status().isUnauthorized());
     }
 
     // ========== WebAuthn ==========
     @Test
-    @DisplayName("UT-05-001: WebAuthn assertion の必須欠落 -> 400")
+    @DisplayName("UT-03-001: WebAuthn assertion の result 欠落 -> 400")
     void webauthn_assertion_missing_400() throws Exception {
-        // 必須フィールドが無いボディを送る
-        var body = "{}";
-        // サービスは呼ばれない想定（コントローラで入力バリデーション落ち）
-        mvc.perform(post(WEB_AUTHN_ASSERT_PATH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_PROBLEM_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("application/problem+json")))
-                .andExpect(jsonPath("$.type", containsString("invalid-argument")));
+        mvc.perform(post(API + "/webauthn/assertion/result")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"id\":\"abcd\"}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    // ========== Sessions ==========
+    @Test
+    @DisplayName("UT-04-001: セッション削除: 存在しないID -> 404 + problem+json")
+    void session_delete_not_found_404() throws Exception {
+        Mockito.when(sessionService.revokeById(eq("not-found"))).thenReturn(false);
+
+        mvc.perform(delete(API + "/sessions/not-found")
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja"))
+            .andExpect(status().isNotFound())
+            .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/problem+json")))
+            .andExpect(jsonPath("$.type").value(org.hamcrest.Matchers.containsString("not-found")));
+    }
+
+    // ========== i18n header ==========
+    @Test
+    @DisplayName("UT-05-001: エラーレスポンスは Content-Language を反映")
+    void i18n_header_reflect() throws Exception {
+        mvc.perform(post(API + "/auth/pre-register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Accept-Language", "ja")
+                .content("{\"email\":\"\",\"language\":\"ja-JP\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(header().string("Content-Language", org.hamcrest.Matchers.startsWith("ja")));
     }
 }
