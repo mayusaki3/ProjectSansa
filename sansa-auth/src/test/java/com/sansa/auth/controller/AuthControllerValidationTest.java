@@ -99,7 +99,7 @@ class AuthControllerValidationTest {
     @DisplayName("UT-01-009: DELETE /sessions/not-found -> 404 /session_not_found")
     void session_delete_not_found_404() throws Exception {
         Mockito.doThrow(new IllegalArgumentException("session_not_found"))
-                .when(sessionService).revoke(LogoutRequest.builder().sessionId(Mockito.anyString()).build());
+                .when(sessionService).logout(LogoutRequest.builder().sessionId(Mockito.anyString()).build());
 
         mvc.perform(delete("/sessions/not-found"))
                 .andExpect(status().isNotFound())

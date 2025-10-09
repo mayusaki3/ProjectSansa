@@ -1,6 +1,9 @@
 package com.sansa.auth.service;
 
+import com.sansa.auth.dto.auth.PreRegisterRequest;
 import com.sansa.auth.dto.auth.PreRegisterResponse;
+import com.sansa.auth.dto.auth.VerifyEmailRequest;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +38,7 @@ class RegistrationServiceTest {
         .email("valid@example.com")
         .code("123456")
         .build();
-    var res = authService.verifyEmail(req);
+    var res = authService.verifyEmail(vreq);
     assertThat(res.getPreRegId()).isNotBlank();
     assertThat(res.getExpiresIn()).isPositive();
   }
@@ -46,6 +49,6 @@ class RegistrationServiceTest {
         .email("valid@example.com")
         .code("000000")
         .build();
-    assertThrows(IllegalArgumentException.class, () -> authService.verifyEmail(req));
+    assertThrows(IllegalArgumentException.class, () -> authService.verifyEmail(vreq));
   }
 }
