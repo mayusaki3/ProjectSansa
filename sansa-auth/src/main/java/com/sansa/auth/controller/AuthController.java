@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
  * 成功/失敗時の Content-Language と error(problem+json) は Advice/Filter 側で処理する想定。
  */
 @RestController
-@RequestMapping
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Validated
 public class AuthController {

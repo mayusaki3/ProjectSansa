@@ -1,10 +1,16 @@
 package com.sansa.auth.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sansa.auth.AuthApplication;
 import com.sansa.auth.dto.auth.PreRegisterRequest;
 import com.sansa.auth.dto.login.LoginRequest;
 import com.sansa.auth.dto.sessions.LogoutRequest;
+import com.sansa.auth.service.AuthService;
+import com.sansa.auth.service.SessionService;
+import com.sansa.auth.service.WebAuthnService;
+import com.sansa.auth.service.TokenService;
+import com.sansa.auth.controller.WebAuthnController;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -41,7 +47,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = {
         AuthController.class,
-        SessionController.class,
         WebAuthnController.class,
         ApiExceptionHandler.class
 })

@@ -1,0 +1,28 @@
+-------------------------------------------------------------------------------
+Test set: com.sansa.auth.service.RegistrationServiceTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 1, Errors: 1, Skipped: 0, Time elapsed: 0.166 s <<< FAILURE! -- in com.sansa.auth.service.RegistrationServiceTest
+com.sansa.auth.service.RegistrationServiceTest.verifyEmail_ok_returns_preRegId -- Time elapsed: 0.112 s <<< ERROR!
+com.sansa.auth.service.error.InvalidCodeException: https://errors.sansa.dev/auth/invalid-code
+	at com.sansa.auth.service.AuthService.verifyEmail(AuthService.java:42)
+	at com.sansa.auth.service.RegistrationServiceTest.verifyEmail_ok_returns_preRegId(RegistrationServiceTest.java:41)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.sansa.auth.service.RegistrationServiceTest.verifyEmail_expired -- Time elapsed: 0.003 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.IllegalArgumentException> but was: <com.sansa.auth.service.error.InvalidCodeException>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.sansa.auth.service.RegistrationServiceTest.verifyEmail_expired(RegistrationServiceTest.java:52)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: com.sansa.auth.service.error.InvalidCodeException: https://errors.sansa.dev/auth/invalid-code
+	at com.sansa.auth.service.AuthService.verifyEmail(AuthService.java:42)
+	at com.sansa.auth.service.RegistrationServiceTest.lambda$verifyEmail_expired$0(RegistrationServiceTest.java:52)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
+
