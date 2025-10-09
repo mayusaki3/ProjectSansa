@@ -1,4 +1,5 @@
 [目次](../../../目次.md) > API仕様 > Webサービス> [認証・セッション 目次](目次.md) >  WebAuthn（パスキー）
+
 # WebAuthn（パスキー）
 
 **/webauthn** 配下に、登録（enroll）と認証（assertion）を分離して定義する。  
@@ -14,7 +15,6 @@
 | 4 | 認証アサーション検証 | `POST /webauthn/assertion` |
 | 5 | 登録済みクレデンシャル一覧 | `GET /webauthn/credentials` |
 | 6 | クレデンシャル失効 | `DELETE /webauthn/credentials/{credentialId}` |
-||||
 
 ## リクエスト/レスポンス DTO（ドキュメント定義）
 
@@ -28,7 +28,6 @@
 | user | string | RP user.id（内部IDをエンコード） |
 | pubKeyCredParams | object[] | `[{type:"public-key", alg:-7}, ...]` |
 | attestation | string | 既定 `"none"` |
-||||
 
 **`POST /webauthn/register/verify` → WebAuthnRegisterVerifyResponse**
 | フィールド | 型 | 説明 |
@@ -38,7 +37,6 @@
 | aaguid | string | 任意 |
 | transports | string[] | 任意 |
 | signCount | number | 任意 |
-||||
 
 **検証入力**
 - `clientDataJSON`, `attestationObject`（必須）
