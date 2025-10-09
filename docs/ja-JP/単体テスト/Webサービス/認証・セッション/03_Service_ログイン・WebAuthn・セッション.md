@@ -51,5 +51,25 @@
 ### UT-03-010: セッション個別失効（未存在） -> 404
 - Then: 404、`type=.../session_not_found`
 
+## D) トークンリフレッシュ
+
+### UT-03-011: refresh 成功（200）
+- Given: 有効な RT
+- When: `POST /auth/token/refresh` `{ refreshToken }`
+- Then:
+  - 200、`tokens.accessToken`/`tokens.refreshToken` を返す
+  - `tv` は現行値（増えない）
+  - 旧RTは**使用不可**（後続で使うと 401 `/token/reused` を返す）
+
+### UT-03-012: refresh 期限切れ → 401 `/token/expired`
+- Given: 期限切れ RT
+- Then: 401、`type="https://errors.sansa.dev/token/expired"`
+
+### UT-03-013: refresh 再利用検知 → 401 `/token/reused` + tv++
+- Given: 既に失効済みRTを再提出
+- Then:
+  - 401、`type="https://errors.sansa.dev/token/reused"`
+  - サーバ側の `token_version` が **+1** される（後続の旧AT/RTは 401）
+
 ---
 [目次](../../../目次.md) > 単体テスト > Webサービス > [認証・セッション 単体テスト 目次](目次.md) > 03. Service ログイン・WebAuthn・セッション

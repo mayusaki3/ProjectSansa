@@ -1,142 +1,168 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                      https://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+<!-- sansa-auth / pom.xml -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <!-- Spring Boot 親で依存バージョンを一元管理 -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.3</version>
+    <relativePath/>
+  </parent>
 
   <groupId>com.sansa</groupId>
   <artifactId>sansa-auth</artifactId>
   <version>0.1.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
   <name>sansa-auth</name>
-  <description>Project Sansa - Auth service</description>
-
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.2</version>
-    <relativePath/>
-  </parent>
+  <description>Sansa Auth: Registration / Login / MFA / WebAuthn / Sessions</description>
+  <packaging>jar</packaging>
 
   <properties>
     <java.version>21</java.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- Boot親が管理しないもの -->
+    <jjwt.version>0.12.5</jjwt.version>
+    <datastax.driver.version>4.17.0</datastax.driver.version>
+    <lombok.version>1.18.32</lombok.version>
   </properties>
 
   <dependencies>
+    <!-- Web / JSON / Validation -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-configuration-processor</artifactId>
-      <optional>true</optional>
-    </dependency>
-
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
+    <!-- 署名・暗号 -->
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-core</artifactId>
-      <version>4.17.0</version>
-    </dependency>
-
+    <!-- JWT -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
-      <version>0.12.5</version>
+      <version>${jjwt.version}</version>
     </dependency>
-
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
-      <version>0.12.5</version>
+      <version>${jjwt.version}</version>
       <scope>runtime</scope>
     </dependency>
-
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-jackson</artifactId>
-      <version>0.12.5</version>
+      <version>${jjwt.version}</version>
       <scope>runtime</scope>
+    </dependency>
+
+    <!-- Cassandra ドライバ（本体では optional; IT時にプロファイルで test 依存を追加） -->
+    <dependency>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-core</artifactId>
+      <version>${datastax.driver.version}</version>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Lombok -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- 単体テスト基盤 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-      </plugin>
-
+      <!-- Java 21 / Lombok AP -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
         <configuration>
           <release>${maven.compiler.release}</release>
           <encoding>${project.build.sourceEncoding}</encoding>
+          <parameters>true</parameters>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
 
+      <!-- Boot repackage -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>com.sansa.auth.Application</mainClass>
+        </configuration>
+      </plugin>
+
+      <!-- 単体テスト（*Test.java） -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
-          <includes><include>**/*Test.java</include></includes>
-          <excludes><exclude>**/*IT.java</exclude></excludes>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
 
+      <!-- 結合テスト（*IT.java） -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.2.5</version>
         <executions>
           <execution>
-            <id>integration-tests</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
-            <configuration>
-              <includes><include>**/*IT.java</include></includes>
-            </configuration>
           </execution>
         </executions>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+        </configuration>
       </plugin>
     </plugins>
   </build>
 
+  <!-- プロファイル -->
   <profiles>
     <profile>
       <id>inmem</id>
-      <activation><activeByDefault>true</activeByDefault></activation>
       <properties>
         <spring-boot.run.profiles>inmem</spring-boot.run.profiles>
       </properties>
@@ -144,9 +170,102 @@
 
     <profile>
       <id>it</id>
+      <activation>
+        <property>
+          <name>env.IT</name>
+          <value>true</value>
+        </property>
+      </activation>
       <properties>
-        <spring.profiles.active>cassandra</spring.profiles.active>
+        <spring-boot.run.profiles>it</spring-boot.run.profiles>
       </properties>
+    </profile>
+
+    <!-- ★ Cassandra IT 用：必要な時だけ有効化 -->
+    <profile>
+      <id>it-cassandra</id>
+      <build>
+        <plugins>
+          <!-- 旧Cassandra IT を専用テストソースとして取り込む -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.5.0</version>
+            <executions>
+              <execution>
+                <id>add-test-source-cassandra</id>
+                <phase>generate-test-sources</phase>
+                <goals><goal>add-test-source</goal></goals>
+                <configuration>
+                  <sources>
+                    <!-- Cassandra 用の IT テストをこの下に配置 -->
+                    <source>src/testCassandra/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add-test-resource-cassandra</id>
+                <phase>generate-test-resources</phase>
+                <goals><goal>add-test-resource</goal></goals>
+                <configuration>
+                  <resources>
+                    <resource>
+                      <directory>src/testCassandra/resources</directory>
+                      <filtering>false</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Failsafe: ITをこのプロファイルでも実行（既定includesを継承） -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>3.2.5</version>
+            <configuration>
+              <!-- 任意: Testcontainers の並列性などを調整 -->
+              <reuseForks>true</reuseForks>
+              <systemPropertyVariables>
+                <!-- 必要に応じて上書き（例：Keyspace名など） -->
+                <cassandra.keyspace>auth_it</cassandra.keyspace>
+                <cassandra.localdc>datacenter1</cassandra.localdc>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+
+      <!-- プロファイル有効時のみ追加するテスト依存 -->
+      <dependencies>
+        <!-- Testcontainers（Spring Boot親のBOM管理下） -->
+        <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>junit-jupiter</artifactId>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>cassandra</artifactId>
+          <scope>test</scope>
+        </dependency>
+
+        <!-- Datastax ドライバ（ITのテストコードが直接使う場合） -->
+        <dependency>
+          <groupId>com.datastax.oss</groupId>
+          <artifactId>java-driver-core</artifactId>
+          <version>${datastax.driver.version}</version>
+          <scope>test</scope>
+        </dependency>
+
+        <!-- （任意）AssertJ 等 -->
+        <dependency>
+          <groupId>org.assertj</groupId>
+          <artifactId>assertj-core</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>

@@ -18,5 +18,16 @@
 - When: `logout_all` 実行（`tv=11` に更新）
 - Then: 旧トークン検証時に **不一致で 401**
 
+### UT-05-005: TokenRefreshResponse の `tv` 整合
+- Given: 現在の `token_version=K`
+- When: 正常に `/auth/token/refresh`
+- Then: レスポンス `tv==K`
+
+### UT-05-006: `/token/reused` 検知後の旧トークン無効化
+- Given: 再利用検知で `tv` が **K→K+1**
+- Then:
+  - 旧AT/旧RT 検証は 401（`/token/invalid` or `/token/reused`）
+  - 新規発行トークンには `tv=K+1` が埋め込まれる
+
 ---
 [目次](../../../目次.md) > 単体テスト > Webサービス > [認証・セッション 単体テスト 目次](目次.md) > 05. Util トークン署名・TTL・検証

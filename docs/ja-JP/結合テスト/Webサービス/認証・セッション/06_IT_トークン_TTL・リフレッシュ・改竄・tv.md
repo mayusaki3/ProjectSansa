@@ -7,14 +7,19 @@
 - Then: 保護APIへ 401（`*token_expired`）
 
 ### IT-06-002: RT でリフレッシュ成功
-- When: `POST /auth/token/refresh`（仕様どおりのパス/ペイロードに合わせる）
-- Then: 200、**新しい AT/RT** が発行
+- When: `POST /auth/token/refresh` `{ refreshToken }`
+- Then:
+  - 200、`tokens.accessToken`/`tokens.refreshToken` を返却（**新RT**）
+  - `tv` は現行値（logout_all 未実行なら増えない）
+  - 旧RT を用いた再リフレッシュ試行は 401 `/token/reused`
 
 ### IT-06-003: RT 改竄
 - Then: 401（署名検証失敗 or 形式不正）
 
 ### IT-06-004: logout_all 後の RT 使用
-- Then: 401（`tv` 不一致）
+- Given: `POST /auth/logout_all` 実行で `tv++`
+- When: `POST /auth/token/refresh`
+- Then: 401、`type="https://errors.sansa.dev/token/reused"`
 
 ### IT-06-005: kid/鍵束切替
 - Given: `kid` ローテーション
