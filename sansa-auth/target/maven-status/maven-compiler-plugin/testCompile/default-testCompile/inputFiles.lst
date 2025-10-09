@@ -1,2 +1,13 @@
-C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\BasicTests.java
-C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\BuildSanityTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\controller\AuthControllerValidationTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\cross\RateLimitI18nHeaderTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\model\PreReg.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\model\Session.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\model\User.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\repo\ContractRepoTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\repo\RepoInterfaces.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\service\LoginWebAuthnSessionServiceTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\service\LogoutServiceTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\service\RegistrationServiceTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\testsupport\ConsoleReportExtension.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\util\MfaUtilTest.java
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\test\java\com\sansa\auth\util\TokenUtilTest.java

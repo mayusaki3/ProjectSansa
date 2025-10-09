@@ -1,6 +1,5 @@
 com\sansa\auth\dto\mfa\MfaRecoveryVerifyRequest.class
 com\sansa\auth\service\store\InmemStore$IssuedTokens.class
-com\sansa\auth\repo\cassandra\CassandraProps.class
 com\sansa\auth\dto\login\LoginResponse$LoginResponseBuilder.class
 com\sansa\auth\model\prereg\EmailVerificationCode.class
 com\sansa\auth\dto\common\ProblemDetail$ProblemDetailBuilder.class
@@ -28,7 +27,6 @@ com\sansa\auth\dto\login\LoginTokens$LoginTokensBuilder.class
 com\sansa\auth\service\store\InmemStore$WAOptions.class
 com\sansa\auth\dto\sessions\LogoutRequest.class
 com\sansa\auth\dto\auth\PreRegisterRequest$PreRegisterRequestBuilder.class
-com\sansa\auth\repo\cassandra\CassandraConfig.class
 com\sansa\auth\service\error\InvalidCodeException.class
 com\sansa\auth\dto\sessions\SessionInfo$UserSummary$UserSummaryBuilder.class
 com\sansa\auth\service\error\AuthExceptions$UnauthorizedException.class
@@ -128,6 +126,7 @@ com\sansa\auth\dto\login\LoginResponse.class
 com\sansa\auth\dto\mfa\MfaEmailSendRequest.class
 com\sansa\auth\model\mfa\MfaEnrollment$MfaEnrollmentBuilder.class
 com\sansa\auth\model\session\Session.class
+com\sansa\auth\annotations\VisibleForTesting.class
 com\sansa\auth\dto\webauthn\WebAuthnRegisterOptionsResponse$PubKeyCredParam$PubKeyCredParamBuilder.class
 com\sansa\auth\model\mfa\EmailOtp.class
 com\sansa\auth\service\store\InmemStore$User.class

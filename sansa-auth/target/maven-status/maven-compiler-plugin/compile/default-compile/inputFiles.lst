@@ -1,3 +1,4 @@
+C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\annotations\VisibleForTesting.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\AuthApplication.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\config\JwtConfig.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\config\JwtProviderConfig.java
@@ -48,8 +49,6 @@ C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\m
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\model\user\User.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\model\user\UserProfile.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\model\webauthn\WebAuthnCredential.java
-C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\repo\cassandra\CassandraConfig.java
-C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\repo\cassandra\CassandraProps.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\AuthService.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\error\AuthExceptions.java
 C:\WORKPLACE\Makes\GitHub\ProjectSansa\sansa-auth\src\main\java\com\sansa\auth\service\error\InvalidCodeException.java
