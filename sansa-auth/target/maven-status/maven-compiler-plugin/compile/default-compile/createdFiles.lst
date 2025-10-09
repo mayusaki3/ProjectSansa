@@ -12,6 +12,7 @@ com\sansa\auth\dto\sessions\SessionInfo.class
 com\sansa\auth\dto\mfa\MfaEmailVerifyRequest.class
 com\sansa\auth\dto\login\LoginTokens.class
 com\sansa\auth\dto\login\LoginResponse$MfaInfo$MfaInfoBuilder.class
+com\sansa\auth\controller\ApiExceptionHandler$RateLimitException.class
 com\sansa\auth\service\store\InmemStore$Challenge.class
 com\sansa\auth\service\store\InmemStore$Context.class
 com\sansa\auth\model\prereg\EmailVerificationCode$EmailVerificationCodeBuilder.class
@@ -27,6 +28,7 @@ com\sansa\auth\dto\login\LoginTokens$LoginTokensBuilder.class
 com\sansa\auth\service\store\InmemStore$WAOptions.class
 com\sansa\auth\dto\sessions\LogoutRequest.class
 com\sansa\auth\dto\auth\PreRegisterRequest$PreRegisterRequestBuilder.class
+com\sansa\auth\controller\ApiExceptionHandler$NotFoundException.class
 com\sansa\auth\service\error\InvalidCodeException.class
 com\sansa\auth\dto\sessions\SessionInfo$UserSummary$UserSummaryBuilder.class
 com\sansa\auth\service\error\AuthExceptions$UnauthorizedException.class
@@ -35,6 +37,7 @@ com\sansa\auth\service\TokenService$1.class
 com\sansa\auth\dto\auth\VerifyEmailResponse.class
 com\sansa\auth\model\webauthn\WebAuthnCredential.class
 com\sansa\auth\service\error\AuthExceptions$NotFoundException.class
+com\sansa\auth\controller\ApiExceptionHandler$InvalidCredentialsException.class
 com\sansa\auth\dto\auth\VerifyEmailRequest$VerifyEmailRequestBuilder.class
 com\sansa\auth\dto\mfa\MfaEmailVerifyRequest$MfaEmailVerifyRequestBuilder.class
 com\sansa\auth\service\TokenService.class
