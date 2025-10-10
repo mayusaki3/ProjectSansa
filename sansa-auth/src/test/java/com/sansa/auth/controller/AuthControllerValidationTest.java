@@ -3,16 +3,21 @@ package com.sansa.auth.controller;
 import com.sansa.auth.dto.login.LoginRequest;
 import com.sansa.auth.dto.auth.PreRegisterRequest;
 import com.sansa.auth.dto.common.ProblemDetail;
+import com.sansa.auth.dto.sessions.LogoutResponse;
 import com.sansa.auth.service.AuthService;
 import com.sansa.auth.service.SessionService;
 import com.sansa.auth.service.TokenService;
 import com.sansa.auth.service.WebAuthnService;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,6 +25,7 @@ import jakarta.annotation.Resource;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -31,8 +37,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class) // 例外→ProblemDetail(JSON) を返すため
 class AuthControllerValidationTest {
 
-    private static final String API = "/api";
-
     @Resource
     MockMvc mvc;
 
@@ -42,11 +46,19 @@ class AuthControllerValidationTest {
     @MockBean WebAuthnService webAuthnService;
     @MockBean TokenService tokenService;
 
+    // セットアップ
+    @BeforeEach
+    void setUpSessionServiceMock() {
+        // 存在しないID → 404にマッピングされる業務例外を投げる
+        when(sessionService.revokeById(eq("not_found")))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "session not found"));
+    }
+
     // ========== pre-register ==========
     @Test
     @DisplayName("UT-01-001: pre-register の email ブランク -> 400")
     void preRegister_email_blank_400() throws Exception {
-        mvc.perform(post(API + "/auth/pre-register")
+        mvc.perform(post("/auth/pre-register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -60,7 +72,7 @@ class AuthControllerValidationTest {
     @Test
     @DisplayName("UT-01-002: pre-register の language フォーマット不正 -> 400")
     void preRegister_language_invalid_400() throws Exception {
-        mvc.perform(post(API + "/auth/pre-register")
+        mvc.perform(post("/auth/pre-register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -77,7 +89,7 @@ class AuthControllerValidationTest {
         Mockito.doThrow(new RuntimeException("rate-limit"))
                .when(authService).preRegister(any(PreRegisterRequest.class));
 
-        mvc.perform(post(API + "/auth/pre-register")
+        mvc.perform(post("/auth/pre-register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -89,7 +101,7 @@ class AuthControllerValidationTest {
     @Test
     @DisplayName("UT-02-001: login の identifier 欠落 -> 400")
     void login_identifier_missing_400() throws Exception {
-        mvc.perform(post(API + "/auth/login")
+        mvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -104,7 +116,7 @@ class AuthControllerValidationTest {
         Mockito.doThrow(new RuntimeException("invalid-credentials"))
                .when(authService).login(any(LoginRequest.class));
 
-        mvc.perform(post(API + "/auth/login")
+        mvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -116,7 +128,7 @@ class AuthControllerValidationTest {
     @Test
     @DisplayName("UT-03-001: WebAuthn assertion の result 欠落 -> 400")
     void webauthn_assertion_missing_400() throws Exception {
-        mvc.perform(post(API + "/webauthn/assertion/result")
+        mvc.perform(post("/webauthn/assertion/result")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -130,7 +142,7 @@ class AuthControllerValidationTest {
     void session_delete_not_found_404() throws Exception {
         Mockito.when(sessionService.revokeById(eq("not-found"))).thenReturn(false);
 
-        mvc.perform(delete(API + "/sessions/not-found")
+        mvc.perform(delete("/sessions/not-found")
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja"))
             .andExpect(status().isNotFound())
@@ -142,7 +154,7 @@ class AuthControllerValidationTest {
     @Test
     @DisplayName("UT-05-001: エラーレスポンスは Content-Language を反映")
     void i18n_header_reflect() throws Exception {
-        mvc.perform(post(API + "/auth/pre-register")
+        mvc.perform(post("/auth/pre-register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")

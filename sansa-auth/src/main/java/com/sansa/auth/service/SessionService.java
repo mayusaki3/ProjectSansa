@@ -81,7 +81,7 @@ public class SessionService {
      * TEST-ONLY: リフレッシュトークンでのセッション無効化
      */
     @VisibleForTesting
-    boolean revokeById(String sessionId) {
+    public boolean revokeById(String sessionId) {
         // 既存ロジックを使って判定可能ならそれを利用
         // 例：例外設計に依存します。ここでは一例：
         try {
