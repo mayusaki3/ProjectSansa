@@ -1,4 +1,4 @@
-package com.sansa.auth.service.util;
+package com.sansa.auth.util;
 
 public final class Idx {
   public static String normEmail(String email) {

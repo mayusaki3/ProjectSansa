@@ -5,11 +5,11 @@ import com.sansa.auth.dto.login.LoginRequest;
 import com.sansa.auth.dto.login.LoginResponse;
 import com.sansa.auth.dto.login.LoginTokens;
 import com.sansa.auth.dto.sessions.SessionInfo;
-import com.sansa.auth.service.store.InmemStore;
-import com.sansa.auth.service.util.Idx;
-import com.sansa.auth.service.util.Timestamps;
-import com.sansa.auth.service.error.AuthExceptions.*;
-import com.sansa.auth.service.error.InvalidCodeException;
+import com.sansa.auth.exception.AuthExceptions.*;
+import com.sansa.auth.exception.InvalidCodeException;
+import com.sansa.auth.store.InmemStore;
+import com.sansa.auth.util.Idx;
+import com.sansa.auth.util.Timestamps;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

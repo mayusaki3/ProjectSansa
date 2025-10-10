@@ -1,4 +1,4 @@
-package com.sansa.auth.service.error;
+package com.sansa.auth.exception;
 
 /** メール/OTP/TOTP などの検証コード不正時に投げる実行時例外 */
 public class InvalidCodeException extends RuntimeException {

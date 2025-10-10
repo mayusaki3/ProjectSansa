@@ -1,7 +1,7 @@
-package com.sansa.auth.service.util;
+package com.sansa.auth.util;
 
 import com.sansa.auth.dto.sessions.SessionInfo;
-import com.sansa.auth.service.store.InmemStore;
+import com.sansa.auth.store.InmemStore;
 
 import java.time.format.DateTimeFormatter;
 

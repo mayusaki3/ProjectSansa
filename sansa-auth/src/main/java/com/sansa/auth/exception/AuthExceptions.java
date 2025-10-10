@@ -1,4 +1,4 @@
-package com.sansa.auth.service.error;
+package com.sansa.auth.exception;
 
 public final class AuthExceptions {
   public static class UnauthorizedException extends RuntimeException {

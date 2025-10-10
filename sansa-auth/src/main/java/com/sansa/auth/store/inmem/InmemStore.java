@@ -1,4 +1,4 @@
-package com.sansa.auth.service.store;
+package com.sansa.auth.store;
 
 import com.sansa.auth.dto.webauthn.WebAuthnCredentialSummary;
 

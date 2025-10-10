@@ -3,8 +3,9 @@ package com.sansa.auth.service;
 import com.sansa.auth.dto.login.LoginTokens;
 import com.sansa.auth.dto.login.TokenRefreshRequest;
 import com.sansa.auth.dto.login.TokenRefreshResponse;
-import com.sansa.auth.service.store.InmemStore;
-import com.sansa.auth.service.error.AuthExceptions.*;
+import com.sansa.auth.exception.AuthExceptions.*;
+import com.sansa.auth.store.InmemStore;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
