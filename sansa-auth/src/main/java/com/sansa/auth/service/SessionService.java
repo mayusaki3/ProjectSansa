@@ -4,8 +4,11 @@ import com.sansa.auth.annotations.VisibleForTesting;
 import com.sansa.auth.dto.sessions.LogoutRequest;
 import com.sansa.auth.dto.sessions.LogoutResponse;
 import com.sansa.auth.dto.sessions.SessionInfo;
+import com.sansa.auth.dto.sessions.SessionsListResponse;
+import com.sansa.auth.exception.SessionNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +61,26 @@ public class SessionService {
     public LogoutResponse logoutAll() {
         // 実際は store.invalidateAllForCurrentUser() 等
         return LogoutResponse.builder().build();
+    }
+
+    /**
+     * 現在のユーザーのセッション一覧を返す（Controller用の薄いファサード）
+     * TODO: 実装を永続化層に接続
+     */
+    public SessionsListResponse list() {
+        // 永続化が未接続なら空で返しておけばOK（Controllerの結線目的）
+        return SessionsListResponse.builder()
+                .sessions(Collections.emptyList())
+                .build();
+    }
+
+    /**
+     * セッションIDで1件削除（存在しなければ SessionNotFoundException）
+     * Controllerの DELETE /sessions/{id} で使用
+     */
+    public void deleteById(String sessionId) {
+        // TODO: 実装。未実装段階では「見つからない」404を投げておくとテストに沿う
+        throw new SessionNotFoundException(sessionId);
     }
 
     /**

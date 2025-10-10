@@ -1,167 +1,141 @@
 package com.sansa.auth.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolationException;
+import com.sansa.auth.exception.InvalidCredentialsException;
+import com.sansa.auth.exception.RateLimitException;
+import com.sansa.auth.exception.SessionNotFoundException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.servlet.ServletException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
-import java.time.Duration;
 import java.util.*;
 
 /**
- * application/problem+json を返す ControllerAdvice
- * 400: invalid-argument (+ errors[])
- * 401: auth/invalid-credentials
- * 404: not-found（呼び出し側で type 指定可）
- * 429: rate-limit（Retry-After 付与）
+ * API 共通の例外ハンドラ
+ * - application/problem+json
+ * - Content-Language を常に付与
+ * - type=urn:problem:<code>
  */
-@ControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice(basePackages = "com.sansa.auth")
 public class ApiExceptionHandler {
 
-    // 401: 認証失敗（Securityへ依存しない独自例外）
-    public static class InvalidCredentialsException extends RuntimeException {
-        public InvalidCredentialsException(String msg) { super(msg); }
+    // 共通の ProblemDetail レスポンス生成
+    private static ResponseEntity<ProblemDetail> problem(
+            HttpStatus status, String title, String detail, String code, Locale locale, Map<String, Object> extras) {
+
+        ProblemDetail pd = ProblemDetail.forStatus(status);
+        if (title != null) pd.setTitle(title);
+        if (detail != null) pd.setDetail(detail);
+        if (code != null) {
+            pd.setType(URI.create("urn:problem:" + code));
+            pd.setProperty("code", code);
+        }
+        if (extras != null) {
+            extras.forEach(pd::setProperty);
+        }
+        String lang = (locale != null) ? locale.toLanguageTag() : Locale.getDefault().toLanguageTag();
+
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+                .header(HttpHeaders.CONTENT_LANGUAGE, lang)
+                .body(pd);
     }
 
-    // 404: 未検出（type を上書き可能）
-    public static class NotFoundException extends RuntimeException {
-        private final String type;
-        public NotFoundException(String type, String msg) { super(msg); this.type = type; }
-        public String getType() { return type; }
+    // ServletException 経由で包まれて来るケースを解凍して振り分ける
+    @ExceptionHandler(ServletException.class)
+    public ResponseEntity<ProblemDetail> handleServlet(ServletException ex, Locale locale) {
+        Throwable root = ex.getCause();
+        if (root instanceof SessionNotFoundException snf) {
+            return handleSessionNotFound(snf, locale);
+        }
+        if (root instanceof InvalidCredentialsException ice) {
+            return handleInvalidCredentials(ice, locale); // 既存の 401 ハンドラを呼ぶ（下にあるはず）
+        }
+        if (root instanceof RateLimitException rle) {
+            return handleRateLimit(rle, locale); // 既存の 429 ハンドラ
+        }
+        // それ以外はフォールバック 500
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "internal-error", "unexpected error", "internal-error", locale, null);
     }
 
-    // 429: レート制限
-    public static class RateLimitException extends RuntimeException {
-        private final Duration retryAfter;
-        public RateLimitException(Duration retryAfter, String msg) { super(msg); this.retryAfter = retryAfter; }
-        public Duration getRetryAfter() { return retryAfter; }
-    }
-
-    // ---- 400: @Valid でのバリデーション失敗 ----
+    // ===== 400: @Valid のボディ検証失敗（field errors を errors[] に格納） =====
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex,
-            HttpServletRequest request,
-            Locale locale
-    ) {
-        ProblemDetail body = base(HttpStatus.BAD_REQUEST,
-                "Invalid argument",
-                "invalid-argument",
-                null,
-                request.getRequestURI());
-
-        // errors[] = [{field, code, message}]
+    public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, Locale locale) {
         List<Map<String, Object>> errors = new ArrayList<>();
-        for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("field", fe.getField());
-            item.put("code", fe.getCode());
-            item.put("message", fe.getDefaultMessage());
-            errors.add(item);
+        ex.getBindingResult().getFieldErrors().forEach(fe -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("field", fe.getField());
+            m.put("message", fe.getDefaultMessage());
+            errors.add(m);
+        });
+        Map<String, Object> extras = Map.of("errors", errors);
+        return problem(HttpStatus.BAD_REQUEST, "invalid-argument", "validation failed", "invalid-argument", locale, extras);
+    }
+
+    // ===== 400: クエリ/パス等の制約違反 =====
+    @ExceptionHandler({ConstraintViolationException.class})
+    public ResponseEntity<ProblemDetail> handleConstraintViolation(ConstraintViolationException ex, Locale locale) {
+        List<Map<String, Object>> errors = new ArrayList<>();
+        for (ConstraintViolation<?> v : ex.getConstraintViolations()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            // propertyPath: e.g. "preRegister.req.email"
+            m.put("field", v.getPropertyPath() != null ? v.getPropertyPath().toString() : null);
+            m.put("message", v.getMessage());
+            errors.add(m);
         }
-        if (!errors.isEmpty()) body.setProperty("errors", errors);
-
-        return withHeaders(body, locale);
+        Map<String, Object> extras = Map.of("errors", errors);
+        return problem(HttpStatus.BAD_REQUEST, "invalid-argument", "validation failed", "invalid-argument", locale, extras);
     }
 
-    // ---- 400: ConstraintViolation 等 ----
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ProblemDetail> handleConstraintViolation(
-            ConstraintViolationException ex,
-            HttpServletRequest request,
-            Locale locale
-    ) {
-        ProblemDetail body = base(HttpStatus.BAD_REQUEST,
-                "Invalid argument",
-                "invalid-argument",
-                ex.getMessage(),
-                request.getRequestURI());
-        return withHeaders(body, locale);
+    // ===== 400: その他のバインドエラー（@ModelAttribute 等） =====
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ProblemDetail> handleBindException(BindException ex, Locale locale) {
+        List<Map<String, Object>> errors = new ArrayList<>();
+        ex.getBindingResult().getFieldErrors().forEach(fe -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("field", fe.getField());
+            m.put("message", fe.getDefaultMessage());
+            errors.add(m);
+        });
+        Map<String, Object> extras = Map.of("errors", errors);
+        return problem(HttpStatus.BAD_REQUEST, "invalid-argument", "validation failed", "invalid-argument", locale, extras);
     }
 
-    // ---- 401: 認証失敗 ----
+    // ===== 401: ログイン失敗 =====
     @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidCredentials(
-            InvalidCredentialsException ex,
-            HttpServletRequest request,
-            Locale locale
-    ) {
-        ProblemDetail body = base(HttpStatus.UNAUTHORIZED,
-                "Invalid credentials",
-                "auth/invalid-credentials",
-                ex.getMessage(),
-                request.getRequestURI());
-        return withHeaders(body, locale);
+    public ResponseEntity<ProblemDetail> handleInvalidCredentials(InvalidCredentialsException ex, Locale locale) {
+        return problem(HttpStatus.UNAUTHORIZED, "invalid-credentials", ex.getMessage(), "invalid-credentials", locale, null);
     }
 
-    // ---- 404: 未検出 ----
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleNotFound(
-            NotFoundException ex,
-            HttpServletRequest request,
-            Locale locale
-    ) {
-        String type = (ex.getType() != null ? ex.getType() : "not-found");
-        ProblemDetail body = base(HttpStatus.NOT_FOUND,
-                "Not found",
-                type,
-                ex.getMessage(),
-                request.getRequestURI());
-        return withHeaders(body, locale);
+    // ===== 404: セッション未検出 =====
+    @ExceptionHandler(SessionNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleSessionNotFound(SessionNotFoundException ex, Locale locale) {
+        return problem(HttpStatus.NOT_FOUND, "session-not-found", ex.getMessage(), "session-not-found", locale, null);
     }
 
-    // ---- 429: レート制限 ----
+    // ===== 429: レート制限 =====
     @ExceptionHandler(RateLimitException.class)
-    public ResponseEntity<ProblemDetail> handleRateLimit(
-            RateLimitException ex,
-            HttpServletRequest request,
-            Locale locale
-    ) {
-        ProblemDetail body = base(HttpStatus.TOO_MANY_REQUESTS,
-                "Too Many Requests",
-                "rate-limit",
-                ex.getMessage(),
-                request.getRequestURI());
-
-        HttpHeaders headers = defaultHeaders(locale);
-        if (ex.getRetryAfter() != null && !ex.getRetryAfter().isNegative()) {
-            headers.set("Retry-After", String.valueOf(ex.getRetryAfter().toSeconds()));
-        }
-        return new ResponseEntity<>(body, headers, HttpStatus.TOO_MANY_REQUESTS);
+    public ResponseEntity<ProblemDetail> handleRateLimit(RateLimitException ex, Locale locale) {
+        return problem(HttpStatus.TOO_MANY_REQUESTS, "rate-limit", ex.getMessage(), "rate-limit", locale, null);
     }
 
-    // ========= helper =========
-
-    private static ProblemDetail base(HttpStatus status, String title, String type, String detail, String instancePath) {
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, detail);
-        pd.setTitle(title);
-        pd.setType(URI.create(type));             // $.type
-        pd.setInstance(URI.create(instancePath)); // $.instance
-        pd.setProperty("status", status.value()); // $.status を明示で持たせる（テスト整合用）
-        return pd;
-    }
-
-    private static ResponseEntity<ProblemDetail> withHeaders(ProblemDetail body, Locale locale) {
-        return new ResponseEntity<>(body, defaultHeaders(locale), HttpStatus.valueOf(body.getStatus()));
-    }
-
-    private static HttpHeaders defaultHeaders(Locale locale) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, "application/problem+json");
-        headers.set(HttpHeaders.CONTENT_LANGUAGE, toLangTag(locale));
-        return headers;
-    }
-
-    private static String toLangTag(Locale locale) {
-        if (locale == null) return "en";
-        if ("ja".equalsIgnoreCase(locale.getLanguage())) return "ja"; // テスト期待: startsWith("ja")
-        return locale.toLanguageTag();
+    // ===== フォールバック（予期しない例外） =====
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ProblemDetail> handleAny(Exception ex, Locale locale) {
+        // ここはログ出力などお好みで
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "internal-error", "unexpected error", "internal-error", locale, null);
     }
 }

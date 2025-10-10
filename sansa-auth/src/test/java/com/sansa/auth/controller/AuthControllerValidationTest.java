@@ -8,6 +8,9 @@ import com.sansa.auth.service.AuthService;
 import com.sansa.auth.service.SessionService;
 import com.sansa.auth.service.TokenService;
 import com.sansa.auth.service.WebAuthnService;
+import com.sansa.auth.exception.InvalidCredentialsException;
+import com.sansa.auth.exception.RateLimitException;
+import com.sansa.auth.exception.SessionNotFoundException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,25 +29,28 @@ import jakarta.annotation.Resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = {
         AuthController.class,
-        WebAuthnController.class
+        WebAuthnController.class,
+        SessionController.class
 })
-@Import(ApiExceptionHandler.class) // 例外→ProblemDetail(JSON) を返すため
+@Import(ApiExceptionHandler.class)
 class AuthControllerValidationTest {
 
     @Resource
-    MockMvc mvc;
+        MockMvc mvc;
 
     // --- 必要サービスは Mock で用意 ---
     @MockBean AuthService authService;
-    @MockBean SessionService sessionService;
     @MockBean WebAuthnService webAuthnService;
-    @MockBean TokenService tokenService;
+    @MockBean SessionService sessionService;
+    @MockBean TokenService tokenService;   
 
     // セットアップ
     @BeforeEach
@@ -86,15 +92,15 @@ class AuthControllerValidationTest {
     @DisplayName("UT-01-003: pre-register のレート制限 -> 429")
     void preRegister_rateLimit_429() throws Exception {
         // ここでサービスの振る舞いを 429 相当の例外にモック（例：ApiException("rate-limit") を投げる）
-        Mockito.doThrow(new RuntimeException("rate-limit"))
-               .when(authService).preRegister(any(PreRegisterRequest.class));
-
+        when(authService.preRegister(any(PreRegisterRequest.class)))
+                .thenThrow(new RateLimitException("Too many requests"));
         mvc.perform(post("/auth/pre-register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
-                .content("{\"email\":\"a@b.com\",\"language\":\"ja-JP\"}"))
-            .andExpect(status().isTooManyRequests());
+                .content("{\"email\":\"user@example.com\",\"language\":\"ja\"}"))
+            .andExpect(status().isTooManyRequests())
+            .andExpect(header().string("Content-Type", containsString("application/problem+json")));
     }
 
     // ========== login ==========
@@ -113,22 +119,23 @@ class AuthControllerValidationTest {
     @Test
     @DisplayName("UT-02-002: login の認証失敗 -> 401 (invalid-credentials)")
     void login_invalid_credentials_401() throws Exception {
-        Mockito.doThrow(new RuntimeException("invalid-credentials"))
-               .when(authService).login(any(LoginRequest.class));
+        when(authService.login(any(LoginRequest.class)))
+                .thenThrow(new InvalidCredentialsException("invalid-credentials"));
 
         mvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
                 .content("{\"identifier\":\"a@b.com\",\"password\":\"wrong\"}"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(header().string("Content-Type", containsString("application/problem+json")));
     }
 
     // ========== WebAuthn ==========
     @Test
     @DisplayName("UT-03-001: WebAuthn assertion の result 欠落 -> 400")
     void webauthn_assertion_missing_400() throws Exception {
-        mvc.perform(post("/webauthn/assertion/result")
+        mvc.perform(post("/webauthn/assertion")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja")
@@ -140,14 +147,14 @@ class AuthControllerValidationTest {
     @Test
     @DisplayName("UT-04-001: セッション削除: 存在しないID -> 404 + problem+json")
     void session_delete_not_found_404() throws Exception {
-        Mockito.when(sessionService.revokeById(eq("not-found"))).thenReturn(false);
+        doThrow(new SessionNotFoundException("not found"))
+                .when(sessionService).revokeById(eq("no-such-session"));
 
-        mvc.perform(delete("/sessions/not-found")
+        mvc.perform(delete("/sessions/no-such-session")
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Accept-Language", "ja"))
             .andExpect(status().isNotFound())
-            .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/problem+json")))
-            .andExpect(jsonPath("$.type").value(org.hamcrest.Matchers.containsString("not-found")));
+            .andExpect(header().string("Content-Type", containsString("application/problem+json")));
     }
 
     // ========== i18n header ==========

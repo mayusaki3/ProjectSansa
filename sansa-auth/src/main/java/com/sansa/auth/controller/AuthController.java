@@ -27,44 +27,44 @@ public class AuthController {
     private final TokenService tokenService;
 
     // 1) 事前登録
-    @PostMapping("/auth/pre-register")
+    @PostMapping("/pre-register")
     public PreRegisterResponse preRegister(@Valid @RequestBody PreRegisterRequest req) {
         return authService.preRegister(req);
     }
 
     // 2) メール認証
-    @PostMapping("/auth/verify-email")
+    @PostMapping("/verify-email")
     public VerifyEmailResponse verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
         return authService.verifyEmail(req);
     }
 
     // 3) 本登録（201 Created）
-    @PostMapping("/auth/register")
+    @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest req) {
         RegisterResponse res = authService.register(req);
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
     // 4) ログイン（Password 経路）
-    @PostMapping("/auth/login")
+    @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest req) {
         return authService.login(req);
     }
 
     // R1) トークンリフレッシュ（RTローテーション／再利用検知）
-    @PostMapping("/auth/token/refresh")
+    @PostMapping("/token/refresh")
     public TokenRefreshResponse refresh(@Valid @RequestBody TokenRefreshRequest req) {
         return tokenService.refresh(req);
     }
 
     // 6) 現在セッション
-    @GetMapping("/auth/session")
+    @GetMapping("/session")
     public SessionInfo currentSession() {
         return sessionService.currentSession();
     }
 
     // 7) ログアウト（現セッションまたは引数指定）
-    @PostMapping("/auth/logout")
+    @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody(required = false) LogoutRequest req) {
         sessionService.logout(req); // reqがnullなら「現セッションのみ」を想定
         return ResponseEntity.noContent().build(); // 204
