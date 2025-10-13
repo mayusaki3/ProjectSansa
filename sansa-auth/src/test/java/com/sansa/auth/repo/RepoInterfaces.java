@@ -3,67 +3,80 @@ package com.sansa.auth.repo;
 import java.util.List;
 import java.util.Optional;
 
-// ドメインモデル（存在するクラス名に合わせてください）
+// テスト専用の簡易ドメイン（本番とは独立）
 import com.sansa.auth.model.User;
 import com.sansa.auth.model.Session;
 import com.sansa.auth.model.PreReg;
 
 /**
- * 旧テスト資産が参照しているネスト型リポジトリIFの互換シム。
- * 新実装（service/store や cassandra 実装）には影響しない。
+ * 旧テスト資産が参照していた「ネスト型リポジトリIF」の互換シム。
+ *
+ * 目的:
+ *  - 既存テストコードを大きく変更せずに、リポジトリ契約テストを記述できるようにする。
+ *  - 実装は別パッケージ（本番の Store 実装等）で自由に行える。
+ *
+ * 注意:
+ *  - あくまでテスト用のインターフェース定義。永続化の詳細は含めない。
+ *  - 必要最小限のメソッドのみ定義し、デフォルト実装は設けない。
  */
 public final class RepoInterfaces {
 
   private RepoInterfaces() {}
 
-  /** ユーザー系 */
-  public interface IUserRepo {
-    Optional<User> findById(String userId);
-
-    Optional<User> findByEmail(String email);
-
-    Optional<User> findByAccountId(String accountId);
-
-    boolean existsByEmail(String email);
-
-    boolean existsByAccountId(String accountId);
-
+  /** User リポジトリの契約 */
+  public interface UserRepo {
     User save(User user);
-
-    void deleteById(String userId);
+    Optional<User> findById(String accountId);
+    Optional<User> findByEmail(String email);
+    /** ログイン用の外部ID（例: "email","webauthn","github" など）で検索する想定 */
+    Optional<User> findByIdentifier(String idType, String identifierValue);
+    void deleteById(String accountId);
   }
 
-  /** セッション系 */
-  public interface ISessionRepo {
-    Optional<Session> findById(String sessionId);
-
-    List<Session> findByUserId(String userId);
-
+  /** Session リポジトリの契約 */
+  public interface SessionRepo {
     Session save(Session session);
-
+    Optional<Session> findById(String sessionId);
+    List<Session> findByAccountId(String accountId);
     void deleteById(String sessionId);
-
-    void deleteByUserId(String userId);
-
-    /** user の全セッションから exceptSessionId 以外を無効化する等の用途 */
-    default void revokeAllForUserExcept(String userId, String exceptSessionId) {
-      // シムのためデフォルト空実装（実装層が必要なら各実装でoverride）
-    }
+    /** アカウント配下の全セッション失効（ログアウト・オール） */
+    int deleteByAccountId(String accountId);
+    /** TTL 失効掃除（現時点の時刻を渡してガベコレ） */
+    int deleteExpired(long nowEpochMillis);
   }
 
-  /** 事前登録（メール検証）系 */
-  public interface IPreRegRepo {
+  /** PreReg（仮登録）リポジトリの契約 */
+  public interface PreRegRepo {
     PreReg save(PreReg preReg);
-
     Optional<PreReg> findById(String preRegId);
-
     Optional<PreReg> findByEmail(String email);
-
     void deleteById(String preRegId);
+    /** 期限切れ掃除用（テストでは戻り値で削除件数を検証可能） */
+    int deleteExpired(long nowEpochMillis);
+  }
 
-    /** 期限切れ掃除用 */
-    default int deleteExpired(long nowEpochMillis) {
-      return 0; // シムのためデフォルト実装
-    }
+  /**
+   * WebAuthn 認証器の契約（必要最小限）
+   *  - ContractRepoTest の WebAuthn 部分で利用予定
+   */
+  public interface WebAuthnCredentialRepo {
+    /** サマリ保存（本番は CredentialId/PublicKey など詳細を持つ想定） */
+    void save(String accountId, String credentialId, long signCount);
+    /** アカウント配下の認証器一覧 */
+    List<String> listIds(String accountId);
+    /** signCount を更新（monotonic の検証に使用） */
+    void updateSignCount(String accountId, String credentialId, long newSignCount);
+    /** 認証器の削除 */
+    void delete(String accountId, String credentialId);
+  }
+
+  /**
+   * トークンバージョンの契約（logout_all を簡易に実現するためのカウンタ）
+   */
+  public interface TokenVersionRepo {
+    /** 現在値を取得（未作成なら 0 を想定） */
+    int get(String accountId);
+    /** インクリメントして新しい値を返す */
+    int incrementAndGet(String accountId);
   }
 }

@@ -1,111 +1,82 @@
 package com.sansa.auth.service;
 
 import com.sansa.auth.dto.auth.*;
-import com.sansa.auth.dto.login.LoginRequest;
-import com.sansa.auth.dto.login.LoginResponse;
-import com.sansa.auth.dto.login.LoginTokens;
-import com.sansa.auth.dto.sessions.SessionInfo;
-import com.sansa.auth.exception.AuthExceptions.*;
-import com.sansa.auth.exception.InvalidCodeException;
-import com.sansa.auth.store.InmemStore;
-import com.sansa.auth.util.Idx;
-import com.sansa.auth.util.Timestamps;
+import com.sansa.auth.dto.login.*;
+import com.sansa.auth.dto.sessions.*;
+import com.sansa.auth.exception.BadRequestException;
+import com.sansa.auth.exception.NotFoundException;
+import com.sansa.auth.exception.UnauthorizedException;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+/**
+ * 認証系ユースケース（/auth 配下）を扱うサービス。
+ * 参照仕様:
+ * - 01_ユーザー登録.md（/auth/pre-register, /auth/verify-email, /auth/register） :contentReference[oaicite:0]{index=0}
+ * - 02_ログイン.md（/auth/token/refresh） :contentReference[oaicite:1]{index=1}
+ * - 05_セッション管理.md（/auth/session, /auth/logout, /auth/logout_all） :contentReference[oaicite:2]{index=2}
+ */
+public interface AuthService {
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+    // ===== 01_ユーザー登録.md =====
 
-@Service
-@RequiredArgsConstructor
-public class AuthService {
+    /** 事前登録（検証メール用コード発行/送信）。POST /auth/pre-register
+     *  仕様: 01_ユーザー登録.md 「1) POST /auth/pre-register」 :contentReference[oaicite:3]{index=3}
+     *  成功: 200/202 + PreRegisterResponse
+     */
+    PreRegisterResponse preRegister(PreRegisterRequest req)
+            throws BadRequestException;
 
-  private final InmemStore store = InmemStore.get();
+    /** 認証コード確認（preRegId払い出し）。POST /auth/verify-email
+     *  仕様: 01_ユーザー登録.md 「2) POST /auth/verify-email」 :contentReference[oaicite:4]{index=4}
+     *  成功: 200 + VerifyEmailResponse（preRegId, expiresIn）
+     */
+    VerifyEmailResponse verifyEmail(VerifyEmailRequest req)
+            throws BadRequestException, NotFoundException;
 
-  public PreRegisterResponse preRegister(PreRegisterRequest req) {
-    String emailN = Idx.normEmail(req.getEmail());
-    // レート制限やドメインブロックは簡略化（必要なら後続差し替え）
-    String code = store.issueEmailCode(emailN);
-    // 実際はメール送信。ここでは発行のみ。
-    return PreRegisterResponse.builder()
-        .success(true)
-        .throttleMs(0L)
-        .build();
-  }
+    /** 本登録（ユーザー作成）。POST /auth/register
+     *  仕様: 01_ユーザー登録.md 「3) POST /auth/register」 :contentReference[oaicite:5]{index=5}
+     *  成功: 201 + RegisterResponse
+     */
+    RegisterResponse register(RegisterRequest req)
+            throws BadRequestException, NotFoundException;
 
-  public VerifyEmailResponse verifyEmail(VerifyEmailRequest req) {
-    String emailN = Idx.normEmail(req.getEmail());
-    if (!store.verifyEmailCode(emailN, req.getCode())) {
-      throw new InvalidCodeException("https://errors.sansa.dev/auth/invalid-code");
-    }
-    String preRegId = store.createPreReg(emailN, Instant.now().plusSeconds(10 * 60));
-    long ttl = store.getPreRegTtl(preRegId, Instant.now());
-    return VerifyEmailResponse.builder()
-        .preRegId(preRegId)
-        .expiresIn((int) ttl)
-        .build();
-  }
+    // ===== 02_ログイン.md =====
 
-  public RegisterResponse register(RegisterRequest req) {
-    String preRegId = req.getPreRegId();
-    var preReg = store.consumePreReg(preRegId);
-    if (preReg == null) {
-      throw new GoneException("https://errors.sansa.dev/auth/expired");
-    }
-    String userId = store.createUser(preReg.emailNormalized(), req.getAccountId(), req.getPassword());
-    return RegisterResponse.builder()
-        .success(true)
-        .userId(userId)
-        .emailVerified(true)
-        .build();
-  }
+    /** 認証（必要に応じて MFA を要求）。POST /auth/login
+     *  仕様: 02_ログイン.md 「A) POST /auth/login → LoginResponse」
+     *   - 成功: 200 + LoginResponse（authenticated=true, tokens, session, amr, user）
+     *   - MFA要: 200 + LoginResponse（mfaRequired=true, mfa{factors, challengeId}）
+     *   - 失敗: 401 + application/problem+json
+     */
+    LoginResponse login(LoginRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  public LoginResponse login(LoginRequest req) {
-    var user = store.findByIdentifier(Idx.normEmailOrNull(req.getIdentifier()), req.getIdentifier());
-    if (user == null || !store.verifyPassword(user.userId(), req.getPassword())) {
-      throw new UnauthorizedException("https://errors.sansa.dev/login/invalid-credentials");
-    }
+    /** RTでAT/RT再発行（RTローテーション）。POST /auth/token/refresh
+     *  仕様: 02_ログイン.md 「R1」 TokenRefreshRequest/Response, tv を返す :contentReference[oaicite:6]{index=6}
+     *  成功: 200 + TokenRefreshResponse（accessToken, refreshToken, tv）
+     */
+    TokenRefreshResponse refresh(TokenRefreshRequest req)
+            throws BadRequestException, UnauthorizedException;
 
-    // MFA 必須判定
-    boolean mfaEnabled = store.isMfaRequired(user.userId());
-    if (mfaEnabled) {
-      return LoginResponse.builder()
-          .authenticated(false)
-          .mfaRequired(true)
-          .mfa(LoginResponse.MfaInfo.builder()
-              .factors(List.of("totp", "email_otp", "recovery"))
-              .challengeId(store.issueMfaChallenge(user.userId()))
-              .build())
-          .amr(List.of("pwd"))
-          .user(SessionInfo.UserSummary.builder()
-              .userId(user.userId())
-              .email(user.email())
-              .displayName(user.displayName())
-              .build())
-          .build();
-    }
+    // ===== 05_セッション管理.md（/auth 配下の項目のみ） =====
 
-    // セッション作成 & トークン発行
-    var issued = Instant.now();
-    var session = store.createSession(user.userId(), List.of("pwd"), issued, issued.plusSeconds(3600));
-    var tokens = store.issueTokens(user.userId(), session.sessionId());
-    return LoginResponse.builder()
-        .authenticated(true)
-        .mfaRequired(false)
-        .session(Timestamps.toSessionInfo(session, user))
-        .tokens(LoginTokens.builder()
-            .accessToken(tokens.accessToken())
-            .refreshToken(tokens.refreshToken())
-            .build())
-        .amr(session.amr())
-        .user(SessionInfo.UserSummary.builder()
-            .userId(user.userId())
-            .email(user.email())
-            .displayName(user.displayName())
-            .build())
-        .build();
-  }
+    /** 現在セッション情報の取得。GET /auth/session
+     *  仕様: 05_セッション管理.md 「#1 GET /auth/session → SessionInfo」 :contentReference[oaicite:7]{index=7}
+     *  成功: 200 + SessionInfo
+     */
+    SessionInfo getCurrentSession()
+            throws UnauthorizedException;
+
+    /** ログアウト（現セッション or 指定）。POST /auth/logout
+     *  仕様: 05_セッション管理.md 「#4 POST /auth/logout」LogoutRequest/Response :contentReference[oaicite:8]{index=8}
+     *  成功: 200 + LogoutResponse{success}
+     */
+    LogoutResponse logout(LogoutRequest req)
+            throws UnauthorizedException, BadRequestException;
+
+    /** 全端末ログアウト。POST /auth/logout_all
+     *  仕様: 05_セッション管理.md 「#5 POST /auth/logout_all」tv++ による全失効 :contentReference[oaicite:9]{index=9}
+     *  成功: 200（または204）※実装方針で200 + {success} に統一可
+     */
+    LogoutResponse logoutAll()
+            throws UnauthorizedException;
 }

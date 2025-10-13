@@ -95,6 +95,14 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- tests: org.apache.commons.codec.binary.Base32 / Base64 for MfaUtilTest -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.16.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

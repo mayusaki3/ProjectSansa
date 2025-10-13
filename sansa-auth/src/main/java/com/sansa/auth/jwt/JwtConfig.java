@@ -1,8 +1,25 @@
-package com.sansa.auth.config;
+package com.sansa.auth.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * JWT 設定のプロパティクラス。
+ *
+ * <p>想定プロパティ:
+ * <ul>
+ *   <li>{@code jwt.secret} — 署名用シークレット（本番は十分な長さ・エントロピー必須）</li>
+ *   <li>{@code jwt.issuer} — 発行者（{@code iss}）クレーム</li>
+ *   <li>{@code jwt.accessTokenMinutes} — アクセストークンの有効期限（分）</li>
+ *   <li>{@code jwt.refreshTokenDays} — リフレッシュトークンの有効期限（日）</li>
+ * </ul>
+ *
+ * <p>注意:
+ * <ul>
+ *   <li>Getter/Setter は Lombok でも手書きでも可（現在はPOJO想定）</li>
+ *   <li>本番では値のバリデーション（空・桁不足など）を強めることを推奨</li>
+ * </ul>
+ */
 @Configuration
 @ConfigurationProperties(prefix = "jwt")
 public class JwtConfig {

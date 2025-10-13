@@ -1,97 +1,51 @@
 package com.sansa.auth.service;
 
 import com.sansa.auth.dto.login.LoginResponse;
-import com.sansa.auth.dto.login.LoginTokens;
-import com.sansa.auth.dto.sessions.SessionInfo;
 import com.sansa.auth.dto.webauthn.*;
-import com.sansa.auth.exception.AuthExceptions.*;
-import com.sansa.auth.store.InmemStore;
-import com.sansa.auth.util.Timestamps;
+import com.sansa.auth.exception.BadRequestException;
+import com.sansa.auth.exception.NotFoundException;
+import com.sansa.auth.exception.UnauthorizedException;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+/**
+ * WebAuthn（パスキー）ユースケース（/webauthn 配下）。
+ * 参照仕様: 03_WebAuthn.md（register/options, register/verify, challenge, assertion, credentials） :contentReference[oaicite:13]{index=13}
+ */
+public interface WebAuthnService {
 
-import java.time.Instant;
-import java.util.List;
+    /** 登録オプション取得。GET /webauthn/register/options
+     *  仕様: 03_WebAuthn.md 「#1 → WebAuthnRegisterOptionsResponse」 :contentReference[oaicite:14]{index=14}
+     */
+    WebAuthnRegisterOptionsResponse registerOptions()
+            throws UnauthorizedException, BadRequestException;
 
-@Service
-@RequiredArgsConstructor
-public class WebAuthnService {
+    /** 登録検証（Attestation）。POST /webauthn/register/verify
+     *  仕様: 03_WebAuthn.md 「#2 → WebAuthnRegisterVerifyResponse」 :contentReference[oaicite:15]{index=15}
+     */
+    WebAuthnRegisterVerifyResponse registerVerify(WebAuthnRegisterVerifyRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  private final InmemStore store = InmemStore.get();
+    /** 認証チャレンジ取得。GET /webauthn/challenge
+     *  仕様: 03_WebAuthn.md 「#3 → WebAuthnChallengeResponse」 :contentReference[oaicite:16]{index=16}
+     */
+    WebAuthnChallengeResponse challenge()
+            throws UnauthorizedException, BadRequestException;
 
-  public WebAuthnChallengeResponse challenge() {
-    var ctx = store.debugCurrentContext(); // 未ログインでもOKな設計にする場合はnull許容
-    var ch = store.issueWebAuthnChallenge(ctx != null ? ctx.userId() : null);
-    return WebAuthnChallengeResponse.builder()
-        .challenge(ch.challenge())
-        .rpId(ch.rpId())
-        .timeout(60000)
-        .userVerification("preferred")
-        .build();
-  }
+    /** 認証アサーション検証。POST /webauthn/assertion
+     *  仕様: 03_WebAuthn.md 「#4 → LoginResponse」 :contentReference[oaicite:17]{index=17}
+     */
+    LoginResponse assertion(WebAuthnAssertionRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  public LoginResponse assertion(WebAuthnAssertionRequest req) {
-    var result = store.verifyAssertion(req.getId(), req.getClientDataJSON(),
-        req.getAuthenticatorData(), req.getSignature(), req.getUserHandle());
-    if (!result.success()) {
-      throw new BadRequestException("https://errors.sansa.dev/webauthn/invalid-assertion");
-    }
-    // セッション発行
-    var user = store.getUser(result.userId());
-    var now = Instant.now();
-    var session = store.createSession(user.userId(), List.of("webauthn"), now, now.plusSeconds(3600));
-    var tokens = store.issueTokens(user.userId(), session.sessionId());
-    return LoginResponse.builder()
-        .authenticated(true)
-        .mfaRequired(false)
-        .session(Timestamps.toSessionInfo(session, user))
-        .tokens(LoginTokens.builder().accessToken(tokens.accessToken()).refreshToken(tokens.refreshToken()).build())
-        .amr(session.amr())
-        .user(SessionInfo.UserSummary.builder()
-            .userId(user.userId()).email(user.email()).displayName(user.displayName()).build())
-        .build();
-  }
+    /** 登録済みクレデンシャル一覧。GET /webauthn/credentials
+     *  仕様: 03_WebAuthn.md 「#5 → WebAuthnCredentialListResponse」 :contentReference[oaicite:18]{index=18}
+     */
+    WebAuthnCredentialListResponse listCredentials()
+            throws UnauthorizedException;
 
-  public WebAuthnRegisterOptionsResponse registerOptions() {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    var opt = store.issueRegisterOptions(ctx.userId());
-    return WebAuthnRegisterOptionsResponse.builder()
-        .challenge(opt.challenge())
-        .rpId(opt.rpId())
-        .user(opt.userEncoded())
-        .pubKeyCredParams(List.of(WebAuthnRegisterOptionsResponse.PubKeyCredParam
-            .builder().type("public-key").alg(-7).build()))
-        .attestation("none")
-        .build();
-  }
-
-  public WebAuthnRegisterVerifyResponse registerVerify(WebAuthnRegisterVerifyRequest req) {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    var saved = store.verifyAndSaveCredential(ctx.userId(), req.getClientDataJSON(), req.getAttestationObject());
-    if (!saved.success()) throw new BadRequestException("https://errors.sansa.dev/webauthn/invalid-assertion");
-    return WebAuthnRegisterVerifyResponse.builder()
-        .credentialId(saved.credentialId())
-        .publicKey(saved.publicKey())
-        .aaguid(saved.aaguid())
-        .transports(saved.transports())
-        .signCount(saved.signCount())
-        .build();
-  }
-
-  public WebAuthnCredentialListResponse listCredentials() {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    var list = store.listCredentials(ctx.userId());
-    return WebAuthnCredentialListResponse.builder().credentials(list).build();
-  }
-
-  public void revokeCredential(String credentialId) {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    boolean ok = store.revokeCredential(ctx.userId(), credentialId);
-    if (!ok) throw new NotFoundException("https://errors.sansa.dev/sessions/session-not-found");
-  }
+    /** クレデンシャル失効。DELETE /webauthn/credentials/{credentialId}
+     *  仕様: 03_WebAuthn.md 「#6」204/404 :contentReference[oaicite:19]{index=19}
+     *  成功: 204（本文なし）
+     */
+    void deleteCredential(String credentialId)
+            throws UnauthorizedException, NotFoundException;
 }

@@ -1,60 +1,64 @@
+// src/main/java/com/sansa/auth/controller/WebAuthnController.java
 package com.sansa.auth.controller;
 
-import com.sansa.auth.dto.login.*;
-import com.sansa.auth.dto.webauthn.*;
-import com.sansa.auth.service.*;
-
+import com.sansa.auth.dto.login.LoginResponse;
+import com.sansa.auth.dto.webauthn.WebAuthnAssertionRequest;
+import com.sansa.auth.dto.webauthn.WebAuthnChallengeResponse;
+import com.sansa.auth.dto.webauthn.WebAuthnCredentialListResponse;
+import com.sansa.auth.dto.webauthn.WebAuthnRegisterOptionsResponse;
+import com.sansa.auth.dto.webauthn.WebAuthnRegisterVerifyRequest;
+import com.sansa.auth.dto.webauthn.WebAuthnRegisterVerifyResponse;
+import com.sansa.auth.service.WebAuthnService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * /webauthn 配下：登録（options→verify）/ 認証（challenge→assertion）/ 資格情報管理
+ * API仕様に沿ったWebAuthnエンドポイント群。
+ * 返却型と引数はサービスIF(WebAuthnService)と厳密一致。
  */
 @RestController
-@RequestMapping("/webauthn")
+@RequestMapping
 @RequiredArgsConstructor
-@Validated
 public class WebAuthnController {
 
-    private final WebAuthnService webAuthnService;
+    private final WebAuthnService webauthn;
 
-    // 認証：チャレンジ取得
-    @GetMapping("/challenge")
-    public WebAuthnChallengeResponse challenge() {
-        return webAuthnService.challenge();
-    }
-
-    // 認証：アサーション検証（成功→ LoginResponse）
-    @PostMapping("/assertion")
-    public LoginResponse assertion(@Valid @RequestBody WebAuthnAssertionRequest req) {
-        return webAuthnService.assertion(req);
-    }
-
-    // 登録：オプション取得
-    @GetMapping("/register/options")
+    /** GET /webauthn/register/options */
+    @GetMapping("/webauthn/register/options")
     public WebAuthnRegisterOptionsResponse registerOptions() {
-        return webAuthnService.registerOptions();
+        return webauthn.registerOptions();
     }
 
-    // 登録：検証
-    @PostMapping("/register/verify")
-    public WebAuthnRegisterVerifyResponse registerVerify(@Valid @RequestBody WebAuthnRegisterVerifyRequest req) {
-        return webAuthnService.registerVerify(req);
+    /** POST /webauthn/register/verify */
+    @PostMapping("/webauthn/register/verify")
+    public WebAuthnRegisterVerifyResponse registerVerify(@RequestBody @Valid WebAuthnRegisterVerifyRequest req) {
+        return webauthn.registerVerify(req);
     }
 
-    // 管理：クレデンシャル一覧
-    @GetMapping("/credentials")
+    /** GET /webauthn/challenge */
+    @GetMapping("/webauthn/challenge")
+    public WebAuthnChallengeResponse challenge() {
+        return webauthn.challenge();
+    }
+
+    /** POST /webauthn/assertion */
+    @PostMapping("/webauthn/assertion")
+    public LoginResponse assertion(@RequestBody @Valid WebAuthnAssertionRequest req) {
+        return webauthn.assertion(req);
+    }
+
+    /** GET /webauthn/credentials */
+    @GetMapping("/webauthn/credentials")
     public WebAuthnCredentialListResponse listCredentials() {
-        return webAuthnService.listCredentials();
+        return webauthn.listCredentials();
     }
 
-    // 管理：クレデンシャル失効
-    @DeleteMapping("/credentials/{credentialId}")
-    public ResponseEntity<Void> revokeCredential(@PathVariable String credentialId) {
-        webAuthnService.revokeCredential(credentialId);
-        return ResponseEntity.noContent().build(); // 204
+    /** DELETE /webauthn/credentials/{credentialId} */
+    @DeleteMapping("/webauthn/credentials/{credentialId}")
+    public void deleteCredential(@PathVariable @NotBlank String credentialId) {
+        webauthn.deleteCredential(credentialId);
+        // 仕様は204/200いずれでも妥当。voidで204(No Content)を返す。
     }
 }

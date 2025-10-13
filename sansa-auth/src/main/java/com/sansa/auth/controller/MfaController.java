@@ -1,72 +1,51 @@
 package com.sansa.auth.controller;
 
-import com.sansa.auth.dto.login.*;
-import com.sansa.auth.dto.mfa.*;
-import com.sansa.auth.service.*;
-
+import com.sansa.auth.dto.login.LoginResponse;
+import com.sansa.auth.dto.mfa.MfaEmailVerifyRequest;
+import com.sansa.auth.dto.mfa.MfaRecoveryVerifyRequest;
+import com.sansa.auth.dto.mfa.MfaTotpEnrollResponse;
+import com.sansa.auth.dto.mfa.MfaTotpVerifyRequest;
+import com.sansa.auth.service.MfaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * /auth/mfa 配下：TOTP / Email OTP / Recovery
- * verify 成功時は LoginResponse（authenticated=true, amrに"mfa"）を返す想定。
+ * MFA 関連 API
+ * - ここでは Service インターフェースのシグネチャに合わせることを最優先。
+ * - サービスから LoginResponse を返す想定に統一（void を返していた箇所を修正）
  */
 @RestController
-@RequestMapping("/auth/mfa")
+@RequestMapping("/api/mfa")
 @RequiredArgsConstructor
-@Validated
 public class MfaController {
 
-    private final MfaService mfaService;
+    private final MfaService mfa;
 
-    // --- TOTP ---
-    // enroll: secret/otpauth URI を払い出し
     @PostMapping("/totp/enroll")
-    public MfaTotpEnrollResponse totpEnroll() {
-        return mfaService.totpEnroll();
+    public ResponseEntity<MfaTotpEnrollResponse> totpEnroll() {
+        // 実装はサービス側。ここではシグネチャを合わせる。
+        MfaTotpEnrollResponse res = mfa.totpEnroll();
+        return ResponseEntity.ok(res);
     }
 
-    // activate: 初回コードで有効化（200 / bodyなし可）
-    @PostMapping("/totp/activate")
-    public ResponseEntity<Void> totpActivate(@Valid @RequestBody MfaTotpActivateRequest req) {
-        mfaService.totpActivate(req);
-        return ResponseEntity.ok().build(); // 200
-    }
-
-    // verify: 認証フローの検証（LoginResponse を返す）
     @PostMapping("/totp/verify")
-    public LoginResponse totpVerify(@Valid @RequestBody MfaTotpVerifyRequest req) {
-        return mfaService.totpVerify(req);
+    public ResponseEntity<LoginResponse> totpVerify(@RequestBody @Valid MfaTotpVerifyRequest req) {
+        // 以前 void を返す実装だったためコンパイルエラーになっていた
+        LoginResponse res = mfa.totpVerify(req);
+        return ResponseEntity.ok(res);
     }
 
-    // --- Email OTP ---
-    // send: 送信（429レート制限、ここは202受理でOK）
-    @PostMapping("/email/send")
-    public ResponseEntity<Void> emailSend(@RequestBody(required = false) MfaEmailSendRequest req) {
-        mfaService.emailSend(req);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).build(); // 202
-    }
-
-    // verify: 検証（LoginResponse を返す）
     @PostMapping("/email/verify")
-    public LoginResponse emailVerify(@Valid @RequestBody MfaEmailVerifyRequest req) {
-        return mfaService.emailVerify(req);
+    public ResponseEntity<LoginResponse> emailVerify(@RequestBody @Valid MfaEmailVerifyRequest req) {
+        LoginResponse res = mfa.emailVerify(req);
+        return ResponseEntity.ok(res);
     }
 
-    // --- Recovery ---
-    // issue: その場表示のみ（既存はハッシュ保存推奨）
-    @PostMapping("/recovery/issue")
-    public MfaRecoveryIssueResponse recoveryIssue() {
-        return mfaService.recoveryIssue();
-    }
-
-    // verify: 検証（消費・再利用不可）
     @PostMapping("/recovery/verify")
-    public LoginResponse recoveryVerify(@Valid @RequestBody MfaRecoveryVerifyRequest req) {
-        return mfaService.recoveryVerify(req);
+    public ResponseEntity<LoginResponse> recoveryVerify(@RequestBody @Valid MfaRecoveryVerifyRequest req) {
+        LoginResponse res = mfa.recoveryVerify(req);
+        return ResponseEntity.ok(res);
     }
 }

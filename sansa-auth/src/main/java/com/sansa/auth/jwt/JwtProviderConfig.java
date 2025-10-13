@@ -1,4 +1,4 @@
-package com.sansa.auth.config;
+package com.sansa.auth.jwt;
 
 import com.sansa.auth.util.JwtProvider;
 import io.jsonwebtoken.io.Decoders;
@@ -8,6 +8,18 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.crypto.SecretKey;
 
+/**
+ * JWT 関連の Bean 定義。
+ *
+ * <p>{@link JwtConfig} から読み込んだ設定値（secret / issuer / 有効期限）を使って
+ * {@link JwtProvider} を組み立て、アプリ全体で DI 可能にする。
+ *
+ * <p>注意:
+ * <ul>
+ *   <li>外部環境では secret を必ず環境変数や Secret Manager から注入すること</li>
+ *   <li>テストでは短い有効期限／ダミー secret を使うと検証が容易</li>
+ * </ul>
+ */
 @Configuration
 public class JwtProviderConfig {
 

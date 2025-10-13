@@ -1,9 +1,14 @@
 package com.sansa.auth.dto.mfa;
 
-import lombok.*;
+import lombok.Data;
 
-// 実装事情で空でもOK（identifier等を持たせるならここに追加）
-@Value @Builder
+/**
+ * POST /auth/mfa/email/send のリクエストDTO
+ * 仕様: 04_MFA.md「Email send」
+ * 備考: ボディは実装方針により省略可のため、現状フィールドなしの空DTO。
+ *       将来、言語/送信先などのメタ情報を追加する拡張余地あり。
+ */
+@Data
 public class MfaEmailSendRequest {
-  String hint; // 任意: 配送先ヒントやテンプレ切替など
+    // ボディ省略可（仕様）につき、現状フィールドなし
 }

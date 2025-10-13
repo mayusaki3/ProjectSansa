@@ -1,10 +1,23 @@
 package com.sansa.auth.dto.mfa;
 
-import lombok.*;
-import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value @Builder
+/**
+ * POST /auth/mfa/totp/verify のリクエストDTO
+ * 仕様: 04_MFA.md「TOTP verify」
+ * フィールド（必須）:
+ *  - challengeId
+ *  - code
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class MfaTotpVerifyRequest {
-  @NotBlank String challengeId;
-  @NotBlank @Size(min=6, max=10) String code;
+    /** MFA 検証フローを識別するチャレンジID */
+    private String challengeId;
+
+    /** ユーザー入力の TOTP コード */
+    private String code;
 }

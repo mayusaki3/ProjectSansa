@@ -1,111 +1,61 @@
 package com.sansa.auth.service;
 
 import com.sansa.auth.dto.login.LoginResponse;
-import com.sansa.auth.dto.login.LoginTokens;
 import com.sansa.auth.dto.mfa.*;
-import com.sansa.auth.dto.sessions.SessionInfo;
-import com.sansa.auth.exception.AuthExceptions.*;
-import com.sansa.auth.store.InmemStore;
-import com.sansa.auth.util.Timestamps;
+import com.sansa.auth.exception.BadRequestException;
+import com.sansa.auth.exception.UnauthorizedException;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+/**
+ * 多要素認証（TOTP / Email OTP / Recovery）（/auth/mfa 配下）。
+ * 参照仕様: 04_MFA.md（TOTP, Email OTP, Recovery）※ログイン時の成功レスポンスは LoginResponse に統一 :contentReference[oaicite:20]{index=20}
+ */
+public interface MfaService {
 
-import java.time.Instant;
-import java.util.List;
+    // ---- TOTP ----
 
-@Service
-@RequiredArgsConstructor
-public class MfaService {
+    /** TOTP 秘密鍵の発行（登録）。POST /auth/mfa/totp/enroll
+     *  仕様: 04_MFA.md 「TOTP enroll → MfaTotpEnrollResponse」 :contentReference[oaicite:21]{index=21}
+     */
+    MfaTotpEnrollResponse totpEnroll()
+            throws UnauthorizedException, BadRequestException;
 
-  private final InmemStore store = InmemStore.get();
+    /** TOTP 有効化（初回コード確認）。POST /auth/mfa/totp/activate
+     *  仕様: 04_MFA.md 「TOTP activate（code必須）」 :contentReference[oaicite:22]{index=22}
+     */
+    void totpActivate(MfaTotpActivateRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  // --- TOTP ---
-  public MfaTotpEnrollResponse totpEnroll() {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    var r = store.totpEnroll(ctx.userId());
-    return MfaTotpEnrollResponse.builder().secret(r.secret()).uri(r.uri()).build();
-  }
+    /** TOTP 検証（ログイン時）。POST /auth/mfa/totp/verify
+     *  仕様: 04_MFA.md 「TOTP verify → LoginResponse」 :contentReference[oaicite:23]{index=23}
+     */
+    LoginResponse totpVerify(MfaTotpVerifyRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  public void totpActivate(MfaTotpActivateRequest req) {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    if (!store.totpActivate(ctx.userId(), req.getCode())) {
-      throw new BadRequestException("https://errors.sansa.dev/mfa/invalid-code");
-    }
-  }
+    // ---- Email OTP ----
 
-  public LoginResponse totpVerify(MfaTotpVerifyRequest req) {
-    var ch = store.consumeMfaChallenge(req.getChallengeId());
-    if (ch == null || !store.totpVerify(ch.userId(), req.getCode())) {
-      throw new BadRequestException("https://errors.sansa.dev/mfa/invalid-code");
-    }
-    // 認証確定：セッション/トークン
-    var user = store.getUser(ch.userId());
-    var now = Instant.now();
-    var s = store.createSession(user.userId(), List.of("mfa"), now, now.plusSeconds(3600));
-    var t = store.issueTokens(user.userId(), s.sessionId());
-    return LoginResponse.builder()
-        .authenticated(true).mfaRequired(false)
-        .session(Timestamps.toSessionInfo(s, user))
-        .tokens(LoginTokens.builder().accessToken(t.accessToken()).refreshToken(t.refreshToken()).build())
-        .amr(s.amr())
-        .user(SessionInfo.UserSummary.builder()
-            .userId(user.userId()).email(user.email()).displayName(user.displayName()).build())
-        .build();
-  }
+    /** Email OTP 送信。POST /auth/mfa/email/send
+     *  仕様: 04_MFA.md 「Email send（ボディ省略可）」 :contentReference[oaicite:24]{index=24}
+     */
+    void emailSend(MfaEmailSendRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  // --- Email OTP ---
-  public void emailSend(MfaEmailSendRequest req) {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    store.emailOtpSend(ctx.userId());
-  }
+    /** Email OTP 検証（ログイン時）。POST /auth/mfa/email/verify
+     *  仕様: 04_MFA.md 「Email verify（challengeId, code）→ LoginResponse」 :contentReference[oaicite:25]{index=25}
+     */
+    LoginResponse emailVerify(MfaEmailVerifyRequest req)
+            throws UnauthorizedException, BadRequestException;
 
-  public LoginResponse emailVerify(MfaEmailVerifyRequest req) {
-    var ch = store.consumeMfaChallenge(req.getChallengeId());
-    if (ch == null || !store.emailOtpVerify(ch.userId(), req.getCode())) {
-      throw new BadRequestException("https://errors.sansa.dev/mfa/invalid-code");
-    }
-    var user = store.getUser(ch.userId());
-    var now = Instant.now();
-    var s = store.createSession(user.userId(), List.of("mfa"), now, now.plusSeconds(3600));
-    var t = store.issueTokens(user.userId(), s.sessionId());
-    return LoginResponse.builder()
-        .authenticated(true).mfaRequired(false)
-        .session(Timestamps.toSessionInfo(s, user))
-        .tokens(LoginTokens.builder().accessToken(t.accessToken()).refreshToken(t.refreshToken()).build())
-        .amr(s.amr())
-        .user(SessionInfo.UserSummary.builder()
-            .userId(user.userId()).email(user.email()).displayName(user.displayName()).build())
-        .build();
-  }
+    // ---- Recovery Code ----
 
-  // --- Recovery ---
-  public MfaRecoveryIssueResponse recoveryIssue() {
-    var ctx = store.debugCurrentContext();
-    if (ctx == null) throw new UnauthorizedException("https://errors.sansa.dev/token/invalid");
-    var codes = store.recoveryIssue(ctx.userId());
-    return MfaRecoveryIssueResponse.builder().recoveryCodes(codes).build();
-  }
+    /** リカバリーコード発行。POST /auth/mfa/recovery/issue
+     *  仕様: 04_MFA.md 「recovery/issue → MfaRecoveryIssueResponse」 :contentReference[oaicite:26]{index=26}
+     */
+    MfaRecoveryIssueResponse recoveryIssue()
+            throws UnauthorizedException, BadRequestException;
 
-  public LoginResponse recoveryVerify(MfaRecoveryVerifyRequest req) {
-    var ch = store.consumeMfaChallenge(req.getChallengeId());
-    if (ch == null || !store.recoveryVerify(ch.userId(), req.getCode())) {
-      throw new BadRequestException("https://errors.sansa.dev/mfa/invalid-code");
-    }
-    var user = store.getUser(ch.userId());
-    var now = Instant.now();
-    var s = store.createSession(user.userId(), List.of("mfa"), now, now.plusSeconds(3600));
-    var t = store.issueTokens(user.userId(), s.sessionId());
-    return LoginResponse.builder()
-        .authenticated(true).mfaRequired(false)
-        .session(Timestamps.toSessionInfo(s, user))
-        .tokens(LoginTokens.builder().accessToken(t.accessToken()).refreshToken(t.refreshToken()).build())
-        .amr(s.amr())
-        .user(SessionInfo.UserSummary.builder()
-            .userId(user.userId()).email(user.email()).displayName(user.displayName()).build())
-        .build();
-  }
+    /** リカバリーコード検証（ログイン時）。POST /auth/mfa/recovery/verify
+     *  仕様: 04_MFA.md 「recovery/verify（challengeId, code）→ LoginResponse」 :contentReference[oaicite:27]{index=27}
+     */
+    LoginResponse recoveryVerify(MfaRecoveryVerifyRequest req)
+            throws UnauthorizedException, BadRequestException;
 }

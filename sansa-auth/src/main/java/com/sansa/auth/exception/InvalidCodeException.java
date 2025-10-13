@@ -1,22 +1,16 @@
 package com.sansa.auth.exception;
 
-/** メール/OTP/TOTP などの検証コード不正時に投げる実行時例外 */
+/**
+ * メール確認コード / OTP / TOTP 等の検証コードが不正・無効・期限切れのときに
+ * スローされる実行時例外。
+ * <p>
+ * Controller 層では {@code ApiExceptionHandler} が 400 Bad Request
+ * もしくは 422 Unprocessable Entity 等、要件に応じた
+ * application/problem+json にマッピングします。
+ */
 public class InvalidCodeException extends RuntimeException {
-    private final String codeType;   // "email", "totp", "recovery" など
-    private final String reason;     // "mismatch", "expired", "consumed" など
+    private static final long serialVersionUID = 1L;
 
-    public InvalidCodeException(String message) {
-        super(message);
-        this.codeType = null;
-        this.reason = null;
-    }
-
-    public InvalidCodeException(String message, String codeType, String reason) {
-        super(message);
-        this.codeType = codeType;
-        this.reason = reason;
-    }
-
-    public String getCodeType() { return codeType; }
-    public String getReason() { return reason; }
+    public InvalidCodeException(String message) { super(message); }
+    public InvalidCodeException(String message, Throwable cause) { super(message, cause); }
 }

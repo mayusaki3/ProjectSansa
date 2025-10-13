@@ -1,79 +1,31 @@
 package com.sansa.auth.controller;
 
-import com.sansa.auth.dto.auth.*;
-import com.sansa.auth.dto.login.*;
-import com.sansa.auth.dto.sessions.*;
-import com.sansa.auth.service.*;
-
+import com.sansa.auth.dto.login.LoginRequest;
+import com.sansa.auth.dto.login.TokenRefreshRequest;
+import com.sansa.auth.service.AuthService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * /auth 配下：登録・ログイン・トークン・セッション・ログアウト
- * 成功/失敗時の Content-Language と error(problem+json) は Advice/Filter 側で処理する想定。
- */
 @RestController
 @RequestMapping("/auth")
-@RequiredArgsConstructor
-@Validated
 public class AuthController {
 
-    private final AuthService authService;
-    private final SessionService sessionService;
-    private final TokenService tokenService;
+    private final AuthService auth;
 
-    // 1) 事前登録
-    @PostMapping("/pre-register")
-    public PreRegisterResponse preRegister(@Valid @RequestBody PreRegisterRequest req) {
-        return authService.preRegister(req);
+    public AuthController(AuthService auth) {
+        this.auth = auth;
     }
 
-    // 2) メール認証
-    @PostMapping("/verify-email")
-    public VerifyEmailResponse verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
-        return authService.verifyEmail(req);
-    }
-
-    // 3) 本登録（201 Created）
-    @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest req) {
-        RegisterResponse res = authService.register(req);
-        return ResponseEntity.status(HttpStatus.CREATED).body(res);
-    }
-
-    // 4) ログイン（Password 経路）
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest req) {
-        return authService.login(req);
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest req) {
+        var res = auth.login(req);
+        return ResponseEntity.ok(res);
     }
 
-    // R1) トークンリフレッシュ（RTローテーション／再利用検知）
-    @PostMapping("/token/refresh")
-    public TokenRefreshResponse refresh(@Valid @RequestBody TokenRefreshRequest req) {
-        return tokenService.refresh(req);
-    }
-
-    // 6) 現在セッション
-    @GetMapping("/session")
-    public SessionInfo currentSession() {
-        return sessionService.currentSession();
-    }
-
-    // 7) ログアウト（現セッションまたは引数指定）
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody(required = false) LogoutRequest req) {
-        sessionService.logout(req); // reqがnullなら「現セッションのみ」を想定
-        return ResponseEntity.noContent().build(); // 204
-    }
-
-    // 7b) 全端末ログアウト（token_version++）
-    @PostMapping("/auth/logout_all")
-    public ResponseEntity<Void> logoutAll() {
-        sessionService.logoutAll();
-        return ResponseEntity.noContent().build(); // 204
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody @Valid TokenRefreshRequest req) {
+        var res = auth.refresh(req);
+        return ResponseEntity.ok(res); // ← tokens ではなく res を返す
     }
 }

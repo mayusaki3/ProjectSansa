@@ -1,59 +1,36 @@
-package com.sansa.auth.testsupport;
+package com.sansa.auth.testutil;
 
 import org.junit.jupiter.api.extension.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class ConsoleReportExtension implements TestWatcher, BeforeAllCallback, AfterAllCallback {
+import java.time.Duration;
+import java.time.Instant;
 
-  private static final AtomicInteger TOTAL  = new AtomicInteger();
-  private static final AtomicInteger PASS   = new AtomicInteger();
-  private static final AtomicInteger FAIL   = new AtomicInteger();
-  private static volatile boolean hookInstalled = false;
+/**
+ * テスト実行時間を標準出力へ簡易レポートする JUnit5 Extension。
+ *
+ * 用途:
+ *  - ローカル実行時に重いテストの目視確認を容易にするためのユーティリティ。
+ *
+ * 注意:
+ *  - CI でのログ汚染が気になる場合は無効化できるようにしておくこと。
+ */
+public class ConsoleReportExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
-  private static String idFrom(ExtensionContext ctx) {
-    // @DisplayName("UT-01-001: ...") を想定。見つからなければメソッド名。
-    String dn = ctx.getDisplayName();
-    if (dn != null && dn.matches("^[A-Za-z]{2,}-\\d{2}-\\d{3}.*")) return dn.split(":")[0].trim();
-    return ctx.getRequiredTestMethod().getName();
-  }
+    private static final String KEY = "console-report.start";
 
-  @Override
-  public void beforeAll(ExtensionContext context) {
-    // JVM 終了時に全体サマリを 1 回だけ表示
-    if (!hookInstalled) {
-      synchronized (ConsoleReportExtension.class) {
-        if (!hookInstalled) {
-          Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println();
-            System.out.println("==== 単体テスト 実行サマリ ====");
-            System.out.printf("合計: %d, 成功: %d, 失敗: %d%n",
-                TOTAL.get(), PASS.get(), FAIL.get());
-          }, "console-report-shutdown"));
-          hookInstalled = true;
-        }
-      }
+    @Override
+    public void beforeTestExecution(ExtensionContext context) {
+        context.getStore(ExtensionContext.Namespace.GLOBAL)
+                .put(KEY, Instant.now());
     }
-  }
 
-  @Override
-  public void testSuccessful(ExtensionContext context) {
-    TOTAL.incrementAndGet();
-    PASS.incrementAndGet();
-    System.out.printf("%s : OK%n", idFrom(context));
-  }
-
-  @Override
-  public void testFailed(ExtensionContext context, Throwable cause) {
-    TOTAL.incrementAndGet();
-    FAIL.incrementAndGet();
-    System.out.printf("%s : Error (%s)%n", idFrom(context), cause.getClass().getSimpleName());
-  }
-
-  @Override
-  public void afterAll(ExtensionContext context) {
-    // クラスごとの小計（任意）
-    System.out.printf("[Class Summary] %s -> 合計:%d 成功:%d 失敗:%d%n",
-        context.getRequiredTestClass().getSimpleName(),
-        TOTAL.get(), PASS.get(), FAIL.get());
-  }
+    @Override
+    public void afterTestExecution(ExtensionContext context) {
+        Instant start = context.getStore(ExtensionContext.Namespace.GLOBAL).remove(KEY, Instant.class);
+        if (start != null) {
+            Duration d = Duration.between(start, Instant.now());
+            System.out.printf("[TEST] %s took %d ms%n",
+                    context.getDisplayName(), d.toMillis());
+        }
+    }
 }
