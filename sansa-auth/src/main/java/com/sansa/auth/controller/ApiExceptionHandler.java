@@ -114,7 +114,6 @@ public class ApiExceptionHandler {
     }
 
     // ====== 共通ユーティリティ ======
-
     private Map<String, String> toError(FieldError fe) {
         return Map.of(
                 "field", fe.getField(),
@@ -131,9 +130,15 @@ public class ApiExceptionHandler {
             Map<String, Object> extra // null可: {"errors":[...]}等
     ) {
         ProblemDetail pd = ProblemDetail.forStatus(status);
-        if (title != null) pd.setTitle(title);
-        if (detail != null) pd.setDetail(detail);
-        if (code != null) pd.setProperty("code", code);
+        if (title != null) {
+            pd.setTitle(title);
+        }
+        if (detail != null) {
+            pd.setDetail(detail);
+        }
+        if (code != null) {
+            pd.setProperty("code", code);
+        }
         if (extra != null) {
             extra.forEach(pd::setProperty);
         }

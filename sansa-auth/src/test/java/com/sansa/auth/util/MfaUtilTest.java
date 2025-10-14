@@ -15,16 +15,16 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * UT-02: TOTP の相互運用確認
  *
- * 目的:
- *  - RFC 6238 準拠の TOTP 生成をテスト側で再現し、verify ロジックと突き合わせ可能にする
- *  - 実装差異による桁・桁切り捨てのズレを早期に検知
+ * 目的: - RFC 6238 準拠の TOTP 生成をテスト側で再現し、verify ロジックと突き合わせ可能にする -
+ * 実装差異による桁・桁切り捨てのズレを早期に検知
  *
- * 注意:
- *  - 本テストはユーティリティ層の「仕様確認用」。Store や Service に依存しない。
+ * 注意: - 本テストはユーティリティ層の「仕様確認用」。Store や Service に依存しない。
  */
 class MfaUtilTest {
 
-    /** テスト用に TOTP を 30 秒ステップで生成する簡易関数（SHA1・桁=6） */
+    /**
+     * テスト用に TOTP を 30 秒ステップで生成する簡易関数（SHA1・桁=6）
+     */
     static String totp(String base32Secret, long timeSeconds, int step, int digits) throws Exception {
         Base32 b32 = new Base32();
         byte[] key = b32.decode(base32Secret.toUpperCase());
@@ -39,10 +39,10 @@ class MfaUtilTest {
         byte[] hash = mac.doFinal(msg);
 
         int offset = hash[hash.length - 1] & 0xF;
-        int binary = ((hash[offset] & 0x7F) << 24) |
-                ((hash[offset + 1] & 0xFF) << 16) |
-                ((hash[offset + 2] & 0xFF) << 8) |
-                (hash[offset + 3] & 0xFF);
+        int binary = ((hash[offset] & 0x7F) << 24)
+                | ((hash[offset + 1] & 0xFF) << 16)
+                | ((hash[offset + 2] & 0xFF) << 8)
+                | (hash[offset + 3] & 0xFF);
         int otp = binary % (int) Math.pow(10, digits);
         return String.format("%0" + digits + "d", otp);
     }

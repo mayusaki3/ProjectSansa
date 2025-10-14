@@ -142,10 +142,10 @@
         <version>3.2.5</version>
         <configuration>
           <includes>
-            <include>**/*Test.java</include>
+            <include>**/spec/*Test.java</include>
           </includes>
           <excludes>
-            <exclude>**/*IT.java</exclude>
+            <exclude>**/it/*Test.java</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -165,7 +165,7 @@
         </executions>
         <configuration>
           <includes>
-            <include>**/*IT.java</include>
+            <exclude>**/it/*Test.java</exclude>
           </includes>
         </configuration>
       </plugin>

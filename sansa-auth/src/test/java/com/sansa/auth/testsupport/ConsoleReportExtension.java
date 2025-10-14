@@ -8,11 +8,9 @@ import java.time.Instant;
 /**
  * テスト実行時間を標準出力へ簡易レポートする JUnit5 Extension。
  *
- * 用途:
- *  - ローカル実行時に重いテストの目視確認を容易にするためのユーティリティ。
+ * 用途: - ローカル実行時に重いテストの目視確認を容易にするためのユーティリティ。
  *
- * 注意:
- *  - CI でのログ汚染が気になる場合は無効化できるようにしておくこと。
+ * 注意: - CI でのログ汚染が気になる場合は無効化できるようにしておくこと。
  */
 public class ConsoleReportExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 

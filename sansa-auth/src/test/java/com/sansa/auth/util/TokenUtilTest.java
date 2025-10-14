@@ -12,43 +12,50 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * 仕様参照:
- * - 02_ログイン.md 「R1: POST /auth/token/refresh」
- *   - 成功: 200 + TokenRefreshResponse { accessToken, refreshToken, tv }
- * - RTローテーション挙動を TokenIssuer モックで検証
+ * 仕様参照: - 02_ログイン.md 「R1: POST /auth/token/refresh」 - 成功: 200 +
+ * TokenRefreshResponse { accessToken, refreshToken, tv } - RTローテーション挙動を
+ * TokenIssuer モックで検証
  */
 class TokenUtilTest {
 
-  @Test
-  void refresh_rotates_refresh_token_and_returns_tv() throws Exception {
-    Store store = mock(Store.class);
-    AuthServiceImpl.TokenIssuer ti = mock(AuthServiceImpl.TokenIssuer.class);
-    AuthServiceImpl.PasswordHasher ph = mock(AuthServiceImpl.PasswordHasher.class);
-    AuthService auth = new AuthServiceImpl(store, ti, ph);
+    @Test
+    void refresh_rotates_refresh_token_and_returns_tv() throws Exception {
+        Store store = mock(Store.class);
+        AuthServiceImpl.TokenIssuer ti = mock(AuthServiceImpl.TokenIssuer.class);
+        AuthServiceImpl.PasswordHasher ph = mock(AuthServiceImpl.PasswordHasher.class);
+        AuthService auth = new AuthServiceImpl(store, ti, ph);
 
-    // RT 解析結果（署名/exp等は TokenIssuer に委譲）
-    when(ti.parseAndValidateRefresh("RT-old"))
-        .thenReturn(new AuthServiceImpl.TokenIssuer.RefreshParseResult() {
-          public String getUserId() { return "john"; }
-          public String getJti() { return "rt-1"; }
-          public int getTokenVersion() { return 2; }
-        });
+        // RT 解析結果（署名/exp等は TokenIssuer に委譲）
+        when(ti.parseAndValidateRefresh("RT-old"))
+                .thenReturn(new AuthServiceImpl.TokenIssuer.RefreshParseResult() {
+                    public String getUserId() {
+                        return "john";
+                    }
 
-    when(store.getTokenVersion("john")).thenReturn(2);
-    when(ti.newRefreshId()).thenReturn("rt-2");
-    when(ti.issueAccessToken("john", 2)).thenReturn("AT-new");
-    when(ti.issueRefreshToken("john", "rt-2", 2)).thenReturn("RT-new");
+                    public String getJti() {
+                        return "rt-1";
+                    }
 
-    TokenRefreshResponse res = auth.refresh(new TokenRefreshRequest("RT-old"));
+                    public int getTokenVersion() {
+                        return 2;
+                    }
+                });
 
-    assertNotNull(res); // DTO の具体アクセサは最終形に依存するため、存在のみ検証
- 
-    // 相互作用（RTローテーション）が正しく行われたことを検証
-    verify(ti).parseAndValidateRefresh("RT-old");
-    verify(store).getTokenVersion("john");
-    verify(ti).newRefreshId();
-    verify(ti).issueAccessToken("john", 2);
-    verify(ti).issueRefreshToken("john", "rt-2", 2);
-    verifyNoMoreInteractions(ti);
-  }
+        when(store.getTokenVersion("john")).thenReturn(2);
+        when(ti.newRefreshId()).thenReturn("rt-2");
+        when(ti.issueAccessToken("john", 2)).thenReturn("AT-new");
+        when(ti.issueRefreshToken("john", "rt-2", 2)).thenReturn("RT-new");
+
+        TokenRefreshResponse res = auth.refresh(new TokenRefreshRequest("RT-old"));
+
+        assertNotNull(res); // DTO の具体アクセサは最終形に依存するため、存在のみ検証
+
+        // 相互作用（RTローテーション）が正しく行われたことを検証
+        verify(ti).parseAndValidateRefresh("RT-old");
+        verify(store).getTokenVersion("john");
+        verify(ti).newRefreshId();
+        verify(ti).issueAccessToken("john", 2);
+        verify(ti).issueRefreshToken("john", "rt-2", 2);
+        verifyNoMoreInteractions(ti);
+    }
 }
