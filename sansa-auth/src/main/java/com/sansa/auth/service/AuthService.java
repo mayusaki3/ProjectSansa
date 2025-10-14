@@ -63,8 +63,8 @@ public interface AuthService {
     // ===== 05_セッション管理.md（/auth 配下の項目のみ） =====
     /**
      * 現在セッション情報の取得。GET /auth/session
-     * 仕様: 05_セッション管理.md 「#1 GET /auth/session → SessionInfo」 :contentReference[oaicite:7]{index=7}
-     * 成功: 200 + SessionInfo
+     * 仕様: 05_セッション管理.md 「#1 GET /auth/session → SessionInfoResponse」 :contentReference[oaicite:7]{index=7}
+     * 成功: 200 + SessionInfoResponse
      */
     SessionInfo getCurrentSession()
             throws UnauthorizedException;

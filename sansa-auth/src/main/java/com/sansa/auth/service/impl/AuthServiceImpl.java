@@ -1,10 +1,19 @@
 package com.sansa.auth.service.impl;
 
+import com.sansa.auth.exception.BadRequestException;
+import com.sansa.auth.exception.UnauthorizedException;
 import com.sansa.auth.service.AuthService;
 import com.sansa.auth.store.Store;
 import com.sansa.auth.util.JwtProvider;
+import com.sansa.auth.dto.auth.RegisterRequest;
+import com.sansa.auth.dto.auth.RegisterResponse;
+import com.sansa.auth.dto.login.LoginRequest;
+import com.sansa.auth.dto.login.LoginResponse;
+import com.sansa.auth.dto.login.TokenRefreshRequest;
+import com.sansa.auth.dto.login.TokenRefreshResponse;
 import com.sansa.auth.dto.sessions.LogoutRequest;
 import com.sansa.auth.dto.sessions.LogoutResponse;
+import com.sansa.auth.dto.sessions.SessionInfo;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -100,11 +109,23 @@ public class AuthServiceImpl implements AuthService {
 
     /* ==================== AuthService の未実装分を最低限埋める ==================== */
 
+    // AuthServiceImpl.java （クラス内）
+    @Override
+    public RegisterResponse register(RegisterRequest req /* ← AuthServiceと同じthrows節も付ける */) {
+        throw new UnsupportedOperationException("register is not implemented yet");
+    }
+
+    @Override
+    public LoginResponse login(LoginRequest req) throws UnauthorizedException, BadRequestException {
+        // TODO: 後で実装。まずはビルドを通す。
+        throw new UnsupportedOperationException("login is not implemented yet");
+    }
+
     // ① logout(LogoutRequest) を実装（暫定：件数0を返す）
     @Override
     public LogoutResponse logout(LogoutRequest req) {
         return LogoutResponse.builder()
-                .count(0)   // ← DTOが最新（countフィールド）であることが前提
+                .success(true)
                 .build();
     }
 
@@ -112,10 +133,33 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LogoutResponse logoutAll() {
         return LogoutResponse.builder()
-                .count(0)
+                .success(true)
                 .build();
     }
 
-    // ※ register / login / refresh / logout 等の本体は既存実装のままでOK。
-    //   上記 TokenIssuer 呼び出し名の変更にだけ注意（tv を使わない）。
+    @Override
+    public SessionInfo getCurrentSession() {
+        return SessionInfo.builder()
+                    .id(null)
+                    .user(null)
+                    .build();
+    }
+
+    @Override
+    public TokenRefreshResponse refresh(TokenRefreshRequest req)
+            throws BadRequestException, UnauthorizedException {
+        // ここでは Store に依存せず、RT 解析→AT/RT再発行→Storeのローテーションを行う想定。
+        // TokenIssuer に合わせて実装してください（※既存の TokenIssuer / JwtProvider API に準拠）。
+        // 例：
+        // var parsed = tokenIssuer.parseRefresh(req.getRefreshToken());
+        // var newJti = tokenIssuer.newRefreshId();
+        // var at = tokenIssuer.issueAccessToken(parsed.userId(), cfg.accessTtlMinutes());
+        // var rt = tokenIssuer.issueRefreshToken(parsed.userId(), newJti, cfg.refreshTtlMinutes());
+        // store.rotateRefresh(parsed.userId(), parsed.jti(), newJti, parsed.tokenVersion());
+        // return TokenRefreshResponse.builder()
+        //         .tokens(new TokenRefreshResponse.Tokens(at, rt))
+        //         .tv(parsed.tokenVersion())
+        //         .build();
+        throw new UnsupportedOperationException("refresh: wire to TokenIssuer/JwtProvider per current API");
+    }
 }
