@@ -6,6 +6,8 @@ import com.sansa.auth.dto.login.TokenRefreshResponse;
 import com.sansa.auth.service.AuthService;
 import com.sansa.auth.service.impl.AuthServiceImpl;
 import com.sansa.auth.store.Store;
+import com.sansa.auth.util.TokenIssuer;
+import com.sansa.auth.util.impl.TokenIssuerImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,25 +23,13 @@ class TokenUtilTest {
     @Test
     void refresh_rotates_refresh_token_and_returns_tv() throws Exception {
         Store store = mock(Store.class);
-        AuthServiceImpl.TokenIssuer ti = mock(AuthServiceImpl.TokenIssuer.class);
+        TokenIssuer ti = mock(TokenIssuer.class);
         AuthServiceImpl.PasswordHasher ph = mock(AuthServiceImpl.PasswordHasher.class);
         AuthService auth = new AuthServiceImpl(store, ti, ph);
 
         // RT 解析結果（署名/exp等は TokenIssuer に委譲）
-        when(ti.parseAndValidateRefresh("RT-old"))
-                .thenReturn(new AuthServiceImpl.TokenIssuer.RefreshParseResult() {
-                    public String getUserId() {
-                        return "john";
-                    }
-
-                    public String getJti() {
-                        return "rt-1";
-                    }
-
-                    public int getTokenVersion() {
-                        return 2;
-                    }
-                });
+        when(ti.parseRefresh("RT-old"))
+                .thenReturn(new TokenIssuer.RefreshParseResult("john", "rt-1", 2));
 
         when(store.getTokenVersion("john")).thenReturn(2);
         when(ti.newRefreshId()).thenReturn("rt-2");
@@ -51,7 +41,7 @@ class TokenUtilTest {
         assertNotNull(res); // DTO の具体アクセサは最終形に依存するため、存在のみ検証
 
         // 相互作用（RTローテーション）が正しく行われたことを検証
-        verify(ti).parseAndValidateRefresh("RT-old");
+        verify(ti).parseRefresh("RT-old");
         verify(store).getTokenVersion("john");
         verify(ti).newRefreshId();
         verify(ti).issueAccessToken("john", 2);
