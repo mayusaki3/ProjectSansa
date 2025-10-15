@@ -31,12 +31,18 @@ public final class JwtProvider {
     private final String issuer;
     private final int accessTtlSec;
     private final int refreshTtlSec;
+    private final int tokenVersion;
 
-    public JwtProvider(SecretKey key, String issuer, int accessTtlSec, int refreshTtlSec) {
+    public JwtProvider(SecretKey key, String issuer, int accessTtlSec, int refreshTtlSec, int tokenVersion) {
         this.key = key;
         this.issuer = issuer;
         this.accessTtlSec = accessTtlSec;
         this.refreshTtlSec = refreshTtlSec;
+        this.tokenVersion = tokenVersion > 0 ? tokenVersion : 1;
+    }
+
+    public String createRefreshToken(String userId, String jti) {
+        return createRefreshToken(userId, jti, this.tokenVersion);
     }
 
     /** 設定ファイルのBase64秘密鍵を受け取り、プロバイダを生成 */

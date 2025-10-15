@@ -1,53 +1,74 @@
 package com.sansa.auth.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 /**
- * JWT 設定のプロパティクラス。
+ * JWT 関連のアプリ設定を型安全に束ねるクラス。
  *
- * <p>想定プロパティ:
- * <ul>
- *   <li>{@code jwt.secret} — 署名用シークレット（本番は十分な長さ・エントロピー必須）</li>
- *   <li>{@code jwt.issuer} — 発行者（{@code iss}）クレーム</li>
- *   <li>{@code jwt.accessTokenMinutes} — アクセストークンの有効期限（分）</li>
- *   <li>{@code jwt.refreshTokenDays} — リフレッシュトークンの有効期限（日）</li>
- * </ul>
+ * <p>application.yml の例</p>
+ * <pre>
+ * sansa:
+ *   jwt:
+ *     secret: "base64:xxxxxxxx..."   # or 任意のプレーン文字列（十分な長さ）
+ *     issuer: "sansa-auth"
+ *     access-minutes: 15
+ *     refresh-days: 7
+ * </pre>
  *
- * <p>注意:
+ * <p>注意</p>
  * <ul>
- *   <li>Getter/Setter は Lombok でも手書きでも可（現在はPOJO想定）</li>
- *   <li>本番では値のバリデーション（空・桁不足など）を強めることを推奨</li>
+ *   <li>「base64:」で始まる場合は Base64 と解釈（{@link JwtProviderConfig} 側でデコード）。</li>
+ *   <li>本クラスは {@code @ConfigurationProperties} のみ。Bean として有効化するのは
+ *       {@link JwtProviderConfig} または {@link com.sansa.auth.config.ServiceWiringConfig} の
+ *       {@code @EnableConfigurationProperties(JwtConfig.class)} で行います。</li>
  * </ul>
  */
-@Configuration
-@ConfigurationProperties(prefix = "jwt")
+@ConfigurationProperties(prefix = "sansa.jwt")
 public class JwtConfig {
 
-    /**
-     * Base64 でエンコードされた共有秘密鍵（HS256/HS512 用）
-     * 例: application-*.yml で jwt.secret: "xxxxx(base64)xxxxx"
-     */
+    /** 署名鍵。先頭が "base64:" の場合は Base64 エンコード文字列として扱う。 */
     private String secret;
 
-    /** iss (Issuer) */
-    private String issuer;
+    /** iss クレームに入れる発行者名。 */
+    private String issuer = "sansa-auth";
 
-    /** アクセストークンの有効期間（分） */
-    private int accessTokenMinutes;
+    /** アクセストークンの有効期間（分）。 */
+    private int accessMinutes = 15;
 
-    /** リフレッシュトークンの有効期間（日） */
-    private int refreshTokenDays;
+    /** リフレッシュトークンの有効期間（日）。 */
+    private int refreshDays = 7;
 
-    // ---- getters ----
-    public String getSecret() { return secret; }
-    public String getIssuer() { return issuer; }
-    public int getAccessTokenMinutes() { return accessTokenMinutes; }
-    public int getRefreshTokenDays() { return refreshTokenDays; }
+    // ---- getters / setters ----
 
-    // ---- setters ----
-    public void setSecret(String secret) { this.secret = secret; }
-    public void setIssuer(String issuer) { this.issuer = issuer; }
-    public void setAccessTokenMinutes(int accessTokenMinutes) { this.accessTokenMinutes = accessTokenMinutes; }
-    public void setRefreshTokenDays(int refreshTokenDays) { this.refreshTokenDays = refreshTokenDays; }
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    public String getIssuer() {
+        return issuer;
+    }
+
+    public void setIssuer(String issuer) {
+        this.issuer = issuer;
+    }
+
+    public int getAccessMinutes() {
+        return accessMinutes;
+    }
+
+    public void setAccessMinutes(int accessMinutes) {
+        this.accessMinutes = accessMinutes;
+    }
+
+    public int getRefreshDays() {
+        return refreshDays;
+    }
+
+    public void setRefreshDays(int refreshDays) {
+        this.refreshDays = refreshDays;
+    }
 }
