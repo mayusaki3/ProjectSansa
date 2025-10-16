@@ -7,6 +7,10 @@ spring:
 auth:
   jwt:
     # 32バイト以上を base64 化して格納（例はダミー）
-    secretBase64: ${SANSA_AUTH_JWT_B64_SECRET:VGhpc0lzRGVtby1DaGFuZ2VNZQAAAAAAAAAAAAAAAA==}
+    secret: "8511S/VeS9NcTcSnKIxQdwOMwihu0Vy7elR3rjvhvYvW60aPiUtO9yjxK0p5lGHH1sGwG8MfeyFButCh55yXeg=="
+    issuer: "sansa-auth"
+    accessTtl: "PT15M"    # アクセストークン有効期間 ISO-8601 例: 15分
+    refreshTtl: "P7D"     # リフレッシュトークン 例: 
     accessTtlSeconds: 900
     refreshTtlSeconds: 2592000
+    tokenVersion: 1

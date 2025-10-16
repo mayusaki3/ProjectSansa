@@ -1,74 +1,111 @@
 package com.sansa.auth.jwt;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
- * JWT 関連のアプリ設定を型安全に束ねるクラス。
+ * JWT に関する設定値を application.yml / application.properties からバインドするための
+ * コンフィグレーションクラス。
  *
- * <p>application.yml の例</p>
+ * <h2>役割</h2>
+ * <ul>
+ *   <li>署名用シークレット（Base64 文字列）</li>
+ *   <li>発行者（issuer）</li>
+ *   <li>アクセストークンの有効期間（秒）</li>
+ *   <li>リフレッシュトークンの有効期間（秒）</li>
+ * </ul>
+ * を一か所に集約し、{@link JwtProviderConfig} から参照できるようにします。
+ *
+ * <h2>プロパティ定義例</h2>
  * <pre>
  * sansa:
  *   jwt:
- *     secret: "base64:xxxxxxxx..."   # or 任意のプレーン文字列（十分な長さ）
- *     issuer: "sansa-auth"
- *     access-minutes: 15
- *     refresh-days: 7
+ *     secret:  Base64EncodedSecretHere==   # HMAC 用のキーを Base64 で保持
+ *     issuer:  sansa-auth
+ *     access-ttl-seconds: 900              # 15 分
+ *     refresh-ttl-seconds: 1209600         # 14 日
  * </pre>
  *
- * <p>注意</p>
+ * <h2>検証</h2>
  * <ul>
- *   <li>「base64:」で始まる場合は Base64 と解釈（{@link JwtProviderConfig} 側でデコード）。</li>
- *   <li>本クラスは {@code @ConfigurationProperties} のみ。Bean として有効化するのは
- *       {@link JwtProviderConfig} または {@link com.sansa.auth.config.ServiceWiringConfig} の
- *       {@code @EnableConfigurationProperties(JwtConfig.class)} で行います。</li>
+ *   <li>{@code secret}, {@code issuer} は空文字不可</li>
+ *   <li>TTL は 0 より大きい秒数である必要あり</li>
+ * </ul>
+ *
+ * <h2>注意</h2>
+ * <ul>
+ *   <li>ここでは「トークンバージョン（tv）」は保持しません。アクセストークンの tv は
+ *       発行時にアプリ側から値を渡す設計（利用者ごとに異なる／可変のため）です。</li>
+ *   <li>シークレットは <b>Base64</b> で保存してください（平文キーを直接入れない）。</li>
  * </ul>
  */
-@ConfigurationProperties(prefix = "sansa.jwt")
+@Validated
+@ConfigurationProperties(prefix = "auth.jwt")
 public class JwtConfig {
 
-    /** 署名鍵。先頭が "base64:" の場合は Base64 エンコード文字列として扱う。 */
-    private String secret;
+  /** HMAC 署名用の Base64 エンコード済みシークレット。 */
+  @NotBlank
+  private String secret;
 
-    /** iss クレームに入れる発行者名。 */
-    private String issuer = "sansa-auth";
+  /** 発行者（iss クレームに設定）。 */
+  @NotBlank
+  private String issuer;
 
-    /** アクセストークンの有効期間（分）。 */
-    private int accessMinutes = 15;
+  /** アクセストークンの TTL（秒）。 */
+  @Positive
+  private int accessTtlSeconds;
 
-    /** リフレッシュトークンの有効期間（日）。 */
-    private int refreshDays = 7;
+  /** リフレッシュトークンの TTL（秒）。 */
+  @Positive
+  private int refreshTtlSeconds;
 
-    // ---- getters / setters ----
+  // ----- getters / setters -----
 
-    public String getSecret() {
-        return secret;
-    }
+  public String getSecret() {
+    return secret;
+  }
 
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
+  public void setSecret(String secret) {
+    this.secret = secret;
+  }
 
-    public String getIssuer() {
-        return issuer;
-    }
+  public String getIssuer() {
+    return issuer;
+  }
 
-    public void setIssuer(String issuer) {
-        this.issuer = issuer;
-    }
+  public void setIssuer(String issuer) {
+    this.issuer = issuer;
+  }
 
-    public int getAccessMinutes() {
-        return accessMinutes;
-    }
+  public int getAccessTtlSeconds() {
+    return accessTtlSeconds;
+  }
 
-    public void setAccessMinutes(int accessMinutes) {
-        this.accessMinutes = accessMinutes;
-    }
+  public void setAccessTtlSeconds(int accessTtlSeconds) {
+    this.accessTtlSeconds = accessTtlSeconds;
+  }
 
-    public int getRefreshDays() {
-        return refreshDays;
-    }
+  public int getRefreshTtlSeconds() {
+    return refreshTtlSeconds;
+  }
 
-    public void setRefreshDays(int refreshDays) {
-        this.refreshDays = refreshDays;
-    }
+  public void setRefreshTtlSeconds(int refreshTtlSeconds) {
+    this.refreshTtlSeconds = refreshTtlSeconds;
+  }
+
+  @Override
+  public String toString() {
+    // secret をログに出さないために伏字化
+    String masked = (secret == null || secret.isEmpty())
+        ? "(empty)"
+        : "****" + secret.length() + "****";
+    return "JwtConfig{" +
+        "secret=" + masked +
+        ", issuer='" + issuer + '\'' +
+        ", accessTtlSeconds=" + accessTtlSeconds +
+        ", refreshTtlSeconds=" + refreshTtlSeconds +
+        '}';
+  }
 }

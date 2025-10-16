@@ -1,0 +1,3 @@
+# JUnit Platform が ServiceLoader 経由で読み取る設定ファイル。
+# クラスパス上にある TestExecutionListener 実装を列挙する。
+com.sansa.test.PrettyConsoleListener

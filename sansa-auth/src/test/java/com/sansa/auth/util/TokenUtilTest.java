@@ -29,12 +29,12 @@ class TokenUtilTest {
 
         // RT 解析結果（署名/exp等は TokenIssuer に委譲）
         when(ti.parseRefresh("RT-old"))
-                .thenReturn(new TokenIssuer.RefreshParseResult("john", "rt-1", 2));
+                .thenReturn(new TokenIssuer.RefreshParseResult("john", "rt-1"   ));
 
         when(store.getTokenVersion("john")).thenReturn(2);
         when(ti.newRefreshId()).thenReturn("rt-2");
         when(ti.issueAccessToken("john", 2)).thenReturn("AT-new");
-        when(ti.issueRefreshToken("john", "rt-2", 2)).thenReturn("RT-new");
+        when(ti.issueRefreshToken( "john", "rt-2")).thenReturn("RT-new");
 
         TokenRefreshResponse res = auth.refresh(new TokenRefreshRequest("RT-old"));
 
@@ -45,7 +45,7 @@ class TokenUtilTest {
         verify(store).getTokenVersion("john");
         verify(ti).newRefreshId();
         verify(ti).issueAccessToken("john", 2);
-        verify(ti).issueRefreshToken("john", "rt-2", 2);
+        verify(ti).issueRefreshToken("john", "rt-2");
         verifyNoMoreInteractions(ti);
     }
 }

@@ -1,112 +1,124 @@
 package com.sansa.auth.util;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
-import java.util.Map;
+import java.util.Objects;
 
 /**
- * JWTの発行/検証のみを担う薄いユーティリティ。
- * 仕様（テスト/設定に合わせた公開API）:
- * - static JwtProvider fromBase64Secret(String secretB64, String issuer, int accessTtlSec, int refreshTtlSec)
- * - String createAccessToken(String subject)
- * - String createRefreshToken(String subject, String jti)
- * - ParsedRefresh parseRefresh(String token) : userId(subject) と jti と tokenVersion を返す
+ * JWT の発行・解析の実装詳細を隠蔽する薄いユーティリティ。
  *
- * 注意:
- * - ここでは「アクセストークン」「リフレッシュトークン」でTTLを分ける。
- * - 追加クレームは最小化（subject, issuer, exp, iat, jti）に留める。
+ * <p>ポリシー</p>
+ * <ul>
+ *   <li>アクセストークン: {@code sub}=userId, {@code tv}=tokenVersion を必ず含める</li>
+ *   <li>リフレッシュトークン: {@code sub}=userId, {@code jti}=refreshId を必ず含める</li>
+ * </ul>
+ *
+ * <p>JJWT 0.12+ を想定（パーサは {@code Jwts.parser().verifyWith(key).build()}）。</p>
  */
 public final class JwtProvider {
 
-    private final SecretKey key;
+    /** 署名鍵（HMAC 系を想定） */
+    private final SecretKey secretKey;
+    /** iss（任意。監査や多環境の識別に使用） */
     private final String issuer;
-    private final int accessTtlSec;
-    private final int refreshTtlSec;
-    private final int tokenVersion;
+    /** アクセストークンのTTL（秒） */
+    private final int accessTokenTtlSeconds;
+    /** リフレッシュトークンのTTL（秒） */
+    private final int refreshTokenTtlSeconds;
 
-    public JwtProvider(SecretKey key, String issuer, int accessTtlSec, int refreshTtlSec, int tokenVersion) {
-        this.key = key;
+    /**
+     * 直接コンストラクタ。
+     */
+    public JwtProvider(SecretKey secretKey, String issuer,
+                        int accessTokenTtlSeconds, int refreshTokenTtlSeconds) {
+        this.secretKey = Objects.requireNonNull(secretKey, "secretKey");
         this.issuer = issuer;
-        this.accessTtlSec = accessTtlSec;
-        this.refreshTtlSec = refreshTtlSec;
-        this.tokenVersion = tokenVersion > 0 ? tokenVersion : 1;
-    }
-
-    public String createRefreshToken(String userId, String jti) {
-        return createRefreshToken(userId, jti, this.tokenVersion);
-    }
-
-    /** 設定ファイルのBase64秘密鍵を受け取り、プロバイダを生成 */
-    public static JwtProvider fromBase64Secret(String secretB64, String issuer, int accessTtlSec, int refreshTtlSec) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretB64);
-        SecretKey k = Keys.hmacShaKeyFor(keyBytes);
-        return new JwtProvider(k, issuer, accessTtlSec, refreshTtlSec);
-    }
-
-    /** アクセストークン発行（短命）。subject は userId 等を想定。 */
-    public String createAccessToken(String subject) {
-        Instant now = Instant.now();
-        Instant exp = now.plusSeconds(accessTtlSec);
-        return Jwts.builder()
-                .setSubject(subject)
-                .setIssuer(issuer)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+        this.accessTokenTtlSeconds = accessTokenTtlSeconds;
+        this.refreshTokenTtlSeconds = refreshTokenTtlSeconds;
     }
 
     /**
-     * リフレッシュトークン発行（長命）。subject = userId, jti = リフレッシュID。
-     * 実装メモ: jti を必ず入れて、サーバ側の失効/ローテートと突き合わせ可能にする。
+     * Base64 エンコード済みシークレットから HMAC 鍵を生成して組み立てるユーティリティ。
+     *
+     * @param base64Secret Base64 文字列（推奨：十分な長さのランダムバイト）
      */
-    public String createRefreshToken(String subject, String jti, int tokenVersion) {
-        Instant now = Instant.now();
-        Instant exp = now.plusSeconds(refreshTtlSec);
-        return Jwts.builder()
-                .setSubject(subject)
-                .setIssuer(issuer)
-                .setId(jti)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .claim("tokenVersion", tokenVersion)
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+    public static JwtProvider fromBase64Secret(String base64Secret, String issuer,
+                                                int accessTokenTtlSeconds, int refreshTokenTtlSeconds) {
+        byte[] keyBytes = Base64.getDecoder().decode(base64Secret.getBytes(StandardCharsets.US_ASCII));
+        SecretKey key = Keys.hmacShaKeyFor(keyBytes);
+        return new JwtProvider(key, issuer, accessTokenTtlSeconds, refreshTokenTtlSeconds);
     }
 
     /**
-     * リフレッシュのパース（署名・exp検証を含む）。
-     * 成功時: subject(userId), jti, tokenVersion を返す。
+     * アクセストークンを発行する。
+     * 必須クレーム:
+     * <ul>
+     *   <li>{@code sub}=userId</li>
+     *   <li>{@code tv}=tokenVersion（整数）</li>
+     *   <li>{@code iss}, {@code iat}, {@code exp}</li>
+     * </ul>
      */
-    public ParsedRefresh parseRefresh(String token) {
-        Jws<Claims> jws = Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token);
-        Claims c = jws.getBody();
+    public String createAccessToken(String userId, int tokenVersion) {
+        Instant now = Instant.now();
+        Instant exp = now.plusSeconds(accessTokenTtlSeconds);
+        return Jwts.builder()
+            .subject(userId)
+            .issuer(issuer)
+            .issuedAt(Date.from(now))
+            .expiration(Date.from(exp))
+            .claim("tv", tokenVersion)
+            .signWith(secretKey) // 0.12+ : アルゴリズムは鍵から解決
+            .compact();
+    }
+
+    /**
+     * リフレッシュトークンを発行する。
+     * 必須クレーム:
+     * <ul>
+     *   <li>{@code sub}=userId</li>
+     *   <li>{@code jti}=refreshId</li>
+     *   <li>{@code iss}, {@code iat}, {@code exp}</li>
+     * </ul>
+     */
+    public String createRefreshToken(String userId, String refreshId) {
+        Instant now = Instant.now();
+        Instant exp = now.plusSeconds(refreshTokenTtlSeconds);
+        return Jwts.builder()
+            .subject(userId)
+            .id(refreshId)      // = jti
+            .issuer(issuer)
+            .issuedAt(Date.from(now))
+            .expiration(Date.from(exp))
+            .signWith(secretKey)
+            .compact();
+    }
+
+    /**
+     * リフレッシュトークンを解析し、{@code sub} と {@code jti} を取り出す。
+     * 不正／失効は {@link io.jsonwebtoken.JwtException} などランタイム例外をスロー。
+     */
+    public ParsedRefresh parseRefresh(String refreshToken) {
+        Claims c = Jwts.parser().verifyWith(secretKey).build()
+            .parseSignedClaims(refreshToken)
+            .getPayload();
+
         String userId = c.getSubject();
-        String jti = c.getId();
-        Integer tv = c.get("tokenVersion", Integer.class);
-        if (tv == null) throw new JwtException("tokenVersion claim missing");
-        int tokenVersion = tv.intValue();
-        return new ParsedRefresh(userId, jti, tokenVersion);
+        String refreshId = c.getId();
+        if (userId == null || refreshId == null) {
+        throw new IllegalArgumentException("refresh token missing required claims (sub/jti).");
+        }
+        return new ParsedRefresh(userId, refreshId);
     }
 
-    /** 解析結果の薄いDTO（必要最小限） */
-    public record ParsedRefresh(String userId, String jti, int tokenVersion) {}
-
-    public int getAccessTtlSec() { return accessTtlSec; }
-
-    public int getRefreshTtlSec() { return refreshTtlSec; }
-
-    public String getIssuer() { return issuer; }
+    /**
+     * リフレッシュトークン解析結果のシンプルな DTO。
+     */
+    public record ParsedRefresh(String userId, String refreshId) {}
 }

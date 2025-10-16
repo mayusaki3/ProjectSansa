@@ -1,10 +1,13 @@
 package com.sansa.auth.service.impl;
 
 import com.sansa.auth.dto.login.LoginResponse;
+import com.sansa.auth.dto.login.LoginTokens;
 import com.sansa.auth.dto.mfa.*;
 import com.sansa.auth.exception.BadRequestException;
 import com.sansa.auth.exception.UnauthorizedException;
 import com.sansa.auth.service.MfaService;
+import com.sansa.auth.service.port.TokenFacade;
+import com.sansa.auth.service.port.TokenFacade.TokenPair;
 import com.sansa.auth.store.Store;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -60,7 +63,14 @@ public class MfaServiceImpl implements MfaService {
         String secret = store.getTotpSecret(userId).orElseThrow(() -> new BadRequestException("not enrolled"));
         boolean ok = totp.verify(secret, req.getCode());
         if (!ok) throw new BadRequestException("invalid totp code");
-        return tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "totp"));
+        TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "totp"));
+        return LoginResponse.builder()
+                .authenticated(true)
+                .mfaRequired(false)
+                .tokens(LoginTokens(tokens.accessToken(), tokens.refreshToken()))
+                .expiresIn(null)
+                .scope(null)
+                .build();
     }
 
     // ---- Email --------------------------------------------------------------
@@ -81,7 +91,14 @@ public class MfaServiceImpl implements MfaService {
         String userId = requireChallengeUser(req.getChallengeId());
         boolean ok = store.verifyEmailMfaCode(userId, req.getCode());
         if (!ok) throw new BadRequestException("invalid or expired email code");
-        return tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "email"));
+        TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "email"));
+        return LoginResponse.builder()
+                .authenticated(true)
+                .mfaRequired(false)
+                .tokens(LoginTokens(tokens.accessToken(), tokens.refreshToken()))
+                .expiresIn(null)
+                .scope(null)
+                .build();
     }
 
     // ---- Recovery -----------------------------------------------------------
@@ -100,7 +117,16 @@ public class MfaServiceImpl implements MfaService {
         String userId = requireChallengeUser(req.getChallengeId());
         boolean ok = store.consumeRecoveryCode(userId, req.getCode());
         if (!ok) throw new BadRequestException("invalid recovery code");
-        return tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "recovery"));
+        TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "recovery"));
+        return LoginResponse.builder()
+                .authenticated(true)
+                .mfaRequired(false)
+                .tokens(LoginTokens().builder()
+                        .accessToken(tokens.accessToken())
+                        .refreshToken(tokens.refreshToken()))
+                .expiresIn(null)
+                .scope(null)
+                .build();
     }
 
     // ---- 補助 ---------------------------------------------------------------
@@ -112,16 +138,13 @@ public class MfaServiceImpl implements MfaService {
     }
 
     public interface TotpLib {
+        String generateSecret();
         String buildOtpAuthUri(String issuer, String accountLabel, String secret);
         boolean verify(String secret, String code);
     }
 
     public interface Mailer {
         void sendMfaCode(String userId, String subject);
-    }
-
-    public interface TokenFacade {
-        LoginResponse issueAfterAuth(String userId, List<String> amr);
     }
 
     public static final class CurrentRequestContext {

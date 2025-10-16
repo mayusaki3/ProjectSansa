@@ -2,64 +2,48 @@ package com.sansa.auth.util.impl;
 
 import com.sansa.auth.util.JwtProvider;
 import com.sansa.auth.util.TokenIssuer;
-import org.springframework.stereotype.Component;
-import io.jsonwebtoken.Claims;
-import java.util.Objects;
+import java.util.UUID;
 
 /**
- * {@link TokenIssuer} のデフォルト実装。
+ * {@link TokenIssuer} の既定実装。
  *
- * <p>実処理は {@link JwtProvider} に委譲します。
- * 本クラスは「発行（issue）」と「解析（parse）」に特化した薄い層で、
- * 余計なドメイン知識は持ちません。</p>
- *
- * <p>DI 構成例：
- * <pre>{@code
- * @Configuration
- * class ServiceWiringConfig {
- *   @Bean
- *   TokenIssuer tokenIssuer(JwtProvider jwt) {
- *     return new TokenIssuerImpl(jwt);
- *   }
- * }
- * }</pre>
- * </p>
+ * <p>責務の分離:</p>
+ * <ul>
+ *   <li>署名方式やクレームの物理名（"tv" / "jti" など）は {@link JwtProvider} が担う</li>
+ *   <li>アプリ層からはインターフェース（本クラス）だけを使えばよい</li>
+ * </ul>
  */
 public class TokenIssuerImpl implements TokenIssuer {
 
     private final JwtProvider jwt;
 
-    /**
-     * 依存する {@link JwtProvider} を受け取るシンプルなコンストラクタ。
-     */
     public TokenIssuerImpl(JwtProvider jwt) {
-        this.jwt = Objects.requireNonNull(jwt, "jwt");
+        this.jwt = jwt;
     }
 
+    /** アクセストークン発行（"tv" = tokenVersion を付与） */
     @Override
     public String issueAccessToken(String userId, int tokenVersion) {
-        // JwtProvider 側が有効期限・署名キー・issuer などを内包している想定
         return jwt.createAccessToken(userId, tokenVersion);
     }
 
+    /** リフレッシュトークン発行（"jti" = refreshId を付与） */
     @Override
     public String issueRefreshToken(String userId, String refreshId) {
         return jwt.createRefreshToken(userId, refreshId);
     }
 
+    /** リフレッシュトークン解析（sub と jti を返す） */
     @Override
     public RefreshParseResult parseRefresh(String refreshToken) {
-        // jwt.parseRefresh(...) の戻りに合わせて**正しいアクセサ**を使う
-        // 例A: 戻りが record ParsedRefresh(String userId, String refreshId, int tokenVersion)
-        var pr = jwt.parseRefresh(refreshToken);
+        JwtProvider.ParsedRefresh pr = jwt.parseRefresh(refreshToken);
         return new RefreshParseResult(pr.userId(), pr.refreshId());
+    }
 
-        // 例B: 戻りが Map<String,Object> の場合
-        // var claims = jwt.parseRefresh(refreshToken);
-        // return new RefreshParseResult((String) claims.get("sub"), (String) claims.get("jti"));
-
-        // 例C: 戻りが io.jsonwebtoken.Claims の場合
-        // var claims = jwt.parseRefresh(refreshToken);
-        // return new RefreshParseResult(claims.getSubject(), claims.getId());
+    /** リフレッシュトークンのローテーションに使う新しい JTI を返す） */
+    @Override
+    public String newRefreshId() {
+        // ローテーション用の新規 JTI を生成（衝突が事実上起こらない UUID で十分）
+        return UUID.randomUUID().toString();
     }
 }

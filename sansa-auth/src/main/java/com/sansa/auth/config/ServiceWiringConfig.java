@@ -26,26 +26,29 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ServiceWiringConfig {
 
-  /**
-   * TokenIssuer の組み立て。
-   *
-   * <p>引数の {@link JwtProvider} はメソッド引数インジェクションにより
-   * Spring が既存の Bean を解決して渡します。
-   * ここで新たに {@code jwtProvider()} を定義しないことで、重複定義を避けます。</p>
-   */
-  @Bean
-  public TokenIssuer tokenIssuer(JwtProvider jwtProvider) {
-    // 実体は薄いファサード。JwtProvider の API に合わせるだけ。
-    return new TokenIssuerImpl(jwtProvider);
-  }
+    /*
+    * ここに他サービスの配線を追加したい場合の注意点:
+    * - 既存の @Configuration や @Component により同名 Bean が
+    *   すでに存在しないかを確認すること。
+    * - 原則として、ドメイン/アプリサービスの実装クラスが @Service で
+    *   自己登録しているなら、ここで二重に @Bean を作らないこと。
+    * - 外部設定値（issuer、期限、鍵素材など）は本クラスでは終端せず、
+    *   専用の Config クラスで束ねたうえで、利用側に注入すること。
+    */
+    
+    @Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        // 強度はお好みで
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    }
 
-  /*
-   * ここに他サービスの配線を追加したい場合の注意点:
-   * - 既存の @Configuration や @Component により同名 Bean が
-   *   すでに存在しないかを確認すること。
-   * - 原則として、ドメイン/アプリサービスの実装クラスが @Service で
-   *   自己登録しているなら、ここで二重に @Bean を作らないこと。
-   * - 外部設定値（issuer、期限、鍵素材など）は本クラスでは終端せず、
-   *   専用の Config クラスで束ねたうえで、利用側に注入すること。
-   */
+    @Bean
+    public com.sansa.auth.service.impl.AuthServiceImpl.PasswordHasher passwordHasher(
+            org.springframework.security.crypto.password.PasswordEncoder encoder) {
+        // AuthServiceImpl が期待する内部インターフェースの実装を匿名クラスで返す
+        return new com.sansa.auth.service.impl.AuthServiceImpl.PasswordHasher() {
+            @Override public String hash(String raw) { return encoder.encode(raw); }
+            @Override public boolean matches(String raw, String hashed) { return encoder.matches(raw, hashed); }
+        };
+    }
 }

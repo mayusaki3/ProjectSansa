@@ -1,82 +1,91 @@
 package com.sansa.auth.jwt;
 
 import com.sansa.auth.util.JwtProvider;
+import com.sansa.auth.util.TokenIssuer;
+import com.sansa.auth.util.impl.TokenIssuerImpl;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import javax.crypto.SecretKey;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.crypto.SecretKey;
+import java.util.Base64;
+
 /**
- * JWT の低レイヤ機能（署名/検証/パース）を提供する {@link JwtProvider} を組み立てる設定クラス。
+ * JWT 関連の Bean を束ねる設定クラス。
  *
- * <p>設計方針</p>
+ * <h2>このクラスの役割</h2>
  * <ul>
- *   <li>{@code jwtProvider} は <b>ここだけ</b>で定義する（重複 Bean 回避）。</li>
- *   <li>鍵素材は {@link JwtConfig} から受け取り、必要に応じて Base64 デコード。</li>
- *   <li>依存している JJWT ライブラリは 0.11/0.12 いずれでも動くよう、鍵生成は {@link Keys#hmacShaKeyFor(byte[])} を使用。</li>
+ *   <li>{@link JwtConfig} に載っているアプリ設定値（secret/issuer/TTL）を受け取り、</li>
+ *   <li>署名鍵 {@link SecretKey} を生成し、</li>
+ *   <li>トークン操作用の {@link JwtProvider} を生成、</li>
+ *   <li>アプリが直接使うファサード {@link TokenIssuer} を公開する。</li>
  * </ul>
+ *
+ * <h2>重要: 重複定義を避ける</h2>
+ * <p>
+ * {@code ServiceWiringConfig} に <b>jwtProvider()</b> を定義していると
+ * Bean 名の衝突（<code>The bean 'jwtProvider' ... overriding is disabled</code>）が発生します。
+ * <b>jwtProvider の定義は本クラスに一本化</b>してください（ServiceWiringConfig からは削除）。
+ * </p>
+ *
+ * <h2>プロパティの例（application.yml）</h2>
+ * <pre>
+ * sansa:
+ *   jwt:
+ *     secret:  Base64EncodedSecretHere==
+ *     issuer:  sansa-auth
+ *     access-ttl-seconds: 900        # 15 min
+ *     refresh-ttl-seconds: 1209600   # 14 days
+ * </pre>
+ *
+ * <h2>アクセストークン/リフレッシュトークンのクレーム方針</h2>
+ * <ul>
+ *   <li>アクセストークン: {@code sub}=userId, {@code tv}=tokenVersion</li>
+ *   <li>リフレッシュトークン: {@code sub}=userId, {@code jti}=refreshId</li>
+ * </ul>
+ * これらの物理クレーム名の扱いは {@link JwtProvider} に閉じ込めています。
  */
 @Configuration
 @EnableConfigurationProperties(JwtConfig.class)
 public class JwtProviderConfig {
 
-    private final JwtConfig jwtConfig;
+  /**
+   * Base64 文字列（ランダム十分長）のシークレットから HMAC 用の {@link SecretKey} を生成。
+   *
+   * <p>注意: 平文キーではなく <b>Base64</b> で受け取る想定です。</p>
+   */
+  @Bean
+  public SecretKey jwtSecretKey(JwtConfig cfg) {
+    byte[] keyBytes = Base64.getDecoder().decode(cfg.getSecret());
+    return Keys.hmacShaKeyFor(keyBytes);
+  }
 
-    public JwtProviderConfig(JwtConfig jwtConfig) {
-        this.jwtConfig = jwtConfig;
-    }
+  /**
+   * 署名鍵・発行者・TTL を束ねた {@link JwtProvider}。
+   * <p>
+   * TokenIssuerImpl からは本プロバイダの「発行／解析」メソッドだけを使います。
+   * </p>
+   */
+  @Bean
+  public JwtProvider jwtProvider(SecretKey jwtSecretKey, JwtConfig cfg) {
+    return new JwtProvider(
+        jwtSecretKey,
+        cfg.getIssuer(),
+        cfg.getAccessTtlSeconds(),
+        cfg.getRefreshTtlSeconds()
+    );
+  }
 
-    /**
-     * 設定の妥当性を軽くチェック。
-     * 本格的な検証は起動時例外にしておくと原因が追いやすい。
-     */
-    @PostConstruct
-    void validate() {
-        if (jwtConfig.getSecret() == null || jwtConfig.getSecret().isBlank()) {
-        throw new IllegalStateException("sansa.jwt.secret must be set");
-        }
-        if (jwtConfig.getAccessMinutes() <= 0) {
-        throw new IllegalStateException("sansa.jwt.access-minutes must be > 0");
-        }
-        if (jwtConfig.getRefreshDays() <= 0) {
-        throw new IllegalStateException("sansa.jwt.refresh-days must be > 0");
-        }
-    }
-
-    /**
-     * 署名用の SecretKey。
-     * <ul>
-     *   <li>secret が "base64:" で始まる→ Base64 デコード後に HMAC 用鍵を生成。</li>
-     *   <li>それ以外→ UTF-8 バイト列から HMAC 用鍵を生成。</li>
-     * </ul>
-     */
-    @Bean(name = "jwtSecretKey")
-    public SecretKey jwtSecretKey() {
-        final String raw = jwtConfig.getSecret();
-        final byte[] keyBytes;
-        if (raw.startsWith("base64:")) {
-        keyBytes = Base64.getDecoder().decode(raw.substring("base64:".length()));
-        } else {
-        keyBytes = raw.getBytes(StandardCharsets.UTF_8);
-        }
-        // HMAC-SHA 用の鍵を生成（HS256/384/512 いずれにも使える）
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
-
-    /**
-     * アプリ全体で使う JwtProvider。
-     * <p>注意：この Bean 名（"jwtProvider"）は他で重複定義しないこと。</p>
-     */
-    @Bean(name = "jwtProvider")
-    public JwtProvider jwtProvider(SecretKey jwtSecretKey) {
-        return new JwtProvider(
-            jwtSecretKey,
-            jwtConfig.getIssuer(),
-            jwtConfig.getAccessMinutes(),
-            jwtConfig.getRefreshDays());
-    }
+  /**
+   * アプリ側が直接利用するファサード。
+   * <p>
+   * アクセストークン発行時の {@code tokenVersion(tv)} は呼び出し側から引数で受け取ります
+   * （デフォルト値を固定したい場合は、アプリ層でラップするか設定値を別途注入してください）。
+   * </p>
+   */
+  @Bean
+  public TokenIssuer tokenIssuer(JwtProvider jwtProvider) {
+    return new TokenIssuerImpl(jwtProvider);
+  }
 }

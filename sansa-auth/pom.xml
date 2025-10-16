@@ -89,6 +89,19 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- Commons Codec -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.16.1</version>
+    </dependency>
+
+    <!-- JavaMailSender -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
+
     <!-- 単体テスト基盤 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -96,11 +109,11 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- tests: org.apache.commons.codec.binary.Base32 / Base64 for MfaUtilTest -->
+    <!-- テスト結果/テストIDを出力 -->
     <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.16.1</version>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>1.10.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -141,6 +154,13 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
+          <systemPropertyVariables>
+            <file.encoding>UTF-8</file.encoding>
+            <sun.stdout.encoding>UTF-8</sun.stdout.encoding>
+            <sun.jnu.encoding>UTF-8</sun.jnu.encoding>
+            <pretty.console.ascii>false</pretty.console.ascii>
+          </systemPropertyVariables>
+          <useFile>false</useFile>
           <includes>
             <include>**/spec/*Test.java</include>
           </includes>
