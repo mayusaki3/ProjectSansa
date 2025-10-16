@@ -65,11 +65,11 @@ public class MfaServiceImpl implements MfaService {
         if (!ok) throw new BadRequestException("invalid totp code");
         TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "totp"));
         return LoginResponse.builder()
-                .authenticated(true)
-                .mfaRequired(false)
-                .tokens(LoginTokens(tokens.accessToken(), tokens.refreshToken()))
-                .expiresIn(null)
-                .scope(null)
+                // .authenticated(true)
+                // .mfaRequired(false)
+                // .tokens(LoginTokens(tokens.accessToken(), tokens.refreshToken()))
+                // .expiresIn(null)
+                // .scope(null)
                 .build();
     }
 
@@ -93,11 +93,11 @@ public class MfaServiceImpl implements MfaService {
         if (!ok) throw new BadRequestException("invalid or expired email code");
         TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "email"));
         return LoginResponse.builder()
-                .authenticated(true)
-                .mfaRequired(false)
-                .tokens(LoginTokens(tokens.accessToken(), tokens.refreshToken()))
-                .expiresIn(null)
-                .scope(null)
+                // .authenticated(true)
+                // .mfaRequired(false)
+                // .tokens(LoginTokens(tokens.accessToken(), tokens.refreshToken()))
+                // .expiresIn(null)
+                // .scope(null)
                 .build();
     }
 
@@ -119,13 +119,13 @@ public class MfaServiceImpl implements MfaService {
         if (!ok) throw new BadRequestException("invalid recovery code");
         TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "recovery"));
         return LoginResponse.builder()
-                .authenticated(true)
-                .mfaRequired(false)
-                .tokens(LoginTokens().builder()
-                        .accessToken(tokens.accessToken())
-                        .refreshToken(tokens.refreshToken()))
-                .expiresIn(null)
-                .scope(null)
+                // .authenticated(true)
+                // .mfaRequired(false)
+                // .tokens(LoginTokens().builder()
+                //         .accessToken(tokens.accessToken())
+                //         .refreshToken(tokens.refreshToken()))
+                // .expiresIn(null)
+                // .scope(null)
                 .build();
     }
 

@@ -3,6 +3,7 @@ package com.sansa.auth.service.port.impl;
 import com.sansa.auth.service.port.TokenFacade;
 import com.sansa.auth.service.port.TokenFacade.TokenPair;
 import com.sansa.auth.util.TokenIssuer;
+import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.List;
  *   ここに @Component を付けてコンポーネントスキャンさせるかのどちらか。
  *   既に匿名クラスで @Bean 生成している場合は重複回避のため @Component は付けないでください。
  */
+@Service
 @RequiredArgsConstructor
 public class TokenFacadeImpl implements TokenFacade {
 
