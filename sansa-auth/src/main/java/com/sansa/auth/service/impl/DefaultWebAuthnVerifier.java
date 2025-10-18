@@ -1,5 +1,7 @@
 package com.sansa.auth.service.impl;
 
+import com.sansa.auth.dto.webauthn.WebAuthnRegisterOptionsResponse;
+import com.sansa.auth.exception.BadRequestException;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -20,48 +22,65 @@ import org.springframework.stereotype.Component;
 @Primary // 複数候補があってもこの実装を優先（テスト向け）
 public class DefaultWebAuthnVerifier implements WebAuthnServiceImpl.WebAuthnVerifier {
 
-    /**
-     * 認証(assertion)の“検証”ダミー。
-     *
-     * 実装方針:
-     * - 受け取ったパラメータの妥当性チェックや署名検証は行いません。
-     * - テストで扱いやすいように、ユーザーID相当として最後の引数（userHandle を想定）
-     *   が non-blank ならそれを返し、空なら credentialId（第4引数）を返します。
-     *
-     * パラメータの意味（プロジェクトの定義に依存。エラーログから 5 引数である点のみ確定）:
-     *  - 第1引数: clientDataJSON 等
-     *  - 第2引数: authenticatorData 等
-     *  - 第3引数: signature 等
-     *  - 第4引数: credentialId 等
-     *  - 第5引数: userHandle 等（存在すればそのままユーザーIDとして返す）
+    /** 
+     * 登録オプション（チャレンジ等）を準備。
      */
     @Override
-    public WebAuthnServiceImpl.AssertionVerified verifyAssertion(
-            String arg1,
-            String arg2,
-            String arg3,
-            String credentialId,
-            String userHandle
-    ) {
-        // userHandle が空なら credentialId を userId として返すダミー実装
-        return (userHandle != null && !userHandle.isBlank()) ? userHandle : credentialId;
+    public WebAuthnRegisterOptionsResponse prepareRegistrationOptions(String userId) {
+        return WebAuthnRegisterOptionsResponse.builder()
+                .rpId("example.com")
+                .challenge("dummy-registration-challenge")
+                .build();
     }
 
-    /*
-     * 補足:
-     * - 添付コードの断片では verifyAttestation(...) の存在が確定していないため未実装。
-     *   もし {@code WebAuthnServiceImpl.WebAuthnVerifier} に登録(Attestation)検証メソッドが
-     *   追加されている場合は、同様にダミーで実装してください（例: credentialId をそのまま返す等）。
-     *
-     * 例（インターフェースにある場合のみ追加）:
-     *
-     * @Override
-     * public WebAuthnServiceImpl.AttestationVerified verifyAttestation(
-     *         String origin, String rpId, String challenge,
-     *         String clientDataJSON, String attestationObject
-     * ) {
-     *     final String credentialId = attestationObject; // 実際は CBOR 解析などが必要
-     *     return () -> credentialId;
-     * }
+    /**
+     * 登録アテステーションを検証。
      */
+    @Override
+    public AttestationVerified verifyAttestation(String clientDataJSON, String attestationObject, String userId)
+            throws BadRequestException {
+        return AttestationVerified.builder()
+            .credentialId("dummy-credential-id")
+            .userHandle("dummy-user-handle")
+            .counterInitialized(true)
+            .build();
+    }
+
+    /**
+     * RP ID を取得。
+     */
+    @Override
+    public String getRpId() {
+        return "example.com";
+    }
+
+    /**
+     * ダミーのチャレンジ文字列を発行。
+     */
+    @Override
+    public String issueAssertionChallenge() {
+        return "dummy-assertion-challenge";
+    }
+
+    /**
+     * 認証アサーションを検証。
+     */
+    @Override
+    public AssertionVerified verifyAssertion(String id, String clientDataJSON, String authenticatorData,
+                                             String signature, String userHandle)
+            throws BadRequestException {
+        return AssertionVerified.builder()
+                .credentialId(id)
+                .counterUpdated(true)
+                .build();
+    }
+
+
+//     @Override
+//     public AssertionVerified verifyAssertion(/* args */) {
+//         return AssertionVerified.builder()
+//             .credentialId(credId)
+//             .counterUpdated(true)
+//             .build();
+//     }
 }

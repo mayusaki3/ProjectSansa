@@ -7,7 +7,6 @@ import com.sansa.auth.exception.BadRequestException;
 import com.sansa.auth.exception.UnauthorizedException;
 import com.sansa.auth.service.MfaService;
 import com.sansa.auth.service.port.TokenFacade;
-import com.sansa.auth.service.port.TokenFacade.TokenPair;
 import com.sansa.auth.store.Store;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -63,7 +62,7 @@ public class MfaServiceImpl implements MfaService {
         String secret = store.getTotpSecret(userId).orElseThrow(() -> new BadRequestException("not enrolled"));
         boolean ok = totp.verify(secret, req.getCode());
         if (!ok) throw new BadRequestException("invalid totp code");
-        TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "totp"));
+        LoginTokens tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "totp"));
         return LoginResponse.builder()
                 // .authenticated(true)
                 // .mfaRequired(false)
@@ -91,7 +90,7 @@ public class MfaServiceImpl implements MfaService {
         String userId = requireChallengeUser(req.getChallengeId());
         boolean ok = store.verifyEmailMfaCode(userId, req.getCode());
         if (!ok) throw new BadRequestException("invalid or expired email code");
-        TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "email"));
+        LoginTokens tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "email"));
         return LoginResponse.builder()
                 // .authenticated(true)
                 // .mfaRequired(false)
@@ -117,7 +116,7 @@ public class MfaServiceImpl implements MfaService {
         String userId = requireChallengeUser(req.getChallengeId());
         boolean ok = store.consumeRecoveryCode(userId, req.getCode());
         if (!ok) throw new BadRequestException("invalid recovery code");
-        TokenPair tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "recovery"));
+        LoginTokens tokens = tokenFacade.issueAfterAuth(userId, List.of("pwd", "mfa", "recovery"));
         return LoginResponse.builder()
                 // .authenticated(true)
                 // .mfaRequired(false)

@@ -5,10 +5,13 @@ import com.sansa.auth.dto.webauthn.*;
 import com.sansa.auth.exception.BadRequestException;
 import com.sansa.auth.exception.NotFoundException;
 import com.sansa.auth.exception.UnauthorizedException;
+import com.sansa.auth.service.port.TokenFacade;
 import com.sansa.auth.service.WebAuthnService;
 import com.sansa.auth.store.Store;
 import com.sansa.auth.store.Store.WebAuthnCredential;
 import lombok.RequiredArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -89,7 +92,9 @@ public class WebAuthnServiceImpl implements WebAuthnService {
 
         // 認証成功 → セッション + トークン発行
         var out = tokenFacade.issueAfterAuth(userId, List.of("webauthn")); // amr+=["webauthn"]
-        return out;
+        return LoginResponse.builder()
+            .tokens(out)
+            .build();
     }
 
     // ---- credentials list / revoke -------------------------------------------
@@ -122,31 +127,63 @@ public class WebAuthnServiceImpl implements WebAuthnService {
     // ---- 補助抽象 ------------------------------------------------------------
 
     public interface WebAuthnVerifier {
+
+        /** 
+         * 登録オプション（チャレンジ等）を準備。
+         */
         WebAuthnRegisterOptionsResponse prepareRegistrationOptions(String userId);
+
+        /**
+         * 登録アテステーションを検証。
+         */
         AttestationVerified verifyAttestation(String clientDataJSON, String attestationObject, String userId)
                 throws BadRequestException;
+
+        /**
+         * RP ID を取得。
+         */
         String getRpId();
+
+        /**
+         * ダミーのチャレンジ文字列を発行。
+         */
         String issueAssertionChallenge();
+
+        /**
+         * 認証アサーションを検証。
+         */
         AssertionVerified verifyAssertion(String id, String clientDataJSON, String authenticatorData,
                                           String signature, String userHandle)
                 throws BadRequestException;
 
-        interface AttestationVerified {
-            String getCredentialId();
-            String getPublicKey();
-            String getAaguid();
-            List<String> getTransports();
-            int getSignCount();
+        /**
+         * 登録アテステーション検証結果
+         */
+        @Value @Builder
+        class AttestationVerified {
+            String credentialId;
+            String userHandle;
+            String publicKey;
+            String aaguid;
+            java.util.List<String> transports;
+            Integer signCount;
+            boolean counterInitialized;
         }
-        interface AssertionVerified {
-            String getUserId();
+
+        /**
+         * 認証アサーション検証結果
+         */
+        @Value @Builder
+        class AssertionVerified {
+            String userId;
+            String credentialId;
+            boolean counterUpdated;
         }
     }
 
-    public interface TokenFacade {
-        LoginResponse issueAfterAuth(String userId, List<String> amr);
-    }
-
+    /**
+     * 現在のリクエストコンテキスト
+     */
     public static final class CurrentRequestContext {
         public static String getUserIdOrThrow() { throw new UnsupportedOperationException(); }
     }

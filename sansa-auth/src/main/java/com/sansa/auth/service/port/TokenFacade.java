@@ -1,5 +1,6 @@
 package com.sansa.auth.service.port;
 
+import com.sansa.auth.dto.login.LoginTokens;
 import java.util.List;
 
 /**
@@ -18,14 +19,6 @@ import java.util.List;
 public interface TokenFacade {
 
     /**
-     * アクセス／リフレッシュの発行結果を返す不変 DTO。
-     * MfaWiringConfig などから参照する場合は
-     *  import com.sansa.auth.service.port.TokenFacade.TokenPair;
-     * とインポートしてください。
-     */
-    public static record TokenPair(String accessToken, String refreshToken) {}
-
-    /**
      * 認証（および必要なら MFA）を完了した直後に発行する。
      * ユーザーIDと（必要なら）権限・ロールを受け取り、AT/RT のペアを返す。
      *
@@ -33,7 +26,7 @@ public interface TokenFacade {
      * @param roles  トークンに反映したいロール等（使わない実装なら無視してOK）
      * @return アクセストークン／リフレッシュトークンのペア
      */
-    TokenPair issueAfterAuth(String userId, List<String> roles);
+    LoginTokens issueAfterAuth(String userId, List<String> roles);
 
     /**
      * リフレッシュトークンのローテーションを行い、新しい AT/RT を発行する。
@@ -43,5 +36,5 @@ public interface TokenFacade {
      * @param oldRefreshId 直前まで使用していたリフレッシュID（監査や無効化に使う場合）
      * @return 新しいアクセストークン／リフレッシュトークンのペア
      */
-    TokenPair rotate(String userId, String oldRefreshId);
+    LoginTokens rotate(String userId, String oldRefreshId);
 }
