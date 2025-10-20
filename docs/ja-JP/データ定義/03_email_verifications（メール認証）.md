@@ -1,4 +1,5 @@
 [目次](../目次.md) > [データ定義 目次](目次.md) > email_verifications
+
 # email_verifications（メール認証）
 
 **用途**: 登録時のメールコード検証（多要素：メール）

@@ -1,4 +1,5 @@
 [目次](../目次.md) > [データ定義 目次](目次.md) > email_change_requests
+
 # email_change_requests（メール変更）
 
 **用途**: メール変更の二段階認証（旧/新メール）
