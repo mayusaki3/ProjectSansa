@@ -1,11 +1,10 @@
 <!-- sansa-auth / pom.xml -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <!-- Spring Boot 親で依存バージョンを一元管理 -->
+  <!-- Spring Boot parent: dependency versions managed centrally -->
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
@@ -26,7 +25,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <!-- Boot親が管理しないもの -->
+    <!-- Unmanaged by Boot parent -->
     <jjwt.version>0.12.5</jjwt.version>
     <datastax.driver.version>4.17.0</datastax.driver.version>
     <lombok.version>1.18.32</lombok.version>
@@ -42,13 +41,12 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
+
+    <!-- Security (version managed by Boot) -->
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
-      <version>${spring-security.version}</version>
     </dependency>
-
-    <!-- 署名・暗号 -->
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
@@ -73,12 +71,25 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Cassandra ドライバ（本体では optional; IT時にプロファイルで test 依存を追加） -->
+    <!-- Cassandra driver (optional in main artifact; added as test dep in it-cassandra profile) -->
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
       <version>${datastax.driver.version}</version>
       <optional>true</optional>
+    </dependency>
+
+    <!-- Mail -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
+
+    <!-- Commons Codec (for Base32, etc.) -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.16.1</version>
     </dependency>
 
     <!-- Lombok -->
@@ -89,27 +100,12 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Commons Codec -->
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.16.1</version>
-    </dependency>
-
-    <!-- JavaMailSender -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-mail</artifactId>
-    </dependency>
-
-    <!-- 単体テスト基盤 -->
+    <!-- Unit test -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- テスト結果/テストIDを出力 -->
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-launcher</artifactId>
@@ -139,28 +135,28 @@
         </configuration>
       </plugin>
 
-      <!-- Boot repackage -->
+      <!-- Spring Boot repack -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <mainClass>com.sansa.auth.Application</mainClass>
+          <mainClass>com.sansa.auth.AuthApplication</mainClass>
         </configuration>
       </plugin>
 
-      <!-- 単体テスト（*Test.java） -->
+      <!-- Unit tests (e.g., **/spec/*Test.java) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
+          <useFile>false</useFile>
           <systemPropertyVariables>
             <file.encoding>UTF-8</file.encoding>
             <sun.stdout.encoding>UTF-8</sun.stdout.encoding>
             <sun.jnu.encoding>UTF-8</sun.jnu.encoding>
             <pretty.console.ascii>false</pretty.console.ascii>
           </systemPropertyVariables>
-          <useFile>false</useFile>
           <includes>
             <include>**/spec/*Test.java</include>
           </includes>
@@ -170,7 +166,7 @@
         </configuration>
       </plugin>
 
-      <!-- 結合テスト（*IT.java） -->
+      <!-- Integration tests (**/it/*Test.java) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -185,15 +181,39 @@
         </executions>
         <configuration>
           <includes>
-            <exclude>**/it/*Test.java</exclude>
+            <include>**/it/*Test.java</include>
           </includes>
         </configuration>
+      </plugin>
+
+      <!-- Copy Cassandra CQLs to target for IT runs -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>copy-cassandra-cql</id>
+            <phase>generate-test-resources</phase>
+            <goals><goal>copy-resources</goal></goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/cassandra</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>cassandra/cql</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
 
-  <!-- プロファイル -->
+  <!-- Profiles -->
   <profiles>
+    <!-- In-memory (unit tests default) -->
     <profile>
       <id>inmem</id>
       <properties>
@@ -201,6 +221,7 @@
       </properties>
     </profile>
 
+    <!-- Generic IT (still inmem unless overridden) -->
     <profile>
       <id>it</id>
       <activation>
@@ -214,12 +235,13 @@
       </properties>
     </profile>
 
-    <!-- ★ Cassandra IT 用：必要な時だけ有効化 -->
+    <!-- Cassandra IT -->
     <profile>
       <id>it-cassandra</id>
+
       <build>
         <plugins>
-          <!-- 旧Cassandra IT を専用テストソースとして取り込む -->
+          <!-- Add dedicated test sources/resources for cassandra IT if present -->
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
@@ -231,7 +253,6 @@
                 <goals><goal>add-test-source</goal></goals>
                 <configuration>
                   <sources>
-                    <!-- Cassandra 用の IT テストをこの下に配置 -->
                     <source>src/testCassandra/java</source>
                   </sources>
                 </configuration>
@@ -252,27 +273,36 @@
             </executions>
           </plugin>
 
-          <!-- Failsafe: ITをこのプロファイルでも実行（既定includesを継承） -->
+          <!-- (Optional) run a tiny migrator if provided -->
+          <!--
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>3.2.5</version>
-            <configuration>
-              <!-- 任意: Testcontainers の並列性などを調整 -->
-              <reuseForks>true</reuseForks>
-              <systemPropertyVariables>
-                <!-- 必要に応じて上書き（例：Keyspace名など） -->
-                <cassandra.keyspace>auth_it</cassandra.keyspace>
-                <cassandra.localdc>datacenter1</cassandra.localdc>
-              </systemPropertyVariables>
-            </configuration>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.3.0</version>
+            <executions>
+              <execution>
+                <id>apply-cql</id>
+                <phase>pre-integration-test</phase>
+                <goals><goal>java</goal></goals>
+                <configuration>
+                  <mainClass>com.sansa.auth.tools.CqlMigrator</mainClass>
+                  <arguments>
+                    <argument>${project.build.directory}/cassandra/sansa_auth</argument>
+                    <argument>${cassandra.contactPoints}</argument>
+                    <argument>${cassandra.port}</argument>
+                    <argument>${cassandra.localdc}</argument>
+                    <argument>${cassandra.keyspace}</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
+          -->
         </plugins>
       </build>
 
-      <!-- プロファイル有効時のみ追加するテスト依存 -->
       <dependencies>
-        <!-- Testcontainers（Spring Boot親のBOM管理下） -->
+        <!-- Testcontainers -->
         <dependency>
           <groupId>org.testcontainers</groupId>
           <artifactId>junit-jupiter</artifactId>
@@ -284,7 +314,7 @@
           <scope>test</scope>
         </dependency>
 
-        <!-- Datastax ドライバ（ITのテストコードが直接使う場合） -->
+        <!-- Cassandra driver for tests -->
         <dependency>
           <groupId>com.datastax.oss</groupId>
           <artifactId>java-driver-core</artifactId>
@@ -292,13 +322,44 @@
           <scope>test</scope>
         </dependency>
 
-        <!-- （任意）AssertJ 等 -->
+        <!-- (optional) AssertJ -->
         <dependency>
           <groupId>org.assertj</groupId>
           <artifactId>assertj-core</artifactId>
           <scope>test</scope>
         </dependency>
       </dependencies>
+
+      <properties>
+        <!-- Profiles used by Spring during IT -->
+        <spring-boot.run.profiles>cassandra</spring-boot.run.profiles>
+
+        <!-- Default to production keyspace name per方針 -->
+        <cassandra.keyspace>sansa_auth</cassandra.keyspace>
+        <cassandra.localdc>datacenter1</cassandra.localdc>
+        <!-- contact points/port are provided by Testcontainers at runtime; override as needed -->
+      </properties>
+
+      <!-- Failsafe tuning for this profile -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>3.2.5</version>
+            <configuration>
+              <reuseForks>true</reuseForks>
+              <includes>
+                <include>**/it/*Test.java</include>
+              </includes>
+              <systemPropertyVariables>
+                <cassandra.keyspace>${cassandra.keyspace}</cassandra.keyspace>
+                <cassandra.localdc>${cassandra.localdc}</cassandra.localdc>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>
