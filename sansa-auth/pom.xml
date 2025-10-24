@@ -31,6 +31,19 @@
     <lombok.version>1.18.32</lombok.version>
   </properties>
 
+  <!-- 依存の一元管理 -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>1.20.2</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <!-- Web / JSON / Validation -->
     <dependency>
@@ -166,23 +179,44 @@
         </configuration>
       </plugin>
 
-      <!-- Integration tests (**/it/*Test.java) -->
+      <!-- Integration Test 専用プラグイン（failsafe）
+          - surefire は単体テスト、failsafe は結合テスト(IT)を担当
+          - integration-test フェーズで実行し、verify フェーズで結果判定
+          - パターン: src/test/java/**/it/*Test.java を IT として拾う -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.2.5</version>
+
+        <!-- フェーズ連携：IT の実行と検証 -->
         <executions>
           <execution>
             <goals>
+              <!-- IT の実行（pre/post-integration-test にフックを足す場合もここで） -->
               <goal>integration-test</goal>
+              <!-- IT の結果でビルド成功/失敗を確定 -->
               <goal>verify</goal>
             </goals>
           </execution>
         </executions>
+
         <configuration>
+          <!-- フォーク JVM の再利用。テスト起動を高速化 -->
+          <reuseForks>true</reuseForks>
+
+          <!-- IT 対象クラスの include パターン -->
           <includes>
             <include>**/it/*Test.java</include>
           </includes>
+
+          <!-- IT 実行時に渡すシステムプロパティ
+              - cassandra.keyspace / localdc はプロファイルやCIから上書き可
+              - Spring 側の profile 切替は mvn -Dspring.profiles.active=... で -->
+          <systemPropertyVariables>
+            <cassandra.keyspace>${cassandra.keyspace}</cassandra.keyspace>
+            <cassandra.localdc>${cassandra.localdc}</cassandra.localdc>
+            <file.encoding>UTF-8</file.encoding>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
 
@@ -208,6 +242,7 @@
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 
@@ -341,25 +376,6 @@
       </properties>
 
       <!-- Failsafe tuning for this profile -->
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>3.2.5</version>
-            <configuration>
-              <reuseForks>true</reuseForks>
-              <includes>
-                <include>**/it/*Test.java</include>
-              </includes>
-              <systemPropertyVariables>
-                <cassandra.keyspace>${cassandra.keyspace}</cassandra.keyspace>
-                <cassandra.localdc>${cassandra.localdc}</cassandra.localdc>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 </project>
