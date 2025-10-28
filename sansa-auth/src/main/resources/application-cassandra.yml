@@ -2,6 +2,17 @@ spring:
   main:
     web-application-type: none
 
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls.enable: false
+
 sansa:
   cassandra:
     contact-point: ${CASS_CONTACT_POINT:127.0.0.1}
@@ -13,3 +24,12 @@ datastax-java-driver:
   basic:
     request:
       timeout: 10 seconds
+
+app:
+  mail:
+    enabled: true
+    transport: smtp
+    from: "no-reply@sansa.space"
+    # テンプレートのデフォルトロケール（必要に応じて）
+    default-locale: "ja-JP"
+

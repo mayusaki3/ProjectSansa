@@ -12,5 +12,9 @@ services:
     image: redis:7-alpine
     ports: ["6379:6379"]
   mailhog:
-    image: mailhog/mailhog
-    ports: ["8025:8025","1025:1025"]
+    image: mailhog/mailhog:v1.0.1
+    container_name: sansa-auth-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    restart: unless-stopped

@@ -1,5 +1,5 @@
 // src/test/java/com/sansa/auth/util/TokenUtilTest.java
-package com.sansa.auth.util;
+package com.sansa.auth.testutil;
 
 import com.sansa.auth.dto.login.TokenRefreshRequest;
 import com.sansa.auth.dto.login.TokenRefreshResponse;

@@ -32,5 +32,10 @@ management:
       show-components: always
   health:
     cassandra:
-      enabled: false   # ★ Cassandra のヘルスチェック無効化
+      enabled: false   # Cassandra のヘルスチェック無効化
 
+app:
+  mail:
+    enabled: true
+    transport: inmem
+    from: "no-reply@sansa.space"

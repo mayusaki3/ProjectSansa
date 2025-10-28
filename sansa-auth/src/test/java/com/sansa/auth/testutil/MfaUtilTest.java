@@ -1,4 +1,4 @@
-package com.sansa.auth.util;
+package com.sansa.auth.testutil;
 
 import org.apache.commons.codec.binary.Base32;
 import org.junit.jupiter.api.DisplayName;
