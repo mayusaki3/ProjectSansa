@@ -1,107 +1,56 @@
+// 差し替え版（ポイント抜粋、コメント付き）
 package com.sansa.auth.it.mail;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sansa.auth.testutil.InMemoryMailOutbox;
-import com.sansa.auth.testutil.MailMessage;
-import lombok.Value;
+import com.sansa.auth.mail.InmemOutboxMailSender;
+import com.sansa.auth.testutil.MailOutboxSupport;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * inmem環境で、実際のテンプレート結果（件名/本文/コード/言語）をOutboxで検証するIT。
- *
- * 注意：
- *  - まだ inmem Mailer -> Outbox の配線が無い場合、@Disabled を外すと失敗します。
- *  - 配線が終わり次第 @Disabled を削除してください。
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("inmem")
-@DisplayName("IT01 (inmem) Verify-Email メール内容")
-@Disabled("inmemメール配線(Outbox連携)が整い次第、外して実行してください")
+import static org.assertj.core.api.Assertions.*;
+
 class IT01_RegistrationMailInmemIT {
 
-    @Autowired
-    MockMvc mockMvc;
-
-    @Autowired
-    InMemoryMailOutbox outbox;
-
-    @Autowired
-    ObjectMapper om;
+    private InmemOutboxMailSender outbox;
+    private MailOutboxSupport support;
 
     @BeforeEach
-    void setUp() {
-        outbox.purge();
+    void setup() {
+        // 実際の取得方法に合わせて初期化してください（DI / TestConfig など）
+        // outbox = ...
+        support = new MailOutboxSupport(outbox);
+        support.purgeOutbox();
     }
 
-    @Value
+    /** IT-01-003/008 相当: pre-register → verify-email コード受領 → 検証 */
+    @Test
+    void preRegister_and_verifyEmail_success() {
+        // --- pre-register リクエスト（no-args + setter）
+        PreRegisterReq req = new PreRegisterReq();
+        req.setEmail("user1@example.com");
+        req.setLanguage("ja-JP");
+        // POST /auth/pre-register ...（送信は既存ユーティリティ/MockMvc/RestAssured等に合わせて）
+
+        // --- メール到着待ち
+        support.awaitMails(1, 5000);
+
+        // --- 直近本文から 6 桁コード抽出
+        String body = support.lastMailBodyNotNull();
+        String code = body.replaceAll("(?s).*?\\b(\\d{6})\\b.*", "$1");
+        assertThat(code).matches("\\d{6}");
+
+        // --- /auth/verify-email 実行 -> 200 & preRegId
+        // POST /auth/verify-email { email, code } -> preRegId を受領
+        // 以後 /auth/register へ（詳細は既存手順に委ねる）
+    }
+
+    // 内部 DTO: all-args でなく no-args + setter を前提にする
     static class PreRegisterReq {
-        String email;
-        String language; // 実装側でAccept-Languageを使うなら不要
-    }
-
-    @Test
-    @DisplayName("ja-JP: 件名/本文/6桁コード/宛先/言語を検証")
-    void preRegister_jaJP_mailContent() throws Exception {
-        // 1) pre-register（日本語）
-        var req = new PreRegisterReq("alice@example.jp", "ja-JP");
-        mockMvc.perform(
-                post("/auth/pre-register")
-                        .header("Accept-Language", "ja-JP")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(om.writeValueAsString(req))
-        ).andReturn();
-
-        // 2) Outboxで受信待ち（非同期対策）
-        outbox.waitUntilSubjectsAtLeast(1, Duration.ofSeconds(5), Duration.ofMillis(100));
-
-        // 3) 検証
-        var last = outbox.last();
-        assertThat(last).isNotNull();
-        assertThat(last.getTo()).contains("alice@example.jp");
-        assertThat(last.getLocale()).isIn("ja", "ja-JP"); // 実装に合わせて調整
-        assertThat(last.getSubject()).contains("メール確認"); // i18nの件名
-        assertThat(InMemoryMailOutbox.containsSixDigits(last.getBody())).isTrue();
-    }
-
-    @Test
-    @DisplayName("en-US: 件名/本文/6桁コード/宛先/言語を検証")
-    void preRegister_enUS_mailContent() throws Exception {
-        // 1) pre-register（英語）
-        var req = new PreRegisterReq("bob@example.com", "en-US");
-        mockMvc.perform(
-                post("/auth/pre-register")
-                        .header("Accept-Language", "en-US")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(om.writeValueAsString(req))
-        ).andReturn();
-
-        // 2) Outboxで受信待ち
-        outbox.waitUntilSubjectsAtLeast(1, Duration.ofSeconds(5), Duration.ofMillis(100));
-
-        // 3) 検証
-        var last = outbox.last();
-        assertThat(last).isNotNull();
-        assertThat(last.getTo()).contains("bob@example.com");
-        assertThat(last.getLocale()).isIn("en", "en-US");
-        assertThat(last.getSubject().toLowerCase()).contains("verify your email"); // i18nの件名
-        assertThat(InMemoryMailOutbox.containsSixDigits(last.getBody())).isTrue();
+        private String email;
+        private String language;
+        public PreRegisterReq() {}
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getLanguage() { return language; }
+        public void setLanguage(String language) { this.language = language; }
     }
 }

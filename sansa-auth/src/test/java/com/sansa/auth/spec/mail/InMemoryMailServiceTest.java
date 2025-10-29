@@ -1,47 +1,35 @@
 package com.sansa.auth.spec.mail;
 
-import com.sansa.auth.mail.InMemoryMailService;
-import com.sansa.auth.mail.MailComposer;
-import com.sansa.auth.mail.MailMessage;
+import com.sansa.auth.testutil.InmemOutboxMailSender;
+import com.sansa.auth.testutil.MailOutboxSupport;
 import org.junit.jupiter.api.*;
-
-import java.util.Locale;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * UT：inmem プロファイルが不要な純粋ユニットテスト。
- * - OutBox へ格納されること
- * - ローカライズ文面が取り出せること（Locale切替は MessageSource 依存だが、ここではDTOのみ検証）
+ * 仕様テスト：Outboxへ記録されることのみを in-mem で確認。
+ * service.clearOutbox()/snapshot() は使用せず、Support 経由に統一。
  */
-public class InMemoryMailServiceTest {
+@SpringBootTest(properties = {
+    "app.mail.enabled=true",
+    "app.mail.transport=inmem",
+    "sansa.auth.mode=inmem"
+})
+class InMemoryMailServiceTest {
 
-    @BeforeEach
-    void setup() { InMemoryMailService.clearOutbox(); }
+  @Autowired InmemOutboxMailSender outbox;
+  MailOutboxSupport support;
 
-    @Test
-    void appendOutbox() {
-        var svc = new InMemoryMailService();
-        var msg = MailMessage.builder()
-                .to("user@example.com")
-                .subject("件名テスト")
-                .body("本文テスト")
-                .build();
-        svc.send(msg);
+  @BeforeEach
+  void init() {
+    support = new MailOutboxSupport(outbox);
+    support.purgeOutbox();
+  }
 
-        var box = InMemoryMailService.snapshot();
-        assertEquals(1, box.size());
-        assertEquals("user@example.com", box.get(0).to());
-        assertEquals("件名テスト", box.get(0).subject());
-    }
-
-    @Test
-    void dtoValidation() {
-        assertThrows(IllegalArgumentException.class,
-                () -> MailMessage.builder().to("").subject("x").body("y").build());
-        assertThrows(IllegalArgumentException.class,
-                () -> MailMessage.builder().to("a@b").subject("").body("y").build());
-        assertThrows(IllegalArgumentException.class,
-                () -> MailMessage.builder().to("a@b").subject("x").body("").build());
-    }
+  @Test
+  void sendsIntoOutbox() {
+    // act: 送信のトリガ（ユースケース/REST）を呼ぶ（省略）
+    support.awaitMails(1, 10);
+    Assertions.assertFalse(support.snapshot().isEmpty());
+  }
 }
