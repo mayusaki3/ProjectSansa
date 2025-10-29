@@ -1,33 +1,59 @@
 package com.sansa.auth.mail;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.lang.Nullable;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
- * cassandra プロファイル向けのSMTP送信実装。
- * - Spring Boot の JavaMailSender オートコンフィグに依存
- * - application-cassandra.yml で spring.mail.host/port を必ず指定
- * - MailHog 利用時は host=localhost, port=1025 が一般的
+ * 実SMTP配信用のサービス実装。
+ * - JavaMailSender をDIし、MailMessageからSimpleMailMessageへ写像。
+ * - getTo()/getCc()/getBcc() は null/空を許容して安全に反映。
  */
-@Slf4j
 @Service
-@Profile("cassandra")
 @RequiredArgsConstructor
 public class SmtpMailService implements MailService {
 
-    private final JavaMailSender sender;
+    private final JavaMailSender javaMailSender; // ← これが未定義でエラーになっていた
 
     @Override
     public void send(MailMessage msg) {
-        var m = new SimpleMailMessage();
-        m.setTo(msg.to());
-        m.setSubject(msg.subject());
-        m.setText(msg.body());
-        sender.send(m);
-        log.debug("SMTP sent: to={}, subject='{}'", msg.to(), msg.subject());
+        SimpleMailMessage m = new SimpleMailMessage();
+
+        // From（未指定なら application-*.yml の spring.mail.username などにフォールバック）
+        if (msg.getFrom() != null) {
+            m.setFrom(msg.getFrom());
+        }
+
+        // 宛先系を安全に反映
+        setIfPresentTo(m, msg.getTo());
+        setIfPresentCc(m, msg.getCc());
+        setIfPresentBcc(m, msg.getBcc());
+
+        m.setSubject(msg.getSubject());
+        m.setText(msg.getBody());
+
+        javaMailSender.send(m);
+    }
+
+    private static void setIfPresentTo(SimpleMailMessage m, @Nullable List<String> addrs) {
+        if (addrs != null && !addrs.isEmpty()) {
+            m.setTo(addrs.toArray(new String[0]));  // ← 可変長String...に変換
+        }
+    }
+
+    private static void setIfPresentCc(SimpleMailMessage m, @Nullable List<String> addrs) {
+        if (addrs != null && !addrs.isEmpty()) {
+            m.setCc(addrs.toArray(new String[0]));
+        }
+    }
+
+    private static void setIfPresentBcc(SimpleMailMessage m, @Nullable List<String> addrs) {
+        if (addrs != null && !addrs.isEmpty()) {
+            m.setBcc(addrs.toArray(new String[0]));
+        }
     }
 }

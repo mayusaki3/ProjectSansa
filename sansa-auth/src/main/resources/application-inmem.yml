@@ -17,8 +17,6 @@ auth:
     issuer: "sansa-auth"
     accessTtl: "PT15M"    # アクセストークン有効期間 ISO-8601 例: 15分
     refreshTtl: "P7D"     # リフレッシュトークン 例: 
-    accessTtlSeconds: 900
-    refreshTtlSeconds: 2592000
     tokenVersion: 1
 
 management:

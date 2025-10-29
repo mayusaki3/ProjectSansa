@@ -1,21 +1,42 @@
 package com.sansa.auth.mail;
 
 import lombok.Builder;
+import lombok.Getter;
+import lombok.Singular;
+
+import java.util.List;
+import java.util.Locale;
 
 /**
- * メールの最小DTO。
- * - 今はテキスト本文のみ（HTMLが必要ならフィールドを追加）
- * - 多言語の文面は呼び出し側で MessageSource からレンダリングして詰めます
+ * メール送信内容を保持するDTO。
+ * - Lombokの@Singularにより、Builderで to("a@b") のような単数追加が可能。
+ * - アクセサは標準ゲッター（getTo/getCc/getBcc/...）に統一。
  */
+@Getter
 @Builder
-public record MailMessage(
-        String to,        // 宛先（必須）
-        String subject,   // 件名（必須）
-        String body       // 本文（必須：プレーンテキスト）
-) {
-    public MailMessage {
-        if (to == null || to.isBlank())      throw new IllegalArgumentException("to is required");
-        if (subject == null || subject.isBlank()) throw new IllegalArgumentException("subject is required");
-        if (body == null || body.isBlank())  throw new IllegalArgumentException("body is required");
-    }
+public class MailMessage {
+
+    /** 送信元（省略時は構成のデフォルトFromを使用） */
+    private final String from;
+
+    /** 宛先（複数） */
+    @Singular("to")
+    private final List<String> to;
+
+    /** CC（複数） */
+    @Singular("cc")
+    private final List<String> cc;
+
+    /** BCC（複数） */
+    @Singular("bcc")
+    private final List<String> bcc;
+
+    /** 件名 */
+    private final String subject;
+
+    /** 本文（プレーンテキスト前提） */
+    private final String body;
+
+    /** ローカライズに使う言語（必要なら） */
+    private final Locale locale;
 }
