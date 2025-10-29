@@ -1,65 +1,57 @@
 package com.sansa.auth.testutil;
 
-import com.sansa.auth.mail.InmemOutboxMailSender;
 import com.sansa.auth.mail.MailMessage;
-
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 /**
- * MailOutboxSupport
- * - IT から合成(composition)で利用するメール受信トレイ検証ユーティリティ。
- * - 以前の final / private CTOR を廃止し、public CTOR で outbox を受け取る。
- * - IT 側で呼んでいるユーティリティ・メソッド（purgeOutbox/awaitMails/lastMailBodyNotNull）を提供。
+ * テスト補助:
+ * - outbox のクリア/待機/最後の本文取得 などを統一APIで提供
+ * - 継承される想定があるため public + 引数なしコンストラクタも用意
  */
 public class MailOutboxSupport {
+    protected InmemOutboxMailSender outbox;
 
-    private final InmemOutboxMailSender outbox;
+    public MailOutboxSupport() { /* for extends */ }
 
-    /** IT から new できるよう public CTOR にする */
     public MailOutboxSupport(InmemOutboxMailSender outbox) {
-        this.outbox = Objects.requireNonNull(outbox, "outbox");
+        this.outbox = outbox;
     }
 
-    /** 受信箱クリア */
+    public void setOutbox(InmemOutboxMailSender outbox) {
+        this.outbox = outbox;
+    }
+
+    /** 旧 clear()/purgeOutbox() の吸収 */
     public void purgeOutbox() {
-        outbox.clear();
+        if (outbox != null) outbox.clear();
     }
 
-    /**
-     * 指定数に達するまでポーリング待機
-     * @param expected 最低期待通数
-     * @param timeoutMs タイムアウト(ms)
-     */
-    public void awaitMails(int expected, int timeoutMs) {
-        final Instant end = Instant.now().plusMillis(timeoutMs);
-        while (Instant.now().isBefore(end)) {
-            if (outboxSnapshotSize() >= expected) return;
-            try { Thread.sleep(50); } catch (InterruptedException ignored) {}
+    /** 期待通数まで待機 */
+    public void awaitMails(int expected, int timeoutMillis) throws InterruptedException {
+        long until = System.currentTimeMillis() + timeoutMillis;
+        while (System.currentTimeMillis() < until) {
+            if (outbox != null && outbox.size() >= expected) return;
+            Thread.sleep(50);
         }
-        throw new AssertionError("awaitMails timeout: expected>=" + expected + " but got " + outboxSnapshotSize());
+        // 最後に一度確認
+        if (outbox == null || outbox.size() < expected) {
+            throw new AssertionError("mail not arrived: expected=" + expected + " actual=" + (outbox == null ? -1 : outbox.size()));
+        }
     }
 
-    /** 直近本文（null なら失敗） */
+    /** 最後の本文（null不可） */
     public String lastMailBodyNotNull() {
-        MailMessage last = lastMessage();
+        if (outbox == null) throw new IllegalStateException("outbox is null");
+        MailMessage last = outbox.last();
         if (last == null || last.body() == null) {
             throw new AssertionError("last mail body is null");
         }
         return last.body();
     }
 
-    /** 直近メッセージ（存在しなければ null） */
-    public MailMessage lastMessage() {
-        List<MailMessage> list = outbox.snapshot();
-        if (list.isEmpty()) return null;
-        return list.get(list.size() - 1);
-    }
-
-    /** 件名件数（テストの簡易確認用） */
-    public int outboxSnapshotSize() {
-        return outbox.snapshot().size();
+    /** スナップショット（テストで比較用） */
+    public List<MailMessage> snapshot() {
+        return outbox != null ? outbox.snapshot() : List.of();
     }
 }
