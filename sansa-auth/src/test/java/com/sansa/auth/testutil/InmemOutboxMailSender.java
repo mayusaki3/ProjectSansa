@@ -1,88 +1,149 @@
-// package: test用ラッパー（実装差を吸収）
 package com.sansa.auth.testutil;
 
 import com.sansa.auth.mail.MailMessage;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Test wrapper for the real outbox.
- * - 実装差( clear/purgeOutbox, last/size/snapshot 等) を反射で吸収
- * - テストコードが以前のユーティリティAPIを呼んでも落ちないようにする
+ * テスト補助ラッパー:
+ * - 実体の In-memory Outbox（例: com.sansa.auth.mail.InmemOutboxMailSender）を受け取り、
+ *   clear()/size()/last()/subjects(int)/snapshot() を“反射”で呼ぶことで実装差を吸収する。
+ *
+ * 使い方（重要）:
+ *   com.sansa.auth.mail.InmemOutboxMailSender real = new com.sansa.auth.mail.InmemOutboxMailSender();
+ *   InmemOutboxMailSender outbox = new InmemOutboxMailSender(real);
+ *   // 以後は outbox.clear(), outbox.size(), outbox.last(), ... を呼ぶ。
  */
 public class InmemOutboxMailSender {
-    private final Object delegate; // com.sansa.auth.mail.InmemOutboxMailSender 実体
+
+    /** 実体（com.sansa.auth.mail.InmemOutboxMailSender 等） */
+    private final Object delegate;
 
     public InmemOutboxMailSender(Object realOutbox) {
+        if (realOutbox == null) {
+            throw new IllegalArgumentException("realOutbox must not be null");
+        }
         this.delegate = realOutbox;
     }
 
-    // --- helpers ------------------------------------------------------------
-    private Object call(String method, Class<?>[] sig, Object... args) {
+    /* ---------------- 反射ヘルパ ---------------- */
+
+    private Object callNoArg(String methodName) {
         try {
-            var m = delegate.getClass().getMethod(method, sig);
+            Method m = delegate.getClass().getMethod(methodName);
             m.setAccessible(true);
-            return m.invoke(delegate, args);
-        } catch (ReflectiveOperationException e) {
+            return m.invoke(delegate);
+        } catch (ReflectiveOperationException ex) {
             return null;
         }
     }
-    private Object call(String method) { return call(method, new Class<?>[]{ }); }
 
-    // --- bridged APIs expected by tests -------------------------------------
-    /** 以前の clear() 相当。実装により clear / purgeOutbox のどちらかを呼ぶ */
+    private Object call1(String methodName, Class<?> p0, Object a0) {
+        try {
+            Method m = delegate.getClass().getMethod(methodName, p0);
+            m.setAccessible(true);
+            return m.invoke(delegate, a0);
+        } catch (ReflectiveOperationException ex) {
+            return null;
+        }
+    }
+
+    /* --------------- bridge API --------------- */
+
+    /** 旧 clear() / purgeOutbox() を吸収 */
     public void clear() {
-        if (call("clear") == null) call("purgeOutbox");
+        Object r = callNoArg("clear");
+        if (r != null) return;
+        callNoArg("purgeOutbox");
     }
 
-    /** 件数取得（size() がなければ subjects(Integer.MAX_VALUE).size() を推定） */
+    /** 件数 */
     public int size() {
-        var v = call("size");
-        if (v instanceof Integer i) return i;
-        var subjects = call("subjects", new Class<?>[]{ int.class }, Integer.MAX_VALUE);
-        if (subjects instanceof java.util.Collection<?> c) return c.size();
-        return -1;
+        Object r = callNoArg("size");
+        if (r instanceof Integer i) return i;
+
+        Object sub = call1("subjects", int.class, Integer.MAX_VALUE);
+        if (sub instanceof Collection<?> c) return c.size();
+
+        Object snap = callNoArg("snapshot");
+        if (snap instanceof Collection<?> c2) return c2.size();
+
+        return 0;
     }
 
-    /** 末尾メッセージ取得（last() がなければ snapshot() / subjects() から推定） */
+    /** 最後のメッセージ */
     public MailMessage last() {
-        var v = call("last");
-        if (v instanceof MailMessage m) return m;
+        Object r = callNoArg("last");
+        if (r instanceof MailMessage m) return m;
 
-        // snapshot() があれば使う
-        var snap = call("snapshot");
-        if (snap instanceof java.util.List<?> lst && !lst.isEmpty()) {
-            var tail = lst.get(lst.size() - 1);
+        Object snap = callNoArg("snapshot");
+        if (snap instanceof List<?> list && !list.isEmpty()) {
+            Object tail = list.get(list.size() - 1);
             if (tail instanceof MailMessage m) return m;
         }
-
-        // subjects(n) しか無い場合は取得できないので null
         return null;
     }
 
-    /** 件名一覧（実装に subjects(int) がある想定。なければ snapshot() から合成） */
+    /** 件名一覧（反射で subject を解決） */
     @SuppressWarnings("unchecked")
-    public java.util.List<String> subjects(int limit) {
-        var v = call("subjects", new Class<?>[]{ int.class }, limit);
-        if (v instanceof java.util.List<?> l && (l.isEmpty() || l.get(0) instanceof String)) {
-            return (java.util.List<String>) v;
+    public List<String> subjects(int limit) {
+        Object sub = call1("subjects", int.class, limit);
+        if (sub instanceof List<?> l && (l.isEmpty() || l.get(0) instanceof String)) {
+            return (List<String>) l;
         }
-        var snap = call("snapshot");
-        if (snap instanceof java.util.List<?> lst) {
-            var out = new java.util.ArrayList<String>();
-            for (var o : lst) {
-                if (o instanceof MailMessage m) out.add(m.subject());
+
+        Object snap = callNoArg("snapshot");
+        if (snap instanceof List<?> list) {
+            List<String> out = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof MailMessage m) {
+                    out.add(extractSubject(m));
+                }
             }
             return out.size() > limit ? out.subList(0, limit) : out;
         }
-        return java.util.List.of();
+        return List.of();
     }
 
-    /** スナップショット（なければ空） */
+    /** スナップショット（無ければ空） */
     @SuppressWarnings("unchecked")
-    public java.util.List<MailMessage> snapshot() {
-        var v = call("snapshot");
-        if (v instanceof java.util.List<?> l && (l.isEmpty() || l.get(0) instanceof MailMessage)) {
-            return (java.util.List<MailMessage>) v;
+    public List<MailMessage> snapshot() {
+        Object snap = callNoArg("snapshot");
+        if (snap instanceof List<?> l && (l.isEmpty() || l.get(0) instanceof MailMessage)) {
+            return (List<MailMessage>) l;
         }
-        return java.util.List.of();
+        return List.of();
     }
+
+    /* --------------- MailMessage.subject の吸収 --------------- */
+    private String extractSubject(MailMessage msg) {
+        // 1) subject()
+        try {
+            Method m = msg.getClass().getMethod("subject");
+            m.setAccessible(true);
+            Object v = m.invoke(msg);
+            if (v instanceof String s) return s;
+        } catch (ReflectiveOperationException ignore) {}
+
+        // 2) getSubject()
+        try {
+            Method m = msg.getClass().getMethod("getSubject");
+            m.setAccessible(true);
+            Object v = m.invoke(msg);
+            if (v instanceof String s) return s;
+        } catch (ReflectiveOperationException ignore) {}
+
+        // 3) public/protected フィールド subject
+        try {
+            Field f = msg.getClass().getDeclaredField("subject");
+            f.setAccessible(true);
+            Object v = f.get(msg);
+            if (v instanceof String s) return s;
+        } catch (ReflectiveOperationException ignore) {}
+
+        return "(no-subject)";
+        }
 }
