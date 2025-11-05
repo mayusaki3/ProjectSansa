@@ -1,0 +1,36 @@
+name: CI Mail Offline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  mail-offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Unit mail parse with coverage (fail_under=.coveragerc)
+        run: |
+          pytest --cov=tests/unit_mailparse \
+                 --cov-report=term-missing \
+                 --cov-report=xml:coverage-unit.xml \
+                 tests/unit_mailparse
+
+      - name: Upload coverage (python-unit)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-python-unit
+          path: |
+            coverage-unit.xml
+            htmlcov/

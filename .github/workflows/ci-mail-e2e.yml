@@ -1,0 +1,66 @@
+name: CI Mail E2E
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mail-e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      mailhog:
+        image: mailhog/mailhog
+        ports:
+          - 8025:8025
+          - 1025:1025
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Java: UT/IT 実行 + JaCoCo レポート + 閾値チェック（verify）
+      - name: Setup Temurin JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build & Test with JaCoCo (inmem)
+        working-directory: ./sansa-auth
+        run: |
+          mvn -q -Dspring.profiles.active=inmem -DskipITs=false test verify
+          echo "JaCoCo report: sansa-auth/target/site/jacoco/index.html"
+
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: sansa-auth/target/site/jacoco/
+
+      # Python: E2E（MailHog API 経由で受信検証） + カバレッジ
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run E2E tests (MailHog) with coverage
+        env:
+          SMTP_HOST: localhost
+          SMTP_PORT: 1025
+        run: |
+          pytest --cov=tests/e2e_mail \
+                 --cov-report=term-missing \
+                 --cov-report=xml:coverage-e2e.xml \
+                 tests/e2e_mail
+
+      - name: Upload coverage (python-e2e)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-python-e2e
+          path: |
+            coverage-e2e.xml
+            htmlcov/
