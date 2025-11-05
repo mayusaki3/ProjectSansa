@@ -1,5 +1,7 @@
 package com.sansa.auth.it;
 
+import com.sansa.auth.it.config.NoopMailConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -26,6 +28,7 @@ import org.springframework.test.context.TestPropertySource;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles({ "it", "inmem" })
+@Import(NoopMailConfig.class)
 @TestPropertySource(properties = {
     // --- JWT の TTL を @Positive を満たす値に上書き ---
     "auth.jwt.accessTtlSeconds=900",       // 15分

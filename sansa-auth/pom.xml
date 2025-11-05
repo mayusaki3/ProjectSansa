@@ -24,6 +24,8 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- ローカル既定の最低カバレッジ（CIで上書き） -->
+    <coverage.min>0.00</coverage.min>
 
     <!-- Unmanaged by Boot parent -->
     <jjwt.version>0.12.5</jjwt.version>
@@ -128,6 +130,8 @@
   </dependencies>
 
   <build>
+    <!-- verify を既定ゴールに：常にレポート生成・チェックまで到達 -->
+    <defaultGoal>verify</defaultGoal>
     <plugins>
       <!-- Java 21 / Lombok AP -->
       <plugin>
@@ -243,19 +247,43 @@
         </executions>
       </plugin>
 
-      <!-- JaCoCo: UT/IT の行/命令網羅率を可視化し、verify フェーズで閾値チェック -->
+      <!-- JaCoCo: UT/IT を両方計測。verify でレポート＆閾値チェック -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.12</version>
+        <configuration>
+          <!-- 必要に応じて除外を追加（自動生成/DTO/設定クラスなど） -->
+          <excludes>
+            <exclude>**/AuthApplication.class</exclude>
+            <exclude>**/*Config.class</exclude>
+            <exclude>**/*Configuration.class</exclude>
+            <exclude>**/dto/**</exclude>
+            <exclude>**/model/**</exclude>
+            <exclude>**/*MapperImpl.class</exclude>
+          </excludes>
+        </configuration>
         <executions>
-          <!-- test フェーズ後にレポート生成（Surefire/FailSafe の実行結果を集約） -->
+          <!-- UT 用：Surefire にエージェントを注入 -->
+          <execution>
+            <id>prepare-agent</id>
+            <goals><goal>prepare-agent</goal></goals>
+          </execution>
+          <!-- IT 用：Failsafe にエージェントを注入（argLine を it.argLine に出力） -->
+          <execution>
+            <id>prepare-agent-integration</id>
+            <goals><goal>prepare-agent-integration</goal></goals>
+            <configuration>
+              <propertyName>it.argLine</propertyName>
+            </configuration>
+          </execution>
+          <!-- 毎回レポート生成（HTML/XML） -->
           <execution>
             <id>report</id>
-            <phase>test</phase>
+            <phase>verify</phase>
             <goals><goal>report</goal></goals>
           </execution>
-          <!-- verify フェーズで閾値チェック -->
+          <!-- 閾値チェック：ローカルは0%、CIは -Dcoverage.min=1.00 で 100% 強制 -->
           <execution>
             <id>check</id>
             <phase>verify</phase>
@@ -268,7 +296,7 @@
                     <limit>
                       <counter>INSTRUCTION</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.80</minimum>
+                      <minimum>${coverage.min}</minimum>
                     </limit>
                   </limits>
                 </rule>

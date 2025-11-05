@@ -1,5 +1,8 @@
 package com.sansa.auth.it;
 
+import com.sansa.auth.it.config.NoopMailConfig;
+import org.springframework.context.annotation.Import;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
