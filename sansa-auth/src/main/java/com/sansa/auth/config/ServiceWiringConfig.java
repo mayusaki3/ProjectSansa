@@ -1,8 +1,5 @@
 package com.sansa.auth.config;
 
-import com.sansa.auth.util.JwtProvider;
-import com.sansa.auth.util.TokenIssuer;
-import com.sansa.auth.util.impl.TokenIssuerImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
