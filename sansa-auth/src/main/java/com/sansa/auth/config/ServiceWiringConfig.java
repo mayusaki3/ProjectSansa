@@ -1,5 +1,11 @@
 package com.sansa.auth.config;
 
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import com.sansa.auth.service.port.CurrentUserPort;
+import com.sansa.auth.service.port.PasswordPort;
+import com.sansa.auth.service.port.impl.PasswordPortImpl;
+import com.sansa.auth.service.port.impl.SecurityContextCurrentUserPort;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,20 +38,21 @@ public class ServiceWiringConfig {
     * - 外部設定値（issuer、期限、鍵素材など）は本クラスでは終端せず、
     *   専用の Config クラスで束ねたうえで、利用側に注入すること。
     */
-    
+
     @Bean
-    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
-        // 強度はお好みで
-        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    public Argon2PasswordEncoder argon2PasswordEncoder() {
+        // 推奨値は要件に合わせ調整可
+        return new Argon2PasswordEncoder(16, 32, 1, 1 << 16, 3); // saltLen, hashLen, parallelism, memory, iterations
     }
 
     @Bean
-    public com.sansa.auth.service.impl.AuthServiceImpl.PasswordHasher passwordHasher(
-            org.springframework.security.crypto.password.PasswordEncoder encoder) {
-        // AuthServiceImpl が期待する内部インターフェースの実装を匿名クラスで返す
-        return new com.sansa.auth.service.impl.AuthServiceImpl.PasswordHasher() {
-            @Override public String hash(String raw) { return encoder.encode(raw); }
-            @Override public boolean matches(String raw, String hashed) { return encoder.matches(raw, hashed); }
-        };
+    public PasswordPort passwordPort(Argon2PasswordEncoder enc) {
+        return new PasswordPortImpl(enc);
     }
+
+    @Bean
+    public CurrentUserPort currentUserPort() {
+        return new SecurityContextCurrentUserPort();
+    }
+    
 }

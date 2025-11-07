@@ -23,4 +23,11 @@ public interface SessionService {
      */
     void deleteById(String sessionId)
             throws UnauthorizedException, NotFoundException;
+
+    /**
+     * 指定ユーザーの全セッションを終了し、token_version をインクリメントする。
+     * logout_all 用のユースケース。
+     */
+    void logoutAll(String userId);
+
 }

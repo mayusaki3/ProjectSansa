@@ -55,6 +55,17 @@ public class SessionServiceImpl implements SessionService {
                 .build();
     }
 
+    @Override
+    public void logoutAll(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        // token_version++ により既存AT/RTを全失効
+        store.incrementTokenVersion(userId);
+        // セッションレコード全削除
+        store.deleteAllSessions(userId);
+    }
+
     public static final class CurrentRequestContext {
         public static String getUserIdOrThrow() { throw new UnsupportedOperationException(); }
     }
