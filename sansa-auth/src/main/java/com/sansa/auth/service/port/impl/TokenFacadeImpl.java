@@ -1,61 +1,102 @@
 package com.sansa.auth.service.port.impl;
 
-import com.sansa.auth.dto.login.LoginTokens;
 import com.sansa.auth.service.port.TokenFacade;
+import com.sansa.auth.store.Store;
 import com.sansa.auth.util.TokenIssuer;
-import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.time.Duration;
+import java.time.Instant;
 
-/**
- * TokenFacade の標準実装。
- * 下位の TokenIssuer に委譲し、AT/RT の発行・ローテーションを提供する。
- *
- * 設計ポイント:
- * - アクセストークンの "tv"（tokenVersion）やクレーム構成は TokenIssuer → JwtProvider に委譲。
- * - リフレッシュトークンの "jti"（refreshId）生成も TokenIssuer.newRefreshId() に委譲。
- *
- * DI について:
- * - 構成クラス（例: MfaWiringConfig）側で @Bean を作るか、
- *   ここに @Component を付けてコンポーネントスキャンさせるかのどちらか。
- *   既に匿名クラスで @Bean 生成している場合は重複回避のため @Component は付けないでください。
- */
-@Service
+@Component
 @RequiredArgsConstructor
 public class TokenFacadeImpl implements TokenFacade {
 
+    private final Store store;
     private final TokenIssuer tokenIssuer;
 
-    /**
-     * 認証直後に新規の AT/RT を発行する。
-     * - refreshId は毎回新規採番
-     * - roles は必要な実装で TokenIssuer 側へ渡す。現状未使用なら無視。
-     */
+    // 本来は設定値から取得
+    private static final Duration DEFAULT_ACCESS_TTL = Duration.ofMinutes(15);
+    private static final Duration DEFAULT_REFRESH_TTL = Duration.ofDays(7);
+
     @Override
-    public LoginTokens issueAfterAuth(String userId, List<String> roles) {
-        String rolesStr = (roles == null || roles.isEmpty()) ? "" : String.join(" ", roles);
-        var accessToken = tokenIssuer.issueAccessToken(userId, 1);
-        var refreshToken = tokenIssuer.issueRefreshToken(userId, rolesStr);
-        return LoginTokens.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .build();
+    public Tokens issueTokens(
+            String userId,
+            int tokenVersion,
+            Instant now,
+            Duration accessTtl,
+            Duration refreshTtl,
+            String sessionId
+    ) {
+        Duration atTtl = accessTtl != null ? accessTtl : DEFAULT_ACCESS_TTL;
+        Duration rtTtl = refreshTtl != null ? refreshTtl : DEFAULT_REFRESH_TTL;
+
+        // RT用の一意なID(JTI)生成
+        String refreshId = tokenIssuer.newRefreshId();
+
+        String accessToken = tokenIssuer.issueAccessToken(userId, tokenVersion, now, atTtl, sessionId);
+        String refreshToken = tokenIssuer.issueRefreshToken(userId, tokenVersion, now, rtTtl, refreshId);
+
+        Instant atExp = now.plus(atTtl);
+        Instant rtExp = now.plus(rtTtl);
+
+        // RT一意性は rotateRefreshToken 時に検証する想定。
+        // 必要ならここで store.registerRefreshToken(userId, refreshId, rtExp) を追加する。
+
+        return new Tokens(accessToken, refreshToken, atExp, rtExp, sessionId);
     }
 
-    /**
-     * RT のローテーション。oldRefreshId は監査・無効化等で使う想定。
-     * 実際の “旧 RT 無効化” は TokenIssuer 側やストア側に委ねてOK。
-     */
     @Override
-    public LoginTokens rotate(String userId, String oldRefreshId) {
-        // 新しい refreshId を採番して置き換え
-        final String newRefreshId  = tokenIssuer.newRefreshId();
-        final String accessToken   = tokenIssuer.issueAccessToken(userId, 1);
-        final String refreshToken  = tokenIssuer.issueRefreshToken(userId, newRefreshId);
-        return LoginTokens.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .build();
+    public RotateResult rotateRefreshToken(String refreshToken, Instant now) {
+        // 1. パース・署名検証
+        var parsed = tokenIssuer.parseRefreshToken(refreshToken);
+        if (!parsed.valid()) {
+            if (parsed.expired()) {
+                return RotateResult.expired("token_expired");
+            }
+            return RotateResult.invalid("invalid_token");
+        }
+
+        String userId = parsed.userId();
+        int tokenVersionInToken = parsed.tokenVersion();
+        String oldRtId = parsed.refreshId();
+
+        // 2. 現在のtv確認
+        int currentTv = store.getTokenVersion(userId);
+        if (tokenVersionInToken != currentTv) {
+            // すでにtvが進んでいる → 全端末失効後 or 再利用済み
+            return RotateResult.reused("token_reused");
+        }
+
+        // 3. 新しいRT ID発行
+        String newRtId = tokenIssuer.newRefreshId();
+
+        // 4. RTローテーション (Store側で old→new を更新。falseなら再利用検知)
+        boolean rotated = store.rotateRefreshToken(userId, oldRtId, newRtId, now);
+        if (!rotated) {
+            // 再利用検知 → tv++
+            store.incrementTokenVersion(userId);
+            return RotateResult.reused("token_reused");
+        }
+
+        // 5. 新AT/RT発行
+        String sessionId = parsed.sessionId();
+        var tokens = issueTokens(
+                userId,
+                currentTv,
+                now,
+                DEFAULT_ACCESS_TTL,
+                DEFAULT_REFRESH_TTL,
+                sessionId
+        );
+        return RotateResult.success(tokens);
+    }
+
+    @Override
+    public void blacklistRefreshToken(String refreshTokenId, Instant expiresAt) {
+        // 09_token_blacklist.md に合わせたストアI/Fを将来追加:
+        // store.blacklistToken(refreshTokenId, expiresAt);
+        // 現状は未使用なら no-op 実装でも良いが、本番実装では必ずStore連携する。
     }
 }

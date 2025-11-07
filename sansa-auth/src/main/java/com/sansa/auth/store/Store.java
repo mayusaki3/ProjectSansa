@@ -4,7 +4,6 @@ package com.sansa.auth.store;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -139,4 +138,22 @@ public interface Store {
      * @return 1トークン消費できたら true
      */
     boolean tryConsumeRateLimit(String key, int burst, int refillPerMinute);
+
+    // ------------------------------------------------------------
+    // blocklists（ドメイン/アカウント）
+    // ------------------------------------------------------------
+
+    /**
+     * メールドメインがブロック対象か判定する。
+     * @param domain メールドメイン（小文字前提）
+     * @return true: ブロック
+     */
+    boolean isBlockedEmailDomain(String domain);
+
+    /**
+     * アカウントIDがブロック対象か判定する。
+     * @param accountId アカウントID
+     * @return true: ブロック
+     */
+    boolean isBlockedAccountId(String accountId);
 }

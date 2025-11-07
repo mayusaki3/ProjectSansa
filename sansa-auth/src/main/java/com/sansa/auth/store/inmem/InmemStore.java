@@ -280,6 +280,18 @@ public class InmemStore implements Store {
         }
     }
 
+    // ====== blocklists =========================================================
+
+    @Override
+    public boolean isBlockedEmailDomain(String domain) {
+        return false; // 現段階ではブロックなし
+    }
+
+    @Override
+    public boolean isBlockedAccountId(String accountId) {
+        return false; // 現段階ではブロックなし
+    }
+
     // ====== ユーティリティ =====================================================
     private static String randomBase32(int len) {
         // dev簡易: [A-Z2-7] から生成（厳密性不要）

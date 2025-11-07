@@ -1,40 +1,76 @@
 package com.sansa.auth.service.port;
 
-import com.sansa.auth.dto.login.LoginTokens;
-import java.util.List;
+import java.time.Duration;
+import java.time.Instant;
 
-/**
- * TokenFacade は、MFA 完了後や認証フローの終端で
- * 「アクセストークン／リフレッシュトークンのペア」を発行・ローテーションするための
- * ドメインサービス向け “ポート（インターフェース）” です。
- *
- * 役割:
- * - アプリケーション層（例: MfaServiceImpl）が JWT 発行ロジックに直接依存しないようにする
- * - 下位の TokenIssuer / JwtProvider の API 変更を、このファサードの実装に閉じ込める
- *
- * 注意:
- * - 実装は infrastructure 側（例: JwtProvider を使う実装）に置き、DI で注入します。
- * - 戻り値 TokenPair はここで定義するネスト型です。
- */
 public interface TokenFacade {
 
     /**
-     * 認証（および必要なら MFA）を完了した直後に発行する。
-     * ユーザーIDと（必要なら）権限・ロールを受け取り、AT/RT のペアを返す。
-     *
-     * @param userId 対象ユーザーID
-     * @param roles  トークンに反映したいロール等（使わない実装なら無視してOK）
-     * @return アクセストークン／リフレッシュトークンのペア
+     * アクセストークン／リフレッシュトークン一式
      */
-    LoginTokens issueAfterAuth(String userId, List<String> roles);
+    record Tokens(
+            String accessToken,
+            String refreshToken,
+            Instant accessTokenExpiresAt,
+            Instant refreshTokenExpiresAt,
+            String sessionId
+    ) {}
 
     /**
-     * リフレッシュトークンのローテーションを行い、新しい AT/RT を発行する。
-     * 古い RT の取り扱い（無効化や再利用検知など）は、呼び出し側や下位サービスの責務に委ねる。
-     *
-     * @param userId       対象ユーザーID
-     * @param oldRefreshId 直前まで使用していたリフレッシュID（監査や無効化に使う場合）
-     * @return 新しいアクセストークン／リフレッシュトークンのペア
+     * RTローテーション結果
      */
-    LoginTokens rotate(String userId, String oldRefreshId);
+    record RotateResult(
+            boolean ok,
+            Tokens tokens,
+            boolean tokenExpired,
+            boolean tokenReused,
+            String error // 任意の内部メッセージ
+    ) {
+        public static RotateResult success(Tokens tokens) {
+            return new RotateResult(true, tokens, false, false, null);
+        }
+
+        public static RotateResult expired(String msg) {
+            return new RotateResult(false, null, true, false, msg);
+        }
+
+        public static RotateResult reused(String msg) {
+            return new RotateResult(false, null, false, true, msg);
+        }
+
+        public static RotateResult invalid(String msg) {
+            return new RotateResult(false, null, false, false, msg);
+        }
+    }
+
+    /**
+     * ログイン／登録時:
+     * userId + tokenVersion(tv) + TTLを元に AT/RT を発行。
+     * sessionId は呼び出し側(AuthService)で採番済みのものを受け取る。
+     */
+    Tokens issueTokens(
+            String userId,
+            int tokenVersion,
+            Instant now,
+            Duration accessTtl,
+            Duration refreshTtl,
+            String sessionId
+    );
+
+    /**
+     * RTローテーション:
+     * - refreshToken を検証
+     * - 有効なら新しい RT/AT を発行し、Store.rotateRefreshToken(...) で一意性を更新
+     * - 再利用検知時は tv++（Store.incrementTokenVersion）まで含めて処理し、reused を返却
+     * - 期限切れは expired を返却
+     * - 不正トークン等は invalid を返却
+     */
+    RotateResult rotateRefreshToken(String refreshToken, Instant now);
+
+    /**
+     * 任意の RT(JTI) を失効させるためのフック。
+     * /auth/logout などで使用。
+     * 具体的な保持方法は実装側と Store に委譲。
+     */
+    void blacklistRefreshToken(String refreshTokenId, Instant expiresAt);
 }
