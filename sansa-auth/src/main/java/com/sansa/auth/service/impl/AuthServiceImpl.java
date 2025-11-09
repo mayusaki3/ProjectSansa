@@ -6,7 +6,6 @@ import com.sansa.auth.dto.auth.RegisterRequest;
 import com.sansa.auth.dto.auth.RegisterResponse;
 import com.sansa.auth.dto.auth.VerifyEmailRequest;
 import com.sansa.auth.dto.auth.VerifyEmailResponse;
-import com.sansa.auth.dto.error.ApiProblem;
 import com.sansa.auth.dto.login.LoginRequest;
 import com.sansa.auth.dto.login.LoginResponse;
 import com.sansa.auth.dto.login.LoginTokens;
@@ -15,15 +14,9 @@ import com.sansa.auth.dto.login.TokenRefreshResponse;
 import com.sansa.auth.dto.sessions.LogoutRequest;
 import com.sansa.auth.dto.sessions.LogoutResponse;
 import com.sansa.auth.dto.sessions.SessionInfo;
-import com.sansa.auth.dto.sessions.SessionsListResponse;
 import com.sansa.auth.exception.BadRequestException;
-import com.sansa.auth.exception.ConflictException;
-import com.sansa.auth.exception.InvalidCredentialsException;
 import com.sansa.auth.exception.NotFoundException;
-import com.sansa.auth.exception.SessionNotFoundException;
 import com.sansa.auth.exception.UnauthorizedException;
-import com.sansa.auth.mail.MailService;
-import com.sansa.auth.model.user.User;
 import com.sansa.auth.service.AuthService;
 import com.sansa.auth.service.SessionService;
 import com.sansa.auth.service.port.CurrentUserPort;
@@ -31,8 +24,6 @@ import com.sansa.auth.service.port.PasswordPort;
 import com.sansa.auth.service.port.TokenFacade;
 import com.sansa.auth.store.Store;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,366 +33,330 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * AuthService の本番実装.
+ * AuthService の本番実装。
+ * コアロジックのみ。Spring 等のフレームワーク依存は持たない。
  *
- * 役割:
- * - 事前登録コード発行/検証
- * - ユーザー登録
- * - パスワードログイン
- * - トークンリフレッシュ
- * - セッション取得/一覧/失効
- * - 全端末ログアウト (logout_all)
- *
- * ポイント:
- * - 永続化は Store 経由
- * - JWT/トークン発行は TokenFacade 経由
- * - パスワードハッシュは PasswordPort 経由 (PHC形式, Argon2id 等を隠蔽)
- * - 「現在ユーザー」は CurrentUserPort 経由
- * - 例外は既存 UT/IT の期待 (HTTP ステータス, problem+json) に合うものを送出
+ * 参照仕様:
+ * - 01_ユーザー登録.md
+ * - 02_ログイン.md
+ * - 05_セッション管理.md（/auth 配下）
  */
-@Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuthServiceImpl implements AuthService {
 
-    // ポート / サービス依存
+    // 設定値はとりあえず固定。必要ならコンストラクタ引数化。
+    private static final Duration PRE_REG_TTL = Duration.ofMinutes(15);
+    private static final Duration REGISTER_GRACE_TTL = Duration.ofMinutes(30);
+    private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
+    private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(7);
+
     private final Store store;
-    private final TokenFacade tokenFacade;
     private final PasswordPort passwordPort;
+    private final TokenFacade tokenFacade;
     private final SessionService sessionService;
     private final CurrentUserPort currentUserPort;
-    private final MailService mailService;
 
-    // 設計上の定数 (必要に応じて application.yml 側に寄せてもよい)
-    private static final Duration PRE_REGISTER_TTL = Duration.ofMinutes(15);
+    // ===== 01_ユーザー登録 =====
 
-    // ==========
-    // 1. Pre-register
-    // ==========
-
-    /**
-     * {@inheritDoc}
-     *
-     * バリデーション / ブロックドメイン / レート制御は Store 側の責務で扱えるようにしておく想定。
-     */
     @Override
     public PreRegisterResponse preRegister(PreRegisterRequest req) {
-        if (req == null || isBlank(req.getEmail())) {
-            throw new BadRequestException("invalid_argument");
-        }
-
-        final String email = req.getEmail().trim().toLowerCase(Locale.ROOT);
-        final String domain = extractDomain(email);
-
-        // ブロックドメイン検査（Store 側に追加済み想定）
-        if (store.isBlockedEmailDomain(domain)) {
-            throw new BadRequestException("invalid_argument");
-        }
-
         Instant now = Instant.now();
-        Store.PreReg pre = store.issuePreRegisterCode(email, PRE_REGISTER_TTL, now);
 
-        // メール送信 (エラー時は例外でロールバック)
-        mailService.sendPreRegister(email, pre.code(), toLocaleOrDefault(req.getLocale()));
+        String email = req.getEmail();
+        if (isBlank(email)) {
+            throw new BadRequestException("email is required");
+        }
 
-        long throttleMs = pre.throttleMsHint() != null ? pre.throttleMsHint() : 0L;
+        // 重複登録防止やブロックドメイン判定は Store 側にある前提（なければスキップ）。
+        if (store.isBlockedDomain(domainOf(email))) {
+            // throttle 情報だけ返すか、通常 200 で success=false
+            return PreRegisterResponse.builder()
+                    .success(false)
+                    .throttleMs(0L)
+                    .build();
+        }
 
+        // すでに登録済みメールなら何もせず成功風レスポンス（仕様により調整）
+        if (store.findUserByEmail(email).isPresent()) {
+            return PreRegisterResponse.builder()
+                    .success(true)
+                    .throttleMs(0L)
+                    .build();
+        }
+
+        Store.PreReg pre = store.issuePreRegCode(email, PRE_REG_TTL, now);
+
+        // throttle が効いた場合は success=false + throttleMs
+        if (pre.getThrottleMs() != null && pre.getThrottleMs() > 0) {
+            return PreRegisterResponse.builder()
+                    .success(false)
+                    .throttleMs(pre.getThrottleMs())
+                    .build();
+        }
+
+        // メール送信は EmailPort 側で行う想定。本実装では発行まで。
         return PreRegisterResponse.builder()
                 .success(true)
-                .throttleMs(throttleMs)
+                .throttleMs(0L)
                 .build();
     }
 
-    // ==========
-    // 2. Verify email
-    // ==========
-
     @Override
-    public VerifyEmailResponse verifyEmail(VerifyEmailRequest req) {
-        if (req == null || isBlank(req.getEmail()) || isBlank(req.getCode())) {
-            throw new BadRequestException("invalid_argument");
-        }
+    public VerifyEmailResponse verifyEmail(VerifyEmailRequest req)
+            throws BadRequestException, NotFoundException {
 
         Instant now = Instant.now();
-        Store.PreReg result = store.consumePreRegisterCode(
-                req.getEmail().trim().toLowerCase(Locale.ROOT),
-                req.getCode().trim(),
-                now
-        ).orElseThrow(() -> new BadRequestException("invalid_code"));
 
-        if (result.isExpired(now)) {
-            throw new BadRequestException("expired");
-        }
-        if (result.consumed()) {
-            // 二重使用
-            throw new ConflictException("already_used");
+        if (isBlank(req.getEmail()) || isBlank(req.getCode())) {
+            throw new BadRequestException("email and code are required");
         }
 
+        Optional<Store.PreReg> opt =
+                store.consumePreRegCode(req.getEmail(), req.getCode(), now);
+
+        Store.PreReg pre = opt.orElseThrow(
+                () -> new NotFoundException("invalid or expired code"));
+
+        if (pre.isConsumed() || now.isAfter(pre.getExpiresAt())) {
+            throw new NotFoundException("invalid or expired code");
+        }
+
+        // preRegId を払い出し、以降 register で使用
         return VerifyEmailResponse.builder()
                 .success(true)
-                .preRegId(result.preRegId())
+                .preRegId(pre.getId())
+                .expiresIn(secondsUntil(pre.getExpiresAt(), now))
                 .build();
     }
 
-    // ==========
-    // 3. Register
-    // ==========
-
     @Override
-    public RegisterResponse register(RegisterRequest req) {
-        if (req == null
-                || isBlank(req.getPreRegId())
-                || isBlank(req.getAccountId())
-                || isBlank(req.getPassword())) {
-            throw new BadRequestException("invalid_argument");
-        }
+    public RegisterResponse register(RegisterRequest req)
+            throws BadRequestException, NotFoundException {
 
         Instant now = Instant.now();
 
-        // preRegId の妥当性確認 (Store 側で preRegId -> email 紐付け管理想定)
+        if (isBlank(req.getPreRegId())
+                || isBlank(req.getAccountId())
+                || isBlank(req.getEmail())
+                || isBlank(req.getPassword())) {
+            throw new BadRequestException("missing required fields");
+        }
+
         Store.PreReg pre = store.findPreRegById(req.getPreRegId())
-                .orElseThrow(() -> new BadRequestException("invalid_pre_reg"));
-        if (pre.isExpired(now)) {
-            throw new BadRequestException("expired");
+                .orElseThrow(() -> new NotFoundException("preReg not found"));
+
+        if (!req.getEmail().equalsIgnoreCase(pre.getEmail())) {
+            throw new BadRequestException("email mismatch");
         }
-        if (pre.consumed()) {
-            // 410 or 400 相当は Controller/Handler 側でマッピング
-            throw new ConflictException("pre_reg_consumed");
+        if (pre.isConsumed() || now.isAfter(pre.getExpiresAt().plus(REGISTER_GRACE_TTL))) {
+            throw new BadRequestException("preReg expired");
         }
 
-        // ブロックアカウントID
         if (store.isBlockedAccountId(req.getAccountId())) {
-            throw new ConflictException("blocked_account");
+            throw new BadRequestException("accountId is blocked");
         }
-
-        // 既存ユーザー重複チェック
         if (store.findUserByAccountId(req.getAccountId()).isPresent()) {
-            throw new ConflictException("account_exists");
+            throw new BadRequestException("accountId already exists");
         }
-        if (store.findUserByEmail(pre.email()).isPresent()) {
-            throw new ConflictException("email_exists");
+        if (store.findUserByEmail(req.getEmail()).isPresent()) {
+            throw new BadRequestException("email already exists");
         }
 
-        // ユーザー作成
-        String passwordHash = passwordPort.hash(req.getPassword());
-        Store.User created = store.createUser(pre.email(), req.getAccountId(), passwordHash, now);
+        String hash = passwordPort.hash(req.getPassword());
 
-        // pre-reg 消費マーク
-        store.markPreRegConsumed(pre.preRegId(), now);
+        // Store#createUser のシグネチャに合わせる
+        // 期待値: userId, accountId, email, passwordHash, emailVerified
+        String userId = UUID.randomUUID().toString();
+        store.createUser(userId, req.getAccountId(), req.getEmail(), hash, true);
+
+        store.markPreRegConsumed(pre.getId(), now);
 
         return RegisterResponse.builder()
                 .success(true)
-                .userId(created.userId())
-                .emailVerified(true)
+                .userId(userId)
                 .build();
     }
 
-    // ==========
-    // 4. Login (password)
-    // ==========
+    // ===== 02_ログイン =====
 
     @Override
-    public LoginResponse login(LoginRequest req) {
-        if (req == null || (isBlank(req.getAccountId()) && isBlank(req.getEmail()))
-                || isBlank(req.getPassword())) {
-            throw new BadRequestException("invalid_argument");
-        }
+    public LoginResponse login(LoginRequest req)
+            throws UnauthorizedException, BadRequestException {
 
         Instant now = Instant.now();
 
-        // ユーザー特定
-        Optional<Store.User> byAccount = !isBlank(req.getAccountId())
-                ? store.findUserByAccountId(req.getAccountId().trim())
-                : Optional.empty();
-        Optional<Store.User> byEmail = byAccount.isEmpty() && !isBlank(req.getEmail())
-                ? store.findUserByEmail(req.getEmail().trim().toLowerCase(Locale.ROOT))
-                : Optional.empty();
-
-        Store.User user = byAccount.or(() -> byEmail)
-                .orElseThrow(() -> new InvalidCredentialsException("invalid_credentials"));
-
-        // パスワード検証
-        if (!passwordPort.matches(req.getPassword(), user.passwordHash())) {
-            // 将来: ロック・履歴は Store 側で拡張
-            throw new InvalidCredentialsException("invalid_credentials");
+        if (isBlank(req.getPassword())
+                || (isBlank(req.getAccountId()) && isBlank(req.getEmail()))) {
+            throw new BadRequestException("invalid login request");
         }
 
+        Store.User user = findLoginUser(req)
+                .orElseThrow(() -> new UnauthorizedException("invalid credentials"));
+
+        if (!passwordPort.verify(req.getPassword(), user.getPasswordHash())) {
+            throw new UnauthorizedException("invalid credentials");
+        }
+
+        int tv = store.getTokenVersion(user.getId());
+
         // セッション作成
-        Store.Session session = store.createSession(
-                user.userId(),
+        String sessionId = UUID.randomUUID().toString();
+        store.createSession(
+                sessionId,
+                user.getId(),
+                now,
                 now,
                 req.getUserAgent(),
                 req.getIp()
         );
 
         // トークン発行
-        LoginTokens tokens = tokenFacade.issueAfterAuth(
-                user.userId(),
-                List.of() // roles 未使用なら空
+        TokenFacade.Tokens tokens = tokenFacade.issueTokens(
+                user.getId(),
+                tv,
+                now,
+                ACCESS_TOKEN_TTL,
+                REFRESH_TOKEN_TTL,
+                sessionId
         );
 
-        // レスポンス
         SessionInfo sessionInfo = SessionInfo.builder()
-                .id(session.id())
-                .userId(user.userId())
-                .current(true)
-                .createdAt(session.createdAt())
-                .lastActiveAt(session.lastActiveAt())
+                .sessionId(sessionId)
+                .createdAt(now)
+                .lastActiveAt(now)
+                .ip(req.getIp())
+                .userAgent(req.getUserAgent())
                 .build();
+
+        LoginTokens loginTokens = new LoginTokens(
+                tokens.accessToken(),
+                tokens.refreshToken()
+        );
 
         return LoginResponse.builder()
                 .success(true)
-                .authenticated(true)
-                .mfaRequired(false) // MFA は別フェーズ
+                .mfaRequired(false)
                 .session(sessionInfo)
-                .tokens(tokens)
+                .tokens(loginTokens)
                 .build();
     }
 
-    // ==========
-    // 5. Refresh
-    // ==========
-
     @Override
-    public TokenRefreshResponse refresh(TokenRefreshRequest req) {
+    public TokenRefreshResponse refresh(TokenRefreshRequest req)
+            throws BadRequestException, UnauthorizedException {
+
         if (req == null || isBlank(req.getRefreshToken())) {
-            throw new BadRequestException("invalid_argument");
+            throw new BadRequestException("refreshToken is required");
         }
 
         Instant now = Instant.now();
 
-        // TokenFacade 側で RT 検証 + 新AT/RT発行 + 再利用検知まで面倒を見る想定
-        TokenFacade.RefreshResult result = tokenFacade.rotateRefreshToken(req.getRefreshToken(), now);
+        TokenFacade.RotateResult result =
+                tokenFacade.rotateRefreshToken(req.getRefreshToken(), now);
 
-        if (result.isExpired()) {
-            throw new UnauthorizedException("token_expired");
-        }
-        if (result.isReused()) {
-            // 再利用検知 → 全セッション失効など、仕様に応じて連動
-            store.handleRefreshReuse(result.getSubjectUserId(), result.getRefreshTokenId());
-            throw new UnauthorizedException("token_reused");
-        }
-        if (!result.isSuccess()) {
-            throw new UnauthorizedException("invalid_token");
+        if (!result.success()) {
+            throw new UnauthorizedException("invalid refresh token");
         }
 
-        TokenFacade.Tokens t = result.getTokens();
+        TokenRefreshResponse.Tokens dtoTokens =
+                new TokenRefreshResponse.Tokens(
+                        result.tokens().accessToken(),
+                        result.tokens().refreshToken()
+                );
 
         return TokenRefreshResponse.builder()
                 .success(true)
-                .tokens(new TokenRefreshResponse.Tokens(
-                        t.accessToken(),
-                        t.refreshToken(),
-                        t.accessTokenExpiresAt(),
-                        t.refreshTokenExpiresAt()
-                ))
+                .tokens(dtoTokens)
+                .tv(result.tokenVersion())
                 .build();
     }
 
-    // ==========
-    // 6. Current session
-    // ==========
+    // ===== 05_セッション管理 =====
 
     @Override
     public SessionInfo getCurrentSession() {
         String userId = currentUserPort.getCurrentUserId()
                 .orElseThrow(() -> new UnauthorizedException("unauthorized"));
 
-        return sessionService.getCurrentSession(userId);
+        // 現在セッションは CurrentUserPort が持つセッションIDを使うか、
+        // なければ SessionService 側の getCurrentSession 相当を利用する設計とする。
+        return sessionService.getCurrentSession(userId)
+                .orElseThrow(() -> new UnauthorizedException("session not found"));
     }
 
-    // ==========
-    // 7. List sessions
-    // ==========
-
     @Override
-    public SessionsListResponse listSessions() {
+    public LogoutResponse logout(LogoutRequest req)
+            throws UnauthorizedException, BadRequestException {
+
         String userId = currentUserPort.getCurrentUserId()
                 .orElseThrow(() -> new UnauthorizedException("unauthorized"));
 
-        List<SessionInfo> sessions = sessionService.listSessions(userId);
-        return SessionsListResponse.builder()
-                .sessions(sessions)
+        Instant now = Instant.now();
+
+        boolean ok = false;
+
+        // 1) sessionId 指定があればそのセッションのみ削除
+        if (!isBlank(req.getSessionId())) {
+            ok = sessionService.logoutBySessionId(userId, req.getSessionId());
+        }
+        // 2) なければ現セッションのみ削除（CurrentUserPort がセッションIDを持っている前提）
+        else {
+            ok = sessionService.logoutCurrentSession(userId);
+        }
+
+        // 3) refreshTokenJti 指定があればブラックリスト登録
+        if (!isBlank(req.getRefreshTokenJti())) {
+            // 有効期限は RT TTL を目安に now + REFRESH_TOKEN_TTL
+            tokenFacade.blacklistRefreshToken(req.getRefreshTokenJti(), now.plus(REFRESH_TOKEN_TTL));
+        }
+
+        return LogoutResponse.builder()
+                .success(ok)
                 .build();
     }
 
-    // ==========
-    // 8. Logout (単一)
-    // ==========
-
     @Override
-    public LogoutResponse logout(LogoutRequest req) {
+    public LogoutResponse logoutAll() throws UnauthorizedException {
         String userId = currentUserPort.getCurrentUserId()
                 .orElseThrow(() -> new UnauthorizedException("unauthorized"));
 
-        // セッションID指定があれば優先
-        if (!isBlank(req.getSessionId())) {
-            boolean deleted = sessionService.logoutBySessionId(userId, req.getSessionId());
-            if (!deleted) {
-                throw new SessionNotFoundException("session_not_found");
-            }
-            return LogoutResponse.ok(true);
-        }
-
-        // RefreshToken JTI 指定があれば、Store / TokenFacade 側で削除・失効処理
-        if (!isBlank(req.getRefreshTokenJti())) {
-            boolean handled = store.revokeByRefreshTokenId(userId, req.getRefreshTokenJti());
-            if (!handled) {
-                throw new NotFoundException("refresh_not_found");
-            }
-            return LogoutResponse.ok(true);
-        }
-
-        // どちらも無ければ現在セッションを対象
-        boolean deleted = sessionService.logoutCurrentSession(userId);
-        if (!deleted) {
-            throw new SessionNotFoundException("session_not_found");
-        }
-        return LogoutResponse.ok(true);
-    }
-
-    // ==========
-    // 9. Logout all (全端末)
-    // ==========
-
-    /**
-     * {@inheritDoc}
-     *
-     * - token_version++ により全 AT/RT を論理失効
-     * - sessions テーブルも必要なら物理削除
-     */
-    @Override
-    public LogoutResponse logoutAll() {
-        String userId = currentUserPort.getCurrentUserId()
-                .orElseThrow(() -> new UnauthorizedException("unauthorized"));
-
+        // token_version++ により既存 AT/RT を論理的に失効
         store.incrementTokenVersion(userId);
+        // 必要なら物理セッションも削除
         store.deleteAllSessions(userId);
 
-        return LogoutResponse.ok(true);
+        return LogoutResponse.builder()
+                .success(true)
+                .build();
     }
 
-    // ==========
-    // helpers
-    // ==========
+    // ===== internal helpers =====
 
-    /**
-     * メールアドレスからドメイン部分を抽出.
-     */
-    private String extractDomain(String email) {
+    private Optional<Store.User> findLoginUser(LoginRequest req) {
+        if (!isBlank(req.getAccountId())) {
+            Optional<Store.User> byAccount = store.findUserByAccountId(req.getAccountId());
+            if (byAccount.isPresent()) return byAccount;
+        }
+        if (!isBlank(req.getEmail())) {
+            Optional<Store.User> byEmail = store.findUserByEmail(req.getEmail());
+            if (byEmail.isPresent()) return byEmail;
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private static long secondsUntil(Instant expiresAt, Instant now) {
+        if (expiresAt == null) return 0L;
+        long seconds = Duration.between(now, expiresAt).getSeconds();
+        return Math.max(seconds, 0L);
+    }
+
+    private static String domainOf(String email) {
         int at = email.lastIndexOf('@');
-        if (at < 0 || at == email.length() - 1) {
-            throw new BadRequestException("invalid_argument");
-        }
+        if (at < 0 || at == email.length() - 1) return "";
         return email.substring(at + 1).toLowerCase(Locale.ROOT);
-    }
-
-    private Locale toLocaleOrDefault(String lang) {
-        if (isBlank(lang)) return Locale.JAPAN;
-        try {
-            return Locale.forLanguageTag(lang);
-        } catch (Exception ignore) {
-            return Locale.JAPAN;
-        }
     }
 }
