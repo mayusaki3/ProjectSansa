@@ -1,40 +1,64 @@
 package com.sansa.auth.dto.sessions;
 
-import lombok.Value;
-import lombok.Builder;
-import java.util.List;
+import java.time.Instant;
 
 /**
- * GET /auth/session, GET /sessions の要素DTO
- * 仕様: 05_セッション管理.md 「A) GET /auth/session → SessionInfo」参照。:contentReference[oaicite:13]{index=13}
+ * セッション情報。APIレスポンス用。
  */
-@Value
-@Builder
 public class SessionInfo {
-    /** セッションが有効か */
-    boolean active;
-    /** セッションID */
-    String sessionId;
-    /** 発行日時（ISO-8601文字列） */
-    String issuedAt;
-    /** 最終アクティブ（ISO-8601文字列） */
-    String lastActive;
-    /** 失効時刻（ISO-8601文字列） */
-    String expiresAt;
-    /** 認証手段（amr）例: ["pwd","mfa"] */
-    List<String> amr;
-    /** ユーザー概要 */
-    UserSummary user;
 
-    /**
-     * ユーザー概要
-     * 仕様: userId, email, displayName。:contentReference[oaicite:14]{index=14}
-     */
-    @Value
-    @Builder
-    public static class UserSummary {
-        String userId;
-        String email;
-        String displayName;
+    private String id;
+    private Instant createdAt;
+    private Instant lastActiveAt;
+    private String ip;
+    private String userAgent;
+    private boolean current;
+
+    public String getId() {
+        return id;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getLastActiveAt() {
+        return lastActiveAt;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public boolean isCurrent() {
+        return current;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setLastActiveAt(Instant lastActiveAt) {
+        this.lastActiveAt = lastActiveAt;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
+
+    public void setCurrent(boolean current) {
+        this.current = current;
     }
 }

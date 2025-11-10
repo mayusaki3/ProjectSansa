@@ -1,27 +1,77 @@
 package com.sansa.auth.dto.login;
 
-import lombok.*;
-
 /**
- * POST /auth/token/refresh のレスポンスDTO
- * 仕様: 02_ログイン.md 「R1 TokenRefreshResponse（tokens.accessToken, tokens.refreshToken, tv）」参照。:contentReference[oaicite:15]{index=15}
+ * リフレッシュトークン再発行結果。
  */
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
 public class TokenRefreshResponse {
 
-    /** 新しいアクセストークン/リフレッシュトークン */
+    private boolean success;
     private Tokens tokens;
 
-    /** 現在の token_version（/auth/logout_all でインクリメント） */
-    private int tv;
+    public boolean isSuccess() {
+        return success;
+    }
 
-    @Getter @Setter
-    @NoArgsConstructor @AllArgsConstructor
-    @Builder
+    public Tokens getTokens() {
+        return tokens;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    public void setTokens(Tokens tokens) {
+        this.tokens = tokens;
+    }
+
+    public static TokenRefreshResponseBuilder builder() {
+        return new TokenRefreshResponseBuilder();
+    }
+
     public static class Tokens {
         private String accessToken;
         private String refreshToken;
+
+        public Tokens() {
+        }
+
+        public Tokens(String accessToken, String refreshToken) {
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+        }
+
+        public String getAccessToken() {
+            return accessToken;
+        }
+
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+
+        public void setAccessToken(String accessToken) {
+            this.accessToken = accessToken;
+        }
+
+        public void setRefreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
+        }
+    }
+
+    public static class TokenRefreshResponseBuilder {
+        private final TokenRefreshResponse target = new TokenRefreshResponse();
+
+        public TokenRefreshResponseBuilder success(boolean success) {
+            target.success = success;
+            return this;
+        }
+
+        public TokenRefreshResponseBuilder tokens(Tokens tokens) {
+            target.tokens = tokens;
+            return this;
+        }
+
+        public TokenRefreshResponse build() {
+            return target;
+        }
     }
 }

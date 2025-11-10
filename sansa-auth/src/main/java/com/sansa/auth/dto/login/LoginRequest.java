@@ -1,27 +1,57 @@
 package com.sansa.auth.dto.login;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.*;
-
 /**
- * POST /auth/login のリクエストDTO
- * 仕様: 02_ログイン.md 「A) POST /auth/login → LoginRequest(identifier, password)」参照。:contentReference[oaicite:7]{index=7}
+ * ログインリクエスト。
+ * accountId または email のいずれかで認証する想定。
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoginRequest {
 
-    /** ログイン識別子（email または accountId）。必須。 */
-    @NotBlank
-    private String identifier;
-
-    /** パスワード。必須。パース負荷対策として上限を設ける。 */
-    @NotBlank
-    @Size(max = 1024)
+    private String accountId;
+    private String email;
     private String password;
+    private String ip;
+    private String userAgent;
+
+    public LoginRequest() {
+    }
+
+    public String getAccountId() {
+        return accountId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public void setAccountId(String accountId) {
+        this.accountId = accountId;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
 }

@@ -1,18 +1,63 @@
 package com.sansa.auth.dto.auth;
 
-import lombok.*;
+import java.time.Instant;
 
 /**
- * POST /auth/verify-email のレスポンスDTO
- * 役割: 登録続行のための preRegId と有効秒数を返す。
- * 仕様: 01_ユーザー登録.md 「2) POST /auth/verify-email → VerifyEmailResponse」参照。:contentReference[oaicite:7]{index=7}
+ * メール認証コード検証結果。
  */
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
 public class VerifyEmailResponse {
-    /** 登録続行のための一時ID（UUID文字列） */
+
+    private boolean success;
     private String preRegId;
-    /** preRegId の残存有効秒数 */
-    private int expiresIn;
+    private Instant expiresAt;
+    private Long throttleMsHint;
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public String getPreRegId() {
+        return preRegId;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public Long getThrottleMsHint() {
+        return throttleMsHint;
+    }
+
+    // Builder互換（既存コードが builder() を呼んでいる場合用）
+    public static VerifyEmailResponseBuilder builder() {
+        return new VerifyEmailResponseBuilder();
+    }
+
+    public static class VerifyEmailResponseBuilder {
+        private final VerifyEmailResponse target = new VerifyEmailResponse();
+
+        public VerifyEmailResponseBuilder success(boolean success) {
+            target.success = success;
+            return this;
+        }
+
+        public VerifyEmailResponseBuilder preRegId(String preRegId) {
+            target.preRegId = preRegId;
+            return this;
+        }
+
+        public VerifyEmailResponseBuilder expiresAt(Instant expiresAt) {
+            target.expiresAt = expiresAt;
+            return this;
+        }
+
+        public VerifyEmailResponseBuilder throttleMsHint(Long throttleMsHint) {
+            target.throttleMsHint = throttleMsHint;
+            return this;
+        }
+
+        public VerifyEmailResponse build() {
+            return target;
+        }
+    }
 }

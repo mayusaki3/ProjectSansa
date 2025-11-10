@@ -67,15 +67,6 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("email is required");
         }
 
-        // 重複登録防止やブロックドメイン判定は Store 側にある前提（なければスキップ）。
-        if (store.isBlockedDomain(domainOf(email))) {
-            // throttle 情報だけ返すか、通常 200 で success=false
-            return PreRegisterResponse.builder()
-                    .success(false)
-                    .throttleMs(0L)
-                    .build();
-        }
-
         // すでに登録済みメールなら何もせず成功風レスポンス（仕様により調整）
         if (store.findUserByEmail(email).isPresent()) {
             return PreRegisterResponse.builder()

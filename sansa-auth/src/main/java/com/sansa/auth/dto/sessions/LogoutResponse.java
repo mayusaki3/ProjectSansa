@@ -1,22 +1,29 @@
 package com.sansa.auth.dto.sessions;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+/**
+ * ログアウト結果。
+ */
 public class LogoutResponse {
+
     private boolean success;
 
-    public static LogoutResponse ok() {
-        return new LogoutResponse(true);
+    public LogoutResponse() {
     }
 
-    public static LogoutResponse fail() {
-        return new LogoutResponse(false);
+    public LogoutResponse(boolean success) {
+        this.success = success;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    // 既存コード互換のためのヘルパ
+    public static LogoutResponse ok(boolean success) {
+        return new LogoutResponse(success);
     }
 }
