@@ -1,34 +1,46 @@
 package com.sansa.auth.dto.auth;
 
 /**
- * メールアドレス事前登録リクエスト。
+ * POST /auth/pre-register 用リクエストDTO.
+ *
+ * email:
+ *   - 必須
+ *   - ユーザーのメールアドレス
+ *
+ * language:
+ *   - 任意
+ *   - 通知やメッセージに使用する言語/ロケール識別子
+ *   - 例: "ja", "ja-JP", "en", "en-US"
  */
 public class PreRegisterRequest {
 
+    /** ユーザーのメールアドレス */
     private String email;
-    private String locale; // 任意: メール文面ロケールなど
+
+    /** 言語/ロケール識別子 (任意) */
+    private String language;
 
     public PreRegisterRequest() {
     }
 
-    public PreRegisterRequest(String email, String locale) {
+    public PreRegisterRequest(String email, String language) {
         this.email = email;
-        this.locale = locale;
+        this.language = language;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public String getLocale() {
-        return locale;
-    }
-
     public void setEmail(String email) {
         this.email = email;
     }
 
-    public void setLocale(String locale) {
-        this.locale = locale;
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 }
