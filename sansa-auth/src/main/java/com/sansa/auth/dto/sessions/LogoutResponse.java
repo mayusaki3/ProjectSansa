@@ -1,29 +1,19 @@
 package com.sansa.auth.dto.sessions;
 
 /**
- * ログアウト結果。
+ * LogoutResponse.builder() が参照されるため手製ビルダーを用意。
  */
 public class LogoutResponse {
-
     private boolean success;
 
-    public LogoutResponse() {
-    }
+    public boolean isSuccess() { return success; }
+    public void setSuccess(boolean success) { this.success = success; }
 
-    public LogoutResponse(boolean success) {
-        this.success = success;
-    }
+    public static Builder builder() { return new Builder(); }
 
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-
-    // 既存コード互換のためのヘルパ
-    public static LogoutResponse ok(boolean success) {
-        return new LogoutResponse(success);
+    public static class Builder {
+        private final LogoutResponse inst = new LogoutResponse();
+        public Builder success(boolean v) { inst.setSuccess(v); return this; }
+        public LogoutResponse build() { return inst; }
     }
 }

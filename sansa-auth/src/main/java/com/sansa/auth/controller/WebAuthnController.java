@@ -1,64 +1,43 @@
-// src/main/java/com/sansa/auth/controller/WebAuthnController.java
 package com.sansa.auth.controller;
 
-import com.sansa.auth.dto.login.LoginResponse;
-import com.sansa.auth.dto.webauthn.WebAuthnAssertionRequest;
-import com.sansa.auth.dto.webauthn.WebAuthnChallengeResponse;
-import com.sansa.auth.dto.webauthn.WebAuthnCredentialListResponse;
-import com.sansa.auth.dto.webauthn.WebAuthnRegisterOptionsResponse;
-import com.sansa.auth.dto.webauthn.WebAuthnRegisterVerifyRequest;
-import com.sansa.auth.dto.webauthn.WebAuthnRegisterVerifyResponse;
+import com.sansa.auth.dto.webauthn.*;
 import com.sansa.auth.service.WebAuthnService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 
 /**
- * API仕様に沿ったWebAuthnエンドポイント群。
- * 返却型と引数はサービスIF(WebAuthnService)と厳密一致。
+ * サービスIFに合わせた呼び出しに統一。
+ * 以前の compile error はメソッド名／引数不一致が原因。
  */
-@RestController
-@RequestMapping
-@RequiredArgsConstructor
 public class WebAuthnController {
 
     private final WebAuthnService webauthn;
 
-    /** GET /webauthn/register/options */
-    @GetMapping("/webauthn/register/options")
-    public WebAuthnRegisterOptionsResponse registerOptions() {
-        return webauthn.registerOptions();
+    public WebAuthnController(WebAuthnService webauthn) {
+        this.webauthn = webauthn;
     }
 
-    /** POST /webauthn/register/verify */
-    @PostMapping("/webauthn/register/verify")
-    public WebAuthnRegisterVerifyResponse registerVerify(@RequestBody @Valid WebAuthnRegisterVerifyRequest req) {
-        return webauthn.registerVerify(req);
+    public WebAuthnRegisterOptionsResponse registerOptions(@NotBlank String userId) {
+        return webauthn.registerOptions(userId);
     }
 
-    /** GET /webauthn/challenge */
-    @GetMapping("/webauthn/challenge")
-    public WebAuthnChallengeResponse challenge() {
-        return webauthn.challenge();
+    public void registerVerify(@Valid WebAuthnRegisterVerifyRequest req) {
+        webauthn.verifyRegister(req);
     }
 
-    /** POST /webauthn/assertion */
-    @PostMapping("/webauthn/assertion")
-    public LoginResponse assertion(@RequestBody @Valid WebAuthnAssertionRequest req) {
-        return webauthn.assertion(req);
+    public WebAuthnChallengeResponse challenge(@NotBlank String userId) {
+        return webauthn.assertionOptions(userId);
     }
 
-    /** GET /webauthn/credentials */
-    @GetMapping("/webauthn/credentials")
-    public WebAuthnCredentialListResponse listCredentials() {
-        return webauthn.listCredentials();
+    public void assertion(@Valid WebAuthnAssertionRequest req) {
+        webauthn.verifyAssertion(req);
     }
 
-    /** DELETE /webauthn/credentials/{credentialId} */
-    @DeleteMapping("/webauthn/credentials/{credentialId}")
-    public void deleteCredential(@PathVariable @NotBlank String credentialId) {
+    public WebAuthnCredentialListResponse listCredentials(@NotBlank String userId) {
+        return webauthn.listCredentials(userId);
+    }
+
+    public void deleteCredential(@NotBlank String credentialId) {
         webauthn.deleteCredential(credentialId);
-        // 仕様は204/200いずれでも妥当。voidで204(No Content)を返す。
     }
 }

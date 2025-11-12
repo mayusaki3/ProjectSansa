@@ -3,62 +3,50 @@ package com.sansa.auth.dto.sessions;
 import java.time.Instant;
 
 /**
- * セッション情報。APIレスポンス用。
+ * SessionInfo.builder() が参照されるため、手製ビルダーと UserSummary を提供。
  */
 public class SessionInfo {
-
-    private String id;
-    private Instant createdAt;
-    private Instant lastActiveAt;
-    private String ip;
-    private String userAgent;
-    private boolean current;
-
-    public String getId() {
-        return id;
+    public static class UserSummary {
+        private String userId;
+        public String getUserId() { return userId; }
+        public void setUserId(String userId) { this.userId = userId; }
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+    private String sessionId;
+    private Instant issuedAt;
+    private Instant lastActive;
+    private Instant expiresAt;
+    private String amr;
+    private UserSummary userSummary;
 
-    public Instant getLastActiveAt() {
-        return lastActiveAt;
-    }
+    public String getSessionId() { return sessionId; }
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
 
-    public String getIp() {
-        return ip;
-    }
+    public Instant getIssuedAt() { return issuedAt; }
+    public void setIssuedAt(Instant issuedAt) { this.issuedAt = issuedAt; }
 
-    public String getUserAgent() {
-        return userAgent;
-    }
+    public Instant getLastActive() { return lastActive; }
+    public void setLastActive(Instant lastActive) { this.lastActive = lastActive; }
 
-    public boolean isCurrent() {
-        return current;
-    }
+    public Instant getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getAmr() { return amr; }
+    public void setAmr(String amr) { this.amr = amr; }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public UserSummary getUserSummary() { return userSummary; }
+    public void setUserSummary(UserSummary userSummary) { this.userSummary = userSummary; }
 
-    public void setLastActiveAt(Instant lastActiveAt) {
-        this.lastActiveAt = lastActiveAt;
-    }
+    public static Builder builder() { return new Builder(); }
 
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
-    }
-
-    public void setCurrent(boolean current) {
-        this.current = current;
+    public static class Builder {
+        private final SessionInfo inst = new SessionInfo();
+        public Builder sessionId(String v) { inst.setSessionId(v); return this; }
+        public Builder issuedAt(Instant v) { inst.setIssuedAt(v); return this; }
+        public Builder lastActive(Instant v) { inst.setLastActive(v); return this; }
+        public Builder expiresAt(Instant v) { inst.setExpiresAt(v); return this; }
+        public Builder amr(String v) { inst.setAmr(v); return this; }
+        public Builder userSummary(UserSummary v) { inst.setUserSummary(v); return this; }
+        public SessionInfo build() { return inst; }
     }
 }

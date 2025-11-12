@@ -1,27 +1,40 @@
 package com.sansa.auth.service.port;
 
-import com.sansa.auth.dto.login.LoginTokens;
-
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 /**
- * アプリケーションサービス層から利用するトークン発行窓口。
- * 実体は TokenIssuer + Store 等に委譲する。
+ * トークン生成・ローテート・ブラックリスト登録を抽象化。
+ * AuthServiceImpl / MfaServiceImpl から呼ばれる。
  */
 public interface TokenFacade {
 
-    /**
-     * 認証成功後に AT / RT を発行する。
-     *
-     * @param userId ユーザーID
-     * @param authorities クレームに載せる権限など（必要なければ空でOK）
-     */
-    LoginTokens issueAfterAuth(String userId, List<String> authorities);
+    /** 発行結果DTO（AuthServiceImpl で参照される） */
+    class Tokens {
+        public String accessToken;
+        public String refreshToken;
+        public String sessionId;
+    }
 
-    /**
-     * RT を用いて AT/RT をローテーションする。
-     *
-     * @param refreshToken 受け取った RT
-     */
-    LoginTokens rotate(String refreshToken);
+    /** ローテート結果（AuthServiceImpl で参照される） */
+    class RotateResult {
+        public String newRefreshToken;
+        public Instant rotatedAt;
+    }
+
+    Tokens issueTokens(String userId,
+                       int tokenVersion,
+                       Instant now,
+                       Duration accessTtl,
+                       Duration refreshTtl,
+                       String sessionId,
+                       List<String> amr);
+
+    RotateResult rotateRefreshToken(String refreshToken, Instant now);
+
+    void blacklistRefreshToken(String refreshToken, Instant now);
+
+    /** MFA直後の追加AMRで再発行するためのヘルパ（MfaServiceImpl から呼ばれる） */
+    Tokens issueAfterAuth(String userId, List<String> amr);
 }

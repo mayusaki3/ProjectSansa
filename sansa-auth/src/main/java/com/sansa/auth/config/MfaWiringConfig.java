@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.sansa.auth.service.impl.MfaServiceImpl;
-import com.sansa.auth.util.TokenIssuer;
+import com.sansa.auth.service.port.TokenIssuer;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

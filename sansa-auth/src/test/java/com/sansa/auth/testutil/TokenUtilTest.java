@@ -6,8 +6,8 @@ import com.sansa.auth.dto.login.TokenRefreshResponse;
 import com.sansa.auth.service.AuthService;
 import com.sansa.auth.service.impl.AuthServiceImpl;
 import com.sansa.auth.store.Store;
-import com.sansa.auth.util.TokenIssuer;
-import com.sansa.auth.util.impl.TokenIssuerImpl;
+import com.sansa.auth.session.port.TokenIssuer;
+import com.sansa.auth.session.port.impl.TokenIssuerImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

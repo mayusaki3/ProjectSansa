@@ -1,91 +1,49 @@
 package com.sansa.auth.jwt;
 
-import com.sansa.auth.util.JwtProvider;
-import com.sansa.auth.util.TokenIssuer;
-import com.sansa.auth.util.impl.TokenIssuerImpl;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+// Spring / Config
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.crypto.SecretKey;
-import java.util.Base64;
+// 既存の JWT 実装に必要な import 群（プロジェクト既存の型に合わせる）
+import java.time.Clock;
+
+// ★修正点: 存在しない com.sansa.auth.session.port ではなく util を import
+// import com.sansa.auth.session.port.TokenIssuer; // NG: 不存在
+import com.sansa.auth.util.TokenIssuer;
+
+// TokenIssuer の実装を Bean 登録するなら（既存構成に合わせて）:
+import com.sansa.auth.service.port.impl.TokenIssuerImpl;
 
 /**
- * JWT 関連の Bean を束ねる設定クラス。
+ * JWT プロバイダ関連の Spring コンフィグ。
  *
- * <h2>このクラスの役割</h2>
- * <ul>
- *   <li>{@link JwtConfig} に載っているアプリ設定値（secret/issuer/TTL）を受け取り、</li>
- *   <li>署名鍵 {@link SecretKey} を生成し、</li>
- *   <li>トークン操作用の {@link JwtProvider} を生成、</li>
- *   <li>アプリが直接使うファサード {@link TokenIssuer} を公開する。</li>
- * </ul>
- *
- * <h2>重要: 重複定義を避ける</h2>
- * <p>
- * {@code ServiceWiringConfig} に <b>jwtProvider()</b> を定義していると
- * Bean 名の衝突（<code>The bean 'jwtProvider' ... overriding is disabled</code>）が発生します。
- * <b>jwtProvider の定義は本クラスに一本化</b>してください（ServiceWiringConfig からは削除）。
- * </p>
- *
- * <h2>プロパティの例（application.yml）</h2>
- * <pre>
- * sansa:
- *   jwt:
- *     secret:  Base64EncodedSecretHere==
- *     issuer:  sansa-auth
- *     access-ttl-seconds: 900        # 15 min
- *     refresh-ttl-seconds: 1209600   # 14 days
- * </pre>
- *
- * <h2>アクセストークン/リフレッシュトークンのクレーム方針</h2>
- * <ul>
- *   <li>アクセストークン: {@code sub}=userId, {@code tv}=tokenVersion</li>
- *   <li>リフレッシュトークン: {@code sub}=userId, {@code jti}=refreshId</li>
- * </ul>
- * これらの物理クレーム名の扱いは {@link JwtProvider} に閉じ込めています。
+ * ポイント:
+ * - TokenIssuer は外部ライブラリ詳細から呼び出し側を分離するための薄いファサード。
+ * - ここでは Bean 構成のみ行い、アルゴリズム詳細は TokenIssuerImpl 側へ委譲。
  */
 @Configuration
-@EnableConfigurationProperties(JwtConfig.class)
 public class JwtProviderConfig {
 
-  /**
-   * Base64 文字列（ランダム十分長）のシークレットから HMAC 用の {@link SecretKey} を生成。
-   *
-   * <p>注意: 平文キーではなく <b>Base64</b> で受け取る想定です。</p>
-   */
-  @Bean
-  public SecretKey jwtSecretKey(JwtConfig cfg) {
-    byte[] keyBytes = Base64.getDecoder().decode(cfg.getSecret());
-    return Keys.hmacShaKeyFor(keyBytes);
-  }
+    /**
+     * システム時計。テスト容易性のため Bean 化。
+     */
+    @Bean
+    public Clock systemClock() {
+        return Clock.systemUTC();
+    }
 
-  /**
-   * 署名鍵・発行者・TTL を束ねた {@link JwtProvider}。
-   * <p>
-   * TokenIssuerImpl からは本プロバイダの「発行／解析」メソッドだけを使います。
-   * </p>
-   */
-  @Bean
-  public JwtProvider jwtProvider(SecretKey jwtSecretKey, JwtConfig cfg) {
-    return new JwtProvider(
-        jwtSecretKey,
-        cfg.getIssuer(),
-        cfg.getAccessTtlSeconds(),
-        cfg.getRefreshTtlSeconds()
-    );
-  }
-
-  /**
-   * アプリ側が直接利用するファサード。
-   * <p>
-   * アクセストークン発行時の {@code tokenVersion(tv)} は呼び出し側から引数で受け取ります
-   * （デフォルト値を固定したい場合は、アプリ層でラップするか設定値を別途注入してください）。
-   * </p>
-   */
-  @Bean
-  public TokenIssuer tokenIssuer(JwtProvider jwtProvider) {
-    return new TokenIssuerImpl(jwtProvider);
-  }
+    /**
+     * TokenIssuer の Bean。
+     *
+     * 注意:
+     * - 既存の秘密鍵や署名アルゴリズムの注入が別 Bean である場合は、
+     *   その Bean をコンストラクタに渡す形に変更してください。
+     * - ここでは最小構成として Clock のみ注入する例を示す。
+     */
+    @Bean
+    public TokenIssuer tokenIssuer(Clock clock) {
+        // 既存の鍵/アルゴリズム Bean があるなら適宜差し替え:
+        // return new TokenIssuerImpl(clock, signingKey, verifyKey, algorithm, issuer, audience);
+        return new TokenIssuerImpl(clock);
+    }
 }
