@@ -1,72 +1,167 @@
 package com.sansa.auth.service.impl;
 
-import com.sansa.auth.dto.sessions.*;
-import com.sansa.auth.exception.NotFoundException;
-import com.sansa.auth.exception.UnauthorizedException;
-import com.sansa.auth.service.SessionService;
+import com.sansa.auth.dto.session.SessionInfo;
+import com.sansa.auth.dto.token.LogoutResponse;
+import com.sansa.auth.dto.token.TokenRefreshResponse;
+import com.sansa.auth.facade.TokenFacade;
 import com.sansa.auth.store.Store;
-import com.sansa.auth.store.Store.Session;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.sansa.auth.service.SessionService;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * /sessions 配下のユースケース実装
- * 対応仕様: 05_セッション管理.md
- * - GET /sessions → SessionsListResponse
- * - DELETE /sessions/{id} → 204/404（void 戻り）
+ * セッション管理サービスの実装。
+ *
+ * 主な責務：
+ *  - 現在のユーザーセッション一覧取得
+ *  - セッション削除（単体 / 全削除）
+ *  - トークンリフレッシュ
+ *  - セッション作成 / 更新
+ *
+ * AuthService, MfaService, WebAuthnService などから呼び出される。
  */
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class SessionServiceImpl implements SessionService {
 
     private final Store store;
+    private final TokenFacade tokenFacade;
 
+    public SessionServiceImpl(Store store, TokenFacade tokenFacade) {
+        this.store = store;
+        this.tokenFacade = tokenFacade;
+    }
+
+    // ==========================================================
+    // セッション一覧 / 詳細取得
+    // ==========================================================
+
+    /**
+     * 指定ユーザーのすべてのセッションを取得。
+     *
+     * @param accountId 対象アカウントID
+     * @return セッション情報一覧
+     */
     @Override
-    public SessionsListResponse list() throws UnauthorizedException {
-        String userId = CurrentRequestContext.getUserIdOrThrow();
-        List<Session> list = store.listSessions(userId);
-        return SessionsListResponse.builder()
-                .sessions(list.stream().map(SessionServiceImpl::toSessionInfo).toList())
-                .build();
+    public List<SessionInfo> listSessions(String accountId) {
+        return store.listSessionsByAccountId(accountId).stream()
+                .map(s -> new SessionInfo(
+                        s.getSessionId(),
+                        s.getAccountId(),
+                        s.getCreatedAt(),
+                        s.getExpiresAt(),
+                        s.getIpAddress(),
+                        s.getUserAgent()))
+                .collect(Collectors.toList());
     }
 
+    /**
+     * 特定のセッション詳細を取得。
+     *
+     * @param sessionId セッションID
+     * @return 該当セッション情報、存在しない場合はnull
+     */
     @Override
-    public void deleteById(String sessionId) throws UnauthorizedException, NotFoundException {
-        String userId = CurrentRequestContext.getUserIdOrThrow();
-        // 仕様は 204/404（本文なし）。存在しない場合は NotFoundException を投げる実装方針に。
-        boolean exists = store.findSessionById(sessionId).isPresent();
-        if (!exists) throw new NotFoundException("session not found");
-        store.deleteSession(userId, sessionId);
+    public SessionInfo findSession(String sessionId) {
+        var s = store.findSessionById(sessionId);
+        if (s == null) return null;
+        return new SessionInfo(
+                s.getSessionId(),
+                s.getAccountId(),
+                s.getCreatedAt(),
+                s.getExpiresAt(),
+                s.getIpAddress(),
+                s.getUserAgent());
     }
 
-    private static SessionInfo toSessionInfo(Session s) {
-        return SessionInfo.builder()
-                .active(true)
-                .sessionId(s.sessionId())
-                .issuedAt(s.issuedAt().toString())
-                .lastActive(s.lastActive().toString())
-                .expiresAt(s.expiresAt().toString())
-                .amr(s.amr())
-                .user(SessionInfo.UserSummary.builder()
-                        .userId(s.userId())
-                        .email(null).displayName(null).build())
-                .build();
-    }
+    // ==========================================================
+    // セッション作成・更新
+    // ==========================================================
 
+    /**
+     * 新しいセッションを作成または更新。
+     *
+     * @param accountId アカウントID
+     * @param sessionId セッションID
+     * @param createdAt 作成時刻
+     * @param expiresAt 有効期限
+     * @param ipAddress クライアントIP
+     * @param userAgent UA文字列
+     * @return 作成または更新後のSessionInfo
+     */
     @Override
-    public void logoutAll(String userId) {
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("userId is required");
-        }
-        // token_version++ により既存AT/RTを全失効
-        store.incrementTokenVersion(userId);
-        // セッションレコード全削除
-        store.deleteAllSessions(userId);
+    public SessionInfo upsertSession(String accountId, String sessionId,
+                                     Instant createdAt, Instant expiresAt,
+                                     String ipAddress, String userAgent) {
+        var s = store.createSession(accountId, sessionId, createdAt, expiresAt, ipAddress, userAgent);
+        return new SessionInfo(
+                s.getSessionId(),
+                s.getAccountId(),
+                s.getCreatedAt(),
+                s.getExpiresAt(),
+                s.getIpAddress(),
+                s.getUserAgent());
     }
 
-    public static final class CurrentRequestContext {
-        public static String getUserIdOrThrow() { throw new UnsupportedOperationException(); }
+    // ==========================================================
+    // セッション削除（単体 / 全削除）
+    // ==========================================================
+
+    /**
+     * 特定セッションを削除。
+     *
+     * @param sessionId セッションID
+     * @return 成功時true
+     */
+    @Override
+    public boolean deleteSession(String sessionId) {
+        return store.deleteSessionById(sessionId);
+    }
+
+    /**
+     * 指定アカウントの全セッションを削除。
+     *
+     * @param accountId 対象アカウントID
+     * @return 削除件数
+     */
+    @Override
+    public int deleteAllSessions(String accountId) {
+        return store.deleteAllSessions(accountId);
+    }
+
+    // ==========================================================
+    // トークンリフレッシュ / ログアウト
+    // ==========================================================
+
+    /**
+     * リフレッシュトークンを使用してアクセストークンを再発行する。
+     *
+     * @param refreshToken リフレッシュトークン
+     * @return 新しいアクセストークン
+     */
+    @Override
+    public TokenRefreshResponse refresh(String refreshToken) {
+        var result = tokenFacade.refresh(refreshToken);
+        return new TokenRefreshResponse(result.accessToken(), result.refreshToken());
+    }
+
+    /**
+     * ログアウト処理。
+     * 該当セッションを削除し、トークンバージョンをインクリメント。
+     *
+     * @param sessionId セッションID
+     * @param accountId アカウントID
+     * @return 成功レスポンス
+     */
+    @Override
+    public LogoutResponse logout(String sessionId, String accountId) {
+        store.deleteSessionById(sessionId);
+        store.incrementTokenVersion(accountId);
+        return new LogoutResponse(true);
     }
 }

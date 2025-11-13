@@ -1,78 +1,200 @@
 package com.sansa.auth.service.port.impl;
 
-import com.sansa.auth.service.port.TokenFacade;
-import com.sansa.auth.service.port.TokenIssuer;
+import com.sansa.auth.dto.token.LoginTokens;
+import com.sansa.auth.jwt.JwtProviderConfig;
+import com.sansa.auth.service.port.SessionService;
 import com.sansa.auth.store.Store;
-import java.time.Duration;
+import com.sansa.auth.util.TokenIssuer;
+import com.sansa.auth.facade.TokenFacade;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
- * TokenFacade 実装。Store と TokenIssuer を仲介する。
- * 以前のエラーは createSession の引数や List→int などのミスマッチが原因。
- * 本実装ではシグネチャを揃え、セッション生成→トークン発行→DTO組立の順で処理する。
+ * TokenFacade の正式実装。
+ *
+ * 主な責務：
+ *  - JWT 発行／更新／検証
+ *  - セッション生成と紐付け
+ *  - リフレッシュトークン処理
+ *  - TokenVersion 管理（強制失効用）
+ *
+ * Store / TokenIssuer / SessionService に依存。
  */
+@Component
+@Transactional
 public class TokenFacadeImpl implements TokenFacade {
 
     private final Store store;
-    private final TokenIssuer issuer;
+    private final TokenIssuer tokenIssuer;
+    private final SessionService sessionService;
+    private final JwtProviderConfig jwtProviderConfig;
 
-    public TokenFacadeImpl(Store store, TokenIssuer issuer) {
-        this.store = Objects.requireNonNull(store);
-        this.issuer = Objects.requireNonNull(issuer);
+    public TokenFacadeImpl(Store store,
+                           TokenIssuer tokenIssuer,
+                           SessionService sessionService,
+                           JwtProviderConfig jwtProviderConfig) {
+        this.store = store;
+        this.tokenIssuer = tokenIssuer;
+        this.sessionService = sessionService;
+        this.jwtProviderConfig = jwtProviderConfig;
     }
 
+    // ==========================================================
+    // JWT・セッション生成
+    // ==========================================================
+
+    /**
+     * 新しいセッションIDを生成する。
+     *
+     * @return UUID形式の新規セッションID
+     */
     @Override
-    public Tokens issueTokens(String userId,
-                              int tokenVersion,
-                              Instant now,
-                              Duration accessTtl,
-                              Duration refreshTtl,
-                              String sessionId,
-                              List<String> amr) {
-
-        // セッションIDが未指定なら新規採番
-        String sid = (sessionId != null && !sessionId.isBlank()) ? sessionId : UUID.randomUUID().toString();
-
-        // セッション作成（Storeの4引数版に統一）
-        store.createSession(userId, sid, String.join(" ", amr), now);
-
-        // 実トークン発行
-        String at = issuer.issueAccessToken(userId, tokenVersion, now, accessTtl, amr);
-        String rt = issuer.issueRefreshToken(userId, tokenVersion, now, refreshTtl);
-
-        // 返却
-        Tokens t = new Tokens();
-        t.accessToken = at;
-        t.refreshToken = rt;
-        t.sessionId = sid;
-        return t;
+    public String generateSessionId() {
+        return UUID.randomUUID().toString();
     }
 
+    /**
+     * ログインまたはMFA後にJWTトークンを発行。
+     *
+     * @param accountId アカウントID
+     * @param sessionId セッションID
+     * @param ipAddress IPアドレス
+     * @param userAgent UA
+     * @return アクセストークン／リフレッシュトークン
+     */
     @Override
-    public RotateResult rotateRefreshToken(String refreshToken, Instant now) {
-        // 実装例: 古いRTをブラックリストへ、再発行
-        blacklistRefreshToken(refreshToken, now);
-        RotateResult r = new RotateResult();
-        r.newRefreshToken = UUID.randomUUID().toString(); // 実装では issuer を使う
-        r.rotatedAt = now;
-        return r;
-    }
-
-    @Override
-    public void blacklistRefreshToken(String refreshToken, Instant now) {
-        // 実装例: ブラックリスト保管が必要なら Store や別Repoへ登録する
-        // ここではNOP
-    }
-
-    @Override
-    public Tokens issueAfterAuth(String userId, List<String> amr) {
+    public Tokens issue(String accountId, String sessionId,
+                        String ipAddress, String userAgent) {
         Instant now = Instant.now();
-        // 追加AMRを含めて短期AT再発行。RTは再利用想定なら再発行しない設計もあり得る。
-        return issueTokens(userId, store.getTokenVersion(userId), now,
-                Duration.ofMinutes(15), Duration.ofDays(7),
-                null, amr);
+        Instant accessExp = now.plusSeconds(jwtProviderConfig.getAccessTokenTtlSec());
+        Instant refreshExp = now.plusSeconds(jwtProviderConfig.getRefreshTokenTtlSec());
+
+        // TokenVersion 取得
+        long tokenVersion = store.getTokenVersion(accountId);
+
+        // JWT生成
+        String accessToken = tokenIssuer.issueAccessToken(accountId, sessionId, tokenVersion, accessExp);
+        String refreshToken = tokenIssuer.issueRefreshToken(accountId, sessionId, tokenVersion, refreshExp);
+
+        // セッション登録
+        sessionService.upsertSession(accountId, sessionId, now, refreshExp, ipAddress, userAgent);
+
+        return new Tokens(accessToken, refreshToken);
+    }
+
+    /**
+     * MFA完了後の再発行。
+     *
+     * @param accountId アカウントID
+     * @param sessionId セッションID
+     * @param ipAddress IPアドレス
+     * @param userAgent UA
+     * @return 新しいトークンペア
+     */
+    @Override
+    public Tokens issueAfterMfa(String accountId, String sessionId,
+                                String ipAddress, String userAgent) {
+        // MFA成功時は同じ処理フローを再利用
+        return issue(accountId, sessionId, ipAddress, userAgent);
+    }
+
+    // ==========================================================
+    // トークンリフレッシュ
+    // ==========================================================
+
+    /**
+     * リフレッシュトークンを用いてアクセストークンを再発行する。
+     *
+     * @param refreshToken クライアントから送信されたトークン
+     * @return 新トークンペア
+     */
+    @Override
+    public Tokens refresh(String refreshToken) {
+        // トークン解析
+        var parsed = tokenIssuer.parseRefreshToken(refreshToken);
+        if (!parsed.isValid()) {
+            throw new IllegalArgumentException("Invalid refresh token");
+        }
+
+        String accountId = parsed.getAccountId();
+        String sessionId = parsed.getSessionId();
+        long versionInToken = parsed.getTokenVersion();
+
+        // TokenVersionを検証（失効確認）
+        long currentVersion = store.getTokenVersion(accountId);
+        if (currentVersion != versionInToken) {
+            throw new IllegalStateException("Token version mismatch (token invalidated)");
+        }
+
+        Instant now = Instant.now();
+        Instant accessExp = now.plusSeconds(jwtProviderConfig.getAccessTokenTtlSec());
+        Instant refreshExp = now.plusSeconds(jwtProviderConfig.getRefreshTokenTtlSec());
+
+        // 新トークン発行
+        String newAccess = tokenIssuer.issueAccessToken(accountId, sessionId, currentVersion, accessExp);
+        String newRefresh = tokenIssuer.issueRefreshToken(accountId, sessionId, currentVersion, refreshExp);
+
+        // セッション延長
+        sessionService.upsertSession(accountId, sessionId, now, refreshExp, null, null);
+
+        return new Tokens(newAccess, newRefresh);
+    }
+
+    // ==========================================================
+    // トークン検証
+    // ==========================================================
+
+    /**
+     * アクセストークンを検証し、ユーザー情報を返す。
+     *
+     * @param accessToken クライアントトークン
+     * @return アカウントID
+     */
+    @Override
+    public String verifyAccessToken(String accessToken) {
+        var parsed = tokenIssuer.parseAccessToken(accessToken);
+        if (!parsed.isValid()) {
+            throw new IllegalArgumentException("Invalid access token");
+        }
+
+        long currentVersion = store.getTokenVersion(parsed.getAccountId());
+        if (currentVersion != parsed.getTokenVersion()) {
+            throw new IllegalStateException("Access token invalidated");
+        }
+
+        return parsed.getAccountId();
+    }
+
+    // ==========================================================
+    // Logout / Token Version Invalidation
+    // ==========================================================
+
+    /**
+     * トークンを完全無効化する（全セッション失効）。
+     *
+     * @param accountId 対象アカウント
+     */
+    @Override
+    public void invalidateAll(String accountId) {
+        store.incrementTokenVersion(accountId);
+        store.deleteAllSessions(accountId);
+    }
+
+    // ==========================================================
+    // DTO変換
+    // ==========================================================
+
+    /**
+     * Tokens → LoginTokens DTO に変換。
+     */
+    @Override
+    public LoginTokens toLoginTokens(Tokens t) {
+        return LoginTokens.builder()
+                .accessToken(t.accessToken())
+                .refreshToken(t.refreshToken())
+                .build();
     }
 }

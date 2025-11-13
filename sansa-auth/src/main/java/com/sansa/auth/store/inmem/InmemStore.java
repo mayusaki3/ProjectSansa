@@ -1,220 +1,227 @@
+// File: src/main/java/com/sansa/auth/store/inmem/InmemStore.java
 package com.sansa.auth.store.inmem;
 
 import com.sansa.auth.store.Store;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 開発・テスト用のインメモリ実装。
- * 非永続。最低限の一貫性とスレッドセーフ（ConcurrentHashMap）を確保。
+ * InmemStore
+ * 役割:
+ *   - Store の最小 in-memory 実装（単体/ITテスト用、プロトタイプ用）
+ *
+ * 実装方針:
+ *   - スレッドセーフのため ConcurrentHashMap を用いる
+ *   - メールアドレスのキーは小文字化して保存
+ *   - list は都度コピーして不変リストを返す（安全性を優先）
+ *
+ * 注意点:
+ *   - 永続化ではないためプロセス終了で消える
+ *   - 期限切れ自動削除等は行わない（必要に応じて呼び出し側でガベージ）
  */
 public class InmemStore implements Store {
 
-    private final Map<String, User> usersById = new ConcurrentHashMap<>();
-    private final Map<String, PreReg> preregById = new ConcurrentHashMap<>();
+    // ====== ストレージ（簡易） ======
+
+    // users
+    private final Map<String, User> usersByAccountId = new ConcurrentHashMap<>();
+    private final Map<String, User> usersByEmailLower = new ConcurrentHashMap<>();
+
+    // pre-registrations
+    private final Map<String, PreRegistration> preRegsById = new ConcurrentHashMap<>();
+
+    // sessions
     private final Map<String, Session> sessionsById = new ConcurrentHashMap<>();
-    private final Map<String, List<Session>> sessionsByAccount = new ConcurrentHashMap<>();
-    private final Map<String, Integer> tokenVersionByAccount = new ConcurrentHashMap<>();
-    private final Set<String> blockedAccountIds = ConcurrentHashMap.newKeySet();
+    private final Map<String, List<Session>> sessionsByAccountId = new ConcurrentHashMap<>();
 
-    private final Map<String, String> totpSecretByAccount = new ConcurrentHashMap<>();
-    private final Set<String> totpEnabled = ConcurrentHashMap.newKeySet();
+    // webauthn credentials
+    private final Map<String, WebAuthnCredential> credsById = new ConcurrentHashMap<>();
+    private final Map<String, List<WebAuthnCredential>> credsByUserId = new ConcurrentHashMap<>();
 
-    private final Map<String, String> emailMfaCodeByAccount = new ConcurrentHashMap<>();
-    private final Map<String, Instant> emailMfaExpByAccount = new ConcurrentHashMap<>();
 
-    private final Map<String, Set<String>> recoveryCodesByAccount = new ConcurrentHashMap<>();
-
-    private final Map<String, Integer> rlCounter = new ConcurrentHashMap<>();
-    private final Map<String, Instant> rlRefillAt = new ConcurrentHashMap<>();
-
-    private final Map<String, WebAuthnCredential> webauthnByCredId = new ConcurrentHashMap<>();
-    private final Map<String, List<WebAuthnCredential>> webauthnByUser = new ConcurrentHashMap<>();
+    // ====== ユーザー関連 ======
 
     @Override
-    public boolean isBlockedAccountId(String accountId) {
-        return blockedAccountIds.contains(accountId);
+    public Optional<User> findUserByEmail(String email) {
+        if (email == null) return Optional.empty();
+        String key = normalizeEmail(email);
+        return Optional.ofNullable(usersByEmailLower.get(key));
     }
 
     @Override
-    public Optional<PreReg> findPreReg(String preRegId) {
-        return Optional.ofNullable(preregById.get(preRegId));
+    public Optional<User> findUserByAccountId(String accountId) {
+        if (accountId == null) return Optional.empty();
+        return Optional.ofNullable(usersByAccountId.get(accountId));
     }
 
     @Override
-    public void markPreRegConsumed(String preRegId, Instant consumedAt) {
-        PreReg pr = preregById.get(preRegId);
-        if (pr != null) {
-            pr.setConsumed(true);
-            pr.setExpiresAt(consumedAt);
-        }
-    }
-
-    @Override
-    public User createUser(String accountId, String email, String passwordHash, boolean emailVerified) {
-        User u = new User();
-        u.setId(UUID.randomUUID().toString());
-        u.setAccountId(accountId);
-        u.setEmail(email);
-        u.setPasswordHash(passwordHash);
-        u.setEmailVerified(emailVerified);
-        u.setCreatedAt(Instant.now());
-        usersById.put(u.getId(), u);
-        tokenVersionByAccount.putIfAbsent(accountId, 0);
+    public User createUser(String accountId, String email, String displayName, String language, boolean admin) {
+        Instant now = Instant.now();
+        User u = new User(
+            Objects.requireNonNull(accountId, "accountId"),
+            Objects.requireNonNull(email, "email"),
+            Objects.requireNonNull(displayName, "displayName"),
+            Objects.requireNonNull(language, "language"),
+            admin,
+            now
+        );
+        usersByAccountId.put(u.getAccountId(), u);
+        usersByEmailLower.put(normalizeEmail(u.getEmail()), u);
         return u;
     }
 
+
+    // ====== プレ登録（メールコード） ======
+
     @Override
-    public int getTokenVersion(String accountId) {
-        return tokenVersionByAccount.getOrDefault(accountId, 0);
+    public Long issuePreRegCode(String email, Duration ttl, Instant now) {
+        if (email == null || ttl == null || now == null) return null;
+
+        // preRegId は email + createdAt の組合せなど簡易生成（本番は UUID 推奨）
+        String preRegId = "pr_" + normalizeEmail(email) + "_" + now.toEpochMilli();
+        String lang = "ja-JP"; // デフォルト（呼び出し側が上書きする場合あり）
+        String code = generateCode(email, now); // 簡易コード（本番はランダム/暗号的生成）
+
+        Instant expiresAt = now.plus(ttl);
+        PreRegistration pr = new PreRegistration(preRegId, email, lang, code, now, expiresAt);
+        preRegsById.put(preRegId, pr);
+
+        // 呼び出し側が Long の null チェックを行っているため、Long で返す
+        return expiresAt.getEpochSecond();
     }
 
     @Override
-    public void incrementTokenVersion(String accountId) {
-        tokenVersionByAccount.merge(accountId, 1, Integer::sum);
+    public Optional<PreRegistration> findPreRegById(String preRegId) {
+        if (preRegId == null) return Optional.empty();
+        return Optional.ofNullable(preRegsById.get(preRegId));
     }
 
     @Override
-    public Session createSession(String userId, String sessionId, String amr, Instant issuedAt) {
-        Session s = new Session();
-        s.setSessionId(sessionId);
-        s.setUserId(userId);
-        s.setAmr(amr);
-        s.setIssuedAt(issuedAt);
-        s.setLastActive(issuedAt);
-        s.setExpiresAt(issuedAt.plusSeconds(60 * 60 * 24 * 7)); // 1週間のダミー
+    public Optional<PreRegistration> consumePreRegCode(String preRegId, String code, Instant now) {
+        if (preRegId == null || code == null || now == null) return Optional.empty();
+        PreRegistration pr = preRegsById.get(preRegId);
+        if (pr == null) return Optional.empty();
+        if (pr.isExpired(now)) return Optional.empty();
+        if (!Objects.equals(pr.getCode(), code)) return Optional.empty();
+
+        // 成功時: 必要なら 1回限りにするため削除
+        preRegsById.remove(preRegId);
+        return Optional.of(pr);
+    }
+
+
+    // ====== セッション関連 ======
+
+    @Override
+    public Session createSession(String sessionId, String accountId, Instant createdAt, Instant expiresAt, String ip, String userAgent) {
+        Session s = new Session(
+            Objects.requireNonNull(sessionId, "sessionId"),
+            Objects.requireNonNull(accountId, "accountId"),
+            Objects.requireNonNull(createdAt, "createdAt"),
+            Objects.requireNonNull(expiresAt, "expiresAt"),
+            ip,
+            userAgent,
+            /* active */ true
+        );
         sessionsById.put(sessionId, s);
-        // accountId == userId とみなす or 実際のアカウント解決が必要なら適宜置換
-        sessionsByAccount.computeIfAbsent(userId, k -> new ArrayList<>()).add(s);
+
+        sessionsByAccountId.compute(accountId, (k, list) -> {
+            List<Session> next = (list == null) ? new ArrayList<>() : new ArrayList<>(list);
+            next.add(s);
+            return next;
+        });
         return s;
     }
 
     @Override
-    public List<Session> listSessions(String accountId) {
-        return new ArrayList<>(sessionsByAccount.getOrDefault(accountId, List.of()));
+    public Optional<Session> findSessionById(String sessionId) {
+        if (sessionId == null) return Optional.empty();
+        return Optional.ofNullable(sessionsById.get(sessionId));
     }
 
     @Override
-    public void deleteSession(String accountId, String sessionId) {
-        sessionsById.remove(sessionId);
-        List<Session> list = sessionsByAccount.get(accountId);
-        if (list != null) list.removeIf(s -> Objects.equals(s.sessionId(), sessionId));
+    public List<Session> listSessionsByAccountId(String accountId) {
+        if (accountId == null) return Collections.emptyList();
+        List<Session> list = sessionsByAccountId.get(accountId);
+        if (list == null || list.isEmpty()) return Collections.emptyList();
+        return Collections.unmodifiableList(new ArrayList<>(list));
     }
 
     @Override
-    public void deleteAllSessions(String accountId) {
-        List<Session> list = sessionsByAccount.remove(accountId);
-        if (list != null) {
-            for (Session s : list) sessionsById.remove(s.sessionId());
-        }
-    }
+    public boolean deleteSessionById(String sessionId) {
+        if (sessionId == null) return false;
+        Session removed = sessionsById.remove(sessionId);
+        if (removed == null) return false;
 
-    @Override
-    public void revokeSession(String sessionId) {
-        sessionsById.remove(sessionId);
-        // accountマップからも除去
-        sessionsByAccount.values().forEach(l -> l.removeIf(s -> Objects.equals(s.sessionId(), sessionId)));
-    }
-
-    @Override
-    public String issueTotpSecret(String accountId) {
-        String secret = UUID.randomUUID().toString().replace("-", "");
-        totpSecretByAccount.put(accountId, secret);
-        return secret;
-    }
-
-    @Override
-    public Optional<String> getTotpSecret(String accountId) {
-        return Optional.ofNullable(totpSecretByAccount.get(accountId));
-    }
-
-    @Override
-    public void markTotpEnabled(String accountId) {
-        totpEnabled.add(accountId);
-    }
-
-    @Override
-    public String issueEmailMfaCode(String accountId, Duration ttl) {
-        String code = String.valueOf(100000 + new Random().nextInt(900000));
-        emailMfaCodeByAccount.put(accountId, code);
-        emailMfaExpByAccount.put(accountId, Instant.now().plus(ttl));
-        return code;
-    }
-
-    @Override
-    public boolean verifyEmailMfaCode(String accountId, String code) {
-        String stored = emailMfaCodeByAccount.get(accountId);
-        Instant exp = emailMfaExpByAccount.get(accountId);
-        return stored != null && stored.equals(code) && exp != null && exp.isAfter(Instant.now());
-    }
-
-    @Override
-    public List<String> issueRecoveryCodes(String accountId, int count) {
-        Set<String> set = recoveryCodesByAccount.computeIfAbsent(accountId, k -> new HashSet<>());
-        List<String> issued = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            String code = UUID.randomUUID().toString().substring(0, 8);
-            set.add(code);
-            issued.add(code);
-        }
-        return issued;
-    }
-
-    @Override
-    public boolean consumeRecoveryCode(String accountId, String code) {
-        Set<String> set = recoveryCodesByAccount.get(accountId);
-        return set != null && set.remove(code);
-    }
-
-    @Override
-    public boolean tryConsumeRateLimit(String key, int capacity, int refillSeconds) {
-        Instant now = Instant.now();
-        rlRefillAt.putIfAbsent(key, now.plusSeconds(refillSeconds));
-        rlCounter.putIfAbsent(key, capacity);
-
-        if (now.isAfter(rlRefillAt.get(key))) {
-            rlCounter.put(key, capacity);
-            rlRefillAt.put(key, now.plusSeconds(refillSeconds));
-        }
-        int remain = rlCounter.get(key);
-        if (remain <= 0) return false;
-        rlCounter.put(key, remain - 1);
+        sessionsByAccountId.computeIfPresent(removed.getAccountId(), (k, list) -> {
+            if (list == null || list.isEmpty()) return list;
+            List<Session> next = new ArrayList<>(list);
+            next.removeIf(s -> Objects.equals(s.getId(), sessionId));
+            return next;
+        });
         return true;
     }
 
+
+    // ====== WebAuthn 資格情報 ======
+
     @Override
-    public Optional<WebAuthnCredential> findWebAuthnCredential(String credentialId) {
-        return Optional.ofNullable(webauthnByCredId.get(credentialId));
+    public List<WebAuthnCredential> listCredentialsByUserId(String userId) {
+        if (userId == null) return Collections.emptyList();
+        List<WebAuthnCredential> list = credsByUserId.get(userId);
+        if (list == null || list.isEmpty()) return Collections.emptyList();
+        return Collections.unmodifiableList(new ArrayList<>(list));
     }
 
     @Override
-    public void saveWebAuthnCredential(WebAuthnCredential cred) {
-        webauthnByCredId.put(cred.getId(), cred);
-        webauthnByUser.computeIfAbsent(cred.getUserId(), k -> new ArrayList<>()).add(cred);
+    public Optional<WebAuthnCredential> findCredentialById(String credentialId) {
+        if (credentialId == null) return Optional.empty();
+        return Optional.ofNullable(credsById.get(credentialId));
     }
 
     @Override
-    public void updateWebAuthnCredentialOnSign(String credentialId, long newSignCount, Instant now) {
-        WebAuthnCredential c = webauthnByCredId.get(credentialId);
-        if (c != null) {
-            c.setSignCount(newSignCount);
-            c.setLastUsedAt(now);
-        }
+    public WebAuthnCredential createCredential(WebAuthnCredential cred) {
+        Objects.requireNonNull(cred, "credential");
+        credsById.put(cred.getCredentialId(), cred);
+        credsByUserId.compute(cred.getUserId(), (k, list) -> {
+            List<WebAuthnCredential> next = (list == null) ? new ArrayList<>() : new ArrayList<>(list);
+            next.add(cred);
+            return next;
+        });
+        return cred;
     }
 
     @Override
-    public List<WebAuthnCredential> listWebAuthnCredentials(String userId) {
-        return new ArrayList<>(webauthnByUser.getOrDefault(userId, List.of()));
+    public boolean deleteCredentialById(String credentialId) {
+        WebAuthnCredential removed = credsById.remove(credentialId);
+        if (removed == null) return false;
+        credsByUserId.computeIfPresent(removed.getUserId(), (k, list) -> {
+            if (list == null || list.isEmpty()) return list;
+            List<WebAuthnCredential> next = new ArrayList<>(list);
+            next.removeIf(c -> Objects.equals(c.getCredentialId(), credentialId));
+            return next;
+        });
+        return true;
     }
 
-    @Override
-    public void deleteWebAuthnCredential(String credentialId) {
-        WebAuthnCredential c = webauthnByCredId.remove(credentialId);
-        if (c != null) {
-            List<WebAuthnCredential> list = webauthnByUser.get(c.getUserId());
-            if (list != null) list.removeIf(x -> Objects.equals(x.getId(), credentialId));
-        }
+
+    // ====== ユーティリティ ======
+
+    private static String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String generateCode(String email, Instant now) {
+        // 簡易: 時刻 + ハッシュ断片（本番は暗号的乱数を利用）
+        int h = Math.abs((email + now.toString()).hashCode());
+        return String.format("%06d", h % 1_000_000);
     }
 }

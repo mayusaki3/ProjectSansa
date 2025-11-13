@@ -1,200 +1,278 @@
+// File: src/main/java/com/sansa/auth/store/Store.java
 package com.sansa.auth.store;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * 認証ドメインの永続化インタフェース。
- * サービス層（AuthServiceImpl / MfaServiceImpl / SessionServiceImpl / WebAuthnServiceImpl）
- * から呼ばれるメソッド群を集約する。
+ * Store
+ * 役割:
+ *   - 認証・セッション・WebAuthn(一部)に必要な最小限の永続化I/Fを定義する。
+ *   - 実装は in-memory / DB 実装で差し替え可能にする。
  *
- * 重要: 既存実装が呼ぶシグネチャを全て定義してある（過不足でコンパイルが壊れないようにする）
+ * 注意点:
+ *   - 呼び出し側（service 層）の既存利用に合わせ、メソッド名・引数・戻り値を合わせている。
+ *   - ネスト型はインタフェース内の public static クラスとして定義する（実装間で共通の最小DTO）。
  */
 public interface Store {
 
-    // ===== User / PreReg =====
+    // ===== ユーザー関連 =====
 
-    /** 重複 / ブラックリスト用途 */
-    boolean isBlockedAccountId(String accountId);
+    /**
+     * メールアドレスでユーザーを検索（大小無視の正規化は実装側で行うこと）
+     * @param email メールアドレス
+     * @return 見つかれば User、なければ Optional.empty()
+     */
+    Optional<User> findUserByEmail(String email);
 
-    /** 事前登録参照 */
-    Optional<PreReg> findPreReg(String preRegId);
+    /**
+     * アカウントIDでユーザーを検索
+     * @param accountId アカウントID
+     * @return 見つかれば User、なければ Optional.empty()
+     */
+    Optional<User> findUserByAccountId(String accountId);
 
-    /** 事前登録の消費マーク */
-    void markPreRegConsumed(String preRegId, Instant consumedAt);
+    /**
+     * ユーザー作成
+     * @param accountId 付与済みアカウントID（UUID等）
+     * @param email メール
+     * @param displayName 表示名
+     * @param language 言語コード
+     * @param admin 管理者フラグ
+     * @return 作成された User
+     */
+    User createUser(String accountId, String email, String displayName, String language, boolean admin);
 
-    /** ユーザー生成（AuthServiceImpl から呼ばれる4引数版に統一） */
-    User createUser(String accountId, String email, String passwordHash, boolean emailVerified);
 
-    /** トークンバージョン参照／更新（全失効用） */
-    int getTokenVersion(String accountId);
-    void incrementTokenVersion(String accountId);
+    // ===== プレ登録（メールコード）関連 =====
 
-    // ===== Session =====
+    /**
+     * 期限付きのプレ登録コードを発行し、期限（Epoch秒）を返す。
+     * 呼び出し側が null チェックをしているため、戻り値は Long（null 許容）とする。
+     *
+     * @param email 対象メール
+     * @param ttl   有効期間
+     * @param now   基準時刻
+     * @return 失効Epoch秒。失敗時は null を返し得る（呼び出し側の実装に合わせるため）
+     */
+    Long issuePreRegCode(String email, Duration ttl, Instant now);
 
-    /** セッション作成（AuthServiceImpl, TokenFacadeImpl から参照される4引数版） */
-    Session createSession(String userId, String sessionId, String amr, Instant issuedAt);
+    /**
+     * preRegId でプレ登録情報を検索
+     * @param preRegId 事前登録ID
+     * @return 見つかれば PreRegistration
+     */
+    Optional<PreRegistration> findPreRegById(String preRegId);
 
-    /** セッション列挙／削除 */
-    List<Session> listSessions(String accountId);
-    void deleteSession(String accountId, String sessionId);
+    /**
+     * コード消費（一致・期限内確認を含む）
+     * @param preRegId 事前登録ID
+     * @param code     メールコード
+     * @param now      検証時刻
+     * @return 成功時は PreRegistration、失敗時は Optional.empty()
+     */
+    Optional<PreRegistration> consumePreRegCode(String preRegId, String code, Instant now);
 
-    /** アカウント配下のセッション全削除（ログアウトオール） */
-    void deleteAllSessions(String accountId);
 
-    /** セッション失効（ID単位）。古い実装が revokeSession(sessionId, now) を呼ぶためオーバーロードも持つ */
-    void revokeSession(String sessionId);
-    default void revokeSession(String sessionId, Instant ignored) { revokeSession(sessionId); }
+    // ===== セッション関連 =====
 
-    // ===== MFA: TOTP / Email / Recovery =====
+    /**
+     * セッション作成
+     * @param sessionId   セッションID（外部で生成済み文字列）
+     * @param accountId   紐付けアカウントID
+     * @param createdAt   作成時刻
+     * @param expiresAt   失効時刻
+     * @param ip          生成時IP
+     * @param userAgent   生成時UA
+     * @return 作成された Session
+     */
+    Session createSession(String sessionId, String accountId, Instant createdAt, Instant expiresAt, String ip, String userAgent);
 
-    /** TOTP 秘密鍵の新規払い出し */
-    String issueTotpSecret(String accountId);
+    /**
+     * セッションIDで検索
+     * @param sessionId セッションID
+     * @return 見つかれば Session
+     */
+    Optional<Session> findSessionById(String sessionId);
 
-    /** 保存済み TOTP 秘密鍵の取得 */
-    Optional<String> getTotpSecret(String accountId);
+    /**
+     * アカウントIDに紐づくセッション一覧（新しい順などの並びは実装依存）
+     * @param accountId アカウントID
+     * @return セッション一覧（なければ空リスト）
+     */
+    List<Session> listSessionsByAccountId(String accountId);
 
-    /** TOTP 有効化フラグの設定 */
-    void markTotpEnabled(String accountId);
+    /**
+     * セッションIDで削除
+     * @param sessionId セッションID
+     * @return 削除できた場合 true
+     */
+    boolean deleteSessionById(String sessionId);
 
-    /** メールMFAコードの発行／検証 */
-    String issueEmailMfaCode(String accountId, Duration ttl);
-    boolean verifyEmailMfaCode(String accountId, String code);
 
-    /** リカバリコードの発行／消費 */
-    List<String> issueRecoveryCodes(String accountId, int count);
-    boolean consumeRecoveryCode(String accountId, String code);
+    // ===== WebAuthn 資格情報 =====
 
-    /** レートリミット用トークンバケット的カウンタ */
-    boolean tryConsumeRateLimit(String key, int capacity, int refillSeconds);
+    /**
+     * ユーザーに紐づくWebAuthn資格情報一覧
+     * @param userId ユーザーID（=accountId を想定）
+     * @return 資格情報一覧
+     */
+    List<WebAuthnCredential> listCredentialsByUserId(String userId);
 
-    // ===== WebAuthn =====
+    /**
+     * 資格情報IDで検索
+     * @param credentialId 資格情報ID
+     * @return 見つかれば WebAuthnCredential
+     */
+    Optional<WebAuthnCredential> findCredentialById(String credentialId);
 
-    Optional<WebAuthnCredential> findWebAuthnCredential(String credentialId);
-    void saveWebAuthnCredential(WebAuthnCredential cred);
-    void updateWebAuthnCredentialOnSign(String credentialId, long newSignCount, Instant now);
-    List<WebAuthnCredential> listWebAuthnCredentials(String userId);
-    void deleteWebAuthnCredential(String credentialId);
+    /**
+     * 資格情報の作成
+     * @param cred 追加する資格情報
+     * @return 永続化後の資格情報
+     */
+    WebAuthnCredential createCredential(WebAuthnCredential cred);
 
-    // ====== 内部モデル ======
+    /**
+     * 資格情報をIDで削除
+     * @param credentialId 資格情報ID
+     * @return 削除成否
+     */
+    boolean deleteCredentialById(String credentialId);
 
-    class User {
-        private String id;
-        private String accountId;
-        private String email;
-        private String passwordHash;
-        private boolean emailVerified;
-        private Instant createdAt;
 
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
+    // ========================
+    // ネストDTO（最小限フィールド）
+    // ========================
 
+    /**
+     * User: 認証対象ユーザー
+     */
+    public static class User {
+        private final String accountId;
+        private final String email;
+        private final String displayName;
+        private final String language;
+        private final boolean admin;
+        private final Instant createdAt;
+
+        public User(String accountId, String email, String displayName, String language, boolean admin, Instant createdAt) {
+            this.accountId = Objects.requireNonNull(accountId);
+            this.email = Objects.requireNonNull(email);
+            this.displayName = Objects.requireNonNull(displayName);
+            this.language = Objects.requireNonNull(language);
+            this.admin = admin;
+            this.createdAt = Objects.requireNonNull(createdAt);
+        }
+
+        /** アカウントID（サービス層の findUserByAccountId で使用） */
         public String getAccountId() { return accountId; }
-        public void setAccountId(String accountId) { this.accountId = accountId; }
-
         public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getPasswordHash() { return passwordHash; }
-        public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-
-        public boolean isEmailVerified() { return emailVerified; }
-        public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
-
+        public String getDisplayName() { return displayName; }
+        public String getLanguage() { return language; }
+        public boolean isAdmin() { return admin; }
         public Instant getCreatedAt() { return createdAt; }
-        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     }
 
-    public class PreReg {
-        private String id;
-        private String email;
-        private String accountId;
-        private Instant expiresAt;
-        private boolean consumed;
-        private long throttleMs;
+    /**
+     * PreRegistration: メールコード認証の事前登録情報
+     */
+    public static class PreRegistration {
+        private final String id;
+        private final String email;
+        private final String language;
+        private final String code;
+        private final Instant createdAt;
+        private final Instant expiresAt;
+
+        public PreRegistration(String id, String email, String language, String code, Instant createdAt, Instant expiresAt) {
+            this.id = Objects.requireNonNull(id);
+            this.email = Objects.requireNonNull(email);
+            this.language = Objects.requireNonNull(language);
+            this.code = Objects.requireNonNull(code);
+            this.createdAt = Objects.requireNonNull(createdAt);
+            this.expiresAt = Objects.requireNonNull(expiresAt);
+        }
 
         public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-
         public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getAccountId() { return accountId; }
-        public void setAccountId(String accountId) { this.accountId = accountId; }
-
+        public String getLanguage() { return language; }
+        public String getCode() { return code; }
+        public Instant getCreatedAt() { return createdAt; }
         public Instant getExpiresAt() { return expiresAt; }
-        public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
 
-        public boolean isConsumed() { return consumed; }
-        public void setConsumed(boolean consumed) { this.consumed = consumed; }
-
-        public long getThrottleMs() { return throttleMs; }
-        public void setThrottleMs(long throttleMs) { this.throttleMs = throttleMs; }
+        /** 便宜メソッド: 期限切れ判定 */
+        public boolean isExpired(Instant now) {
+            return now.isAfter(expiresAt) || now.equals(expiresAt);
+        }
     }
 
-    public class Session {
-        private String sessionId;
-        private String userId;
-        private String amr;
-        private Instant issuedAt;
-        private Instant lastActive;
-        private Instant expiresAt;
+    /**
+     * Session: ログインセッション
+     */
+    public static class Session {
+        private final String id;
+        private final String accountId;
+        private final Instant createdAt;
+        private final Instant expiresAt;
+        private final String ip;
+        private final String userAgent;
+        private final boolean active;
 
-        public String sessionId() { return sessionId; }
-        public String getSessionId() { return sessionId; }
-        public void setSessionId(String sessionId) { this.sessionId = sessionId; }
-
-        public String userId() { return userId; }
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-
-        public String amr() { return amr; }
-        public String getAmr() { return amr; }
-        public void setAmr(String amr) { this.amr = amr; }
-
-        public Instant issuedAt() { return issuedAt; }
-        public Instant getIssuedAt() { return issuedAt; }
-        public void setIssuedAt(Instant issuedAt) { this.issuedAt = issuedAt; }
-
-        public Instant lastActive() { return lastActive; }
-        public Instant getLastActive() { return lastActive; }
-        public void setLastActive(Instant lastActive) { this.lastActive = lastActive; }
-
-        public Instant expiresAt() { return expiresAt; }
-        public Instant getExpiresAt() { return expiresAt; }
-        public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
-    }
-
-    public class WebAuthnCredential {
-        private String id;         // credentialId
-        private String userId;
-        private String name;       // 表示名
-        private String publicKey;
-        private long signCount;
-        private Instant createdAt;
-        private Instant lastUsedAt;
+        public Session(String id, String accountId, Instant createdAt, Instant expiresAt, String ip, String userAgent, boolean active) {
+            this.id = Objects.requireNonNull(id);
+            this.accountId = Objects.requireNonNull(accountId);
+            this.createdAt = Objects.requireNonNull(createdAt);
+            this.expiresAt = Objects.requireNonNull(expiresAt);
+            this.ip = ip;
+            this.userAgent = userAgent;
+            this.active = active;
+        }
 
         public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
+        public String getAccountId() { return accountId; }
+        public Instant getCreatedAt() { return createdAt; }
+        public Instant getExpiresAt() { return expiresAt; }
+        public String getIp() { return ip; }
+        public String getUserAgent() { return userAgent; }
+        public boolean isActive() { return active; }
+    }
 
+    /**
+     * WebAuthnCredential: WebAuthn 資格情報（登録済みクレデンシャル）
+     *
+     * 呼び出し側の利用に合わせた命名アクセサを用意する。
+     * 例）getCredentialId(), getNewSignCount()
+     */
+    public static class WebAuthnCredential {
+        private final String id;
+        private final String userId;
+        private final String name;
+        private final long signCount;
+        private final Instant createdAt;
+
+        public WebAuthnCredential(String id, String userId, String name, long signCount, Instant createdAt) {
+            this.id = Objects.requireNonNull(id);
+            this.userId = Objects.requireNonNull(userId);
+            this.name = Objects.requireNonNull(name);
+            this.signCount = signCount;
+            this.createdAt = Objects.requireNonNull(createdAt);
+        }
+
+        /** 呼び出し側が getCredentialId() を使用しているため、別名アクセサを提供 */
+        public String getCredentialId() { return id; }
+
+        public String getId() { return id; }
         public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-
         public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
 
-        public String getPublicKey() { return publicKey; }
-        public void setPublicKey(String publicKey) { this.publicKey = publicKey; }
+        /** 呼び出し側が getNewSignCount() を使用しているため、別名アクセサを提供 */
+        public long getNewSignCount() { return signCount; }
 
         public long getSignCount() { return signCount; }
-        public void setSignCount(long signCount) { this.signCount = signCount; }
-
         public Instant getCreatedAt() { return createdAt; }
-        public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-        public Instant getLastUsedAt() { return lastUsedAt; }
-        public void setLastUsedAt(Instant lastUsedAt) { this.lastUsedAt = lastUsedAt; }
     }
 }
