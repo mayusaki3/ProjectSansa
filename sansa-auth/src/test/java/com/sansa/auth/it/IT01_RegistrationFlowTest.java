@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("[IT-01] 登録フロー")
 class IT01_RegistrationFlowTest extends ITBase {
 
-  @Test @DisplayName("IT-01-001 pre-register 正常 (POST /auth/pre-register)")
+  @Test @DisplayName("M01:IT-01-001 pre-register 正常 (POST /auth/pre-register)")
   void IT_01_001() throws Exception {
     // Given: email=user1@example.com, language=ja-JP
     // When: POST /auth/pre-register
@@ -19,29 +19,29 @@ class IT01_RegistrationFlowTest extends ITBase {
     // TODO: mvc.perform(...).andExpect(...)
   }
 
-  @Test @DisplayName("IT-01-002 pre-register ブロックドメイン -> 400 invalid-argument")
+  @Test @DisplayName("M01:IT-01-002 pre-register ブロックドメイン -> 400 invalid-argument")
   void IT_01_002() throws Exception {
     // TODO
   }
 
-  @Test @DisplayName("IT-01-003 verify-email 正常 -> preRegId 取得 (POST /auth/verify-email)")
+  @Test @DisplayName("M01:IT-01-003 verify-email 正常 -> preRegId 取得 (POST /auth/verify-email)")
   void IT_01_003() throws Exception {
     // TODO
   }
 
-  @Test @DisplayName("IT-01-004 verify-email 期限切れ/不一致 -> 400")
+  @Test @DisplayName("M01:IT-01-004 verify-email 期限切れ/不一致 -> 400")
   void IT_01_004() throws Exception {
     // TODO
   }
 
-  @Test @DisplayName("IT-01-005 register 正常 201 + userId + emailVerified=true (POST /auth/register)")
+  @Test @DisplayName("M01:IT-01-005 register 正常 201 + userId + emailVerified=true (POST /auth/register)")
   void IT_01_005() throws Exception {
     // TODO
   }
 
-  @Test @DisplayName("IT-01-006 register preRegId 二重使用 -> 410/400")
+  @Test @DisplayName("M01:IT-01-006 register preRegId 二重使用 -> 410/400")
   void IT_01_006() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-01-007 accountId 重複 -> 409")
+  @Test @DisplayName("M01:IT-01-007 accountId 重複 -> 409")
   void IT_01_007() throws Exception { /* TODO */ }
 }

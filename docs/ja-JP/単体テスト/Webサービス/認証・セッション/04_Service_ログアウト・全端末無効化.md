@@ -2,15 +2,15 @@
 
 # 04. Service ログアウト・全端末無効化
 
-## UT-04-001: ログアウト（現セッション）
+## M01:UT-04-001: ログアウト（現セッション）
 - `POST /auth/logout`（AT で現セッション識別）
 - Then: 200 or 204（以降 `GET /auth/session` → `active=false`）
 
-## UT-04-002: ログアウト（RT/セッションID 指定）
+## M01:UT-04-002: ログアウト（RT/セッションID 指定）
 - body `{ "refreshToken": "...", "sessionId": "..." }`
 - Then: 200/204、指定対象が無効化
 
-## UT-04-003: 全端末ログアウト（logout_all）で token_version++
+## M01:UT-04-003: 全端末ログアウト（logout_all）で token_version++
 - `POST /auth/logout_all`
 - Then: 200/204
 - 以降の検証:
@@ -18,7 +18,7 @@
   - **旧 RT** でトークン更新 → 401
   - 新規ログインで発行されるトークンの `tv` が **旧+1**
 
-## UT-04-004: logout_all の多重実行（冪等）
+## M01:UT-04-004: logout_all の多重実行（冪等）
 - 2回連続
 - Then: 200/204、2回目でも副作用なし
 

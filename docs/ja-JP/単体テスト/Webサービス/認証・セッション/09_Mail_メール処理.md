@@ -41,34 +41,34 @@
 
 ## 4. テストケース（UT）
 
-### UT-09-001: email-verify 基本（ja-JP）
+### M01:UT-09-001: email-verify 基本（ja-JP）
 - `.eml` を JSON 化 → expected と一致
 - 件名 / 差し込み名前 / verify URL / TTL / multipart
 
-### UT-09-002: email-verify 基本（en-US）
+### M01:UT-09-002: email-verify 基本（en-US）
 - ロケール切替
 - phrase & subject & link ラベル差分を確認
 
-### UT-09-003: password-reset（ja-JP）
+### M01:UT-09-003: password-reset（ja-JP）
 - reset URL と署名
 - TTL メタ（ヘッダ or 本文タグ）
 
-### UT-09-004: password-reset（en-US）
+### M01:UT-09-004: password-reset（en-US）
 - i18n 差分確認
 
-### UT-09-005: session-revoked（ja-JP）
+### M01:UT-09-005: session-revoked（ja-JP）
 - セッションIDまたは context 情報（存在する場合）
 - revoke link
 
-### UT-09-006: session-revoked（en-US）
+### M01:UT-09-006: session-revoked（en-US）
 
-### UT-09-007: multipart 構成
+### M01:UT-09-007: multipart 構成
 - text/plain + text/html の両方存在
 
-### UT-09-008: ヘッダ無し fallback
+### M01:UT-09-008: ヘッダ無し fallback
 - `X-Template-Id`, `X-Locale`, `X-Token-Exp` が本文にある場合のパース
 
-### UT-09-009: URL 正規表現妥当性
+### M01:UT-09-009: URL 正規表現妥当性
 - `/auth/verify`, `/auth/password/reset`, `/sessions/revoke`
 
 ---

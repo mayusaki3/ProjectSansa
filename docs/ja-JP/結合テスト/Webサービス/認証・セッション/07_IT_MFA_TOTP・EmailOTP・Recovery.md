@@ -4,34 +4,34 @@
 
 ## TOTP
 
-### IT-07-001: enroll → activate → verify
+### M01:IT-07-001: enroll → activate → verify
 - When: `POST /auth/mfa/totp/enroll` → `POST /auth/mfa/totp/activate` `{code}`
 - Then: 200、以後 `POST /auth/mfa/totp/verify` で `LoginResponse.authenticated=true`
 
-### IT-07-002: verify（時計ずれ ±1 step 許容）
+### M01:IT-07-002: verify（時計ずれ ±1 step 許容）
 - Then: 200（境界値も確認）
 
 ## Email OTP
 
-### IT-07-003: send（レート制限）
+### M01:IT-07-003: send（レート制限）
 - When: `POST /auth/mfa/email/send` を短時間に連打
-- Then: 429、`Retry-After` / `RateLimit-*`
+- Then: 429、`Retry-After` / `RateLimM01:IT-*`
 
-### IT-07-004: verify（成功/不正/期限切れ）
+### M01:IT-07-004: verify（成功/不正/期限切れ）
 - When: `POST /auth/mfa/email/verify` `{ challengeId, code }`
 - Then: 200 / 400(`*invalid-code`) / 400(`*expired`)
 
 ## Recovery
 
-### IT-07-005: issue（その場一度だけ表示）
+### M01:IT-07-005: issue（その場一度だけ表示）
 - When: `POST /auth/mfa/recovery/issue`
 - Then: 200、`recoveryCodes[]`（保存しない）
 
-### IT-07-006: verify（消費/再利用不可）
+### M01:IT-07-006: verify（消費/再利用不可）
 - When: `POST /auth/mfa/recovery/verify` `{ challengeId, code }`
 - Then: 成功=200（消費）、再利用=410/400
 
-## IT-07-007: Email OTP — 送信→受信→検証（TTL/再送間隔/レート制限含む）
+## M01:IT-07-007: Email OTP — 送信→受信→検証（TTL/再送間隔/レート制限含む）
 
 ### 前提
 - MailHog 起動（`mailhog` サービス）
@@ -39,7 +39,7 @@
 
 ### 手順
 1. `POST /auth/mfa/email/send` を実行
-2. 直後に再送を複数回実行し、429 と `Retry-After`, `RateLimit-*` を確認
+2. 直後に再送を複数回実行し、429 と `Retry-After`, `RateLimM01:IT-*` を確認
 3. MailHog API から直近メールを取得し、本文の 6 桁コードを抽出（`\b\d{6}\b`）
 4. `POST /auth/mfa/email/verify { challengeId, code }`
 5. TTL 経過後のコードで再検証 → 400(`*expired`)
@@ -51,7 +51,7 @@
 
 ---
 
-## IT-07-008: Recovery codes — 発行メールの“一度きり表示”の保証
+## M01:IT-07-008: Recovery codes — 発行メールの“一度きり表示”の保証
 
 ### 手順
 1. `POST /auth/mfa/recovery/issue` を実行し、返却 JSON の `recoveryCodes[]` を **その場でのみ** 取得

@@ -1,11 +1,11 @@
 package com.sansa.auth.service.port.impl;
 
-import com.sansa.auth.dto.token.LoginTokens;
+import com.sansa.auth.dto.login.LoginTokens;
 import com.sansa.auth.jwt.JwtProviderConfig;
-import com.sansa.auth.service.port.SessionService;
+import com.sansa.auth.service.SessionService;
 import com.sansa.auth.store.Store;
-import com.sansa.auth.util.TokenIssuer;
-import com.sansa.auth.facade.TokenFacade;
+import com.sansa.auth.service.port.TokenIssuer;
+import com.sansa.auth.service.port.TokenFacade;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

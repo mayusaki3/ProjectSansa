@@ -1,9 +1,9 @@
 package com.sansa.auth.service.impl;
 
-import com.sansa.auth.dto.session.SessionInfo;
-import com.sansa.auth.dto.token.LogoutResponse;
-import com.sansa.auth.dto.token.TokenRefreshResponse;
-import com.sansa.auth.facade.TokenFacade;
+import com.sansa.auth.dto.sessions.SessionInfo;
+import com.sansa.auth.dto.sessions.LogoutResponse;
+import com.sansa.auth.dto.login.TokenRefreshResponse;
+import com.sansa.auth.service.port.TokenFacade;
 import com.sansa.auth.store.Store;
 import com.sansa.auth.service.SessionService;
 

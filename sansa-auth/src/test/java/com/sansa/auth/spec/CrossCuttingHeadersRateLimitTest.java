@@ -8,25 +8,25 @@ import org.junit.jupiter.api.*;
 class CrossCuttingHeadersRateLimitTest {
 
     @Test
-    @DisplayName("UT-08-001 pre-register 429 + RateLimit ヘッダ + Retry-After")
+    @DisplayName("M01:UT-08-001 pre-register 429 + RateLimit ヘッダ + Retry-After")
     void UT_08_001() {
         Assertions.assertTrue(true);
     }
 
     @Test
-    @DisplayName("UT-08-002 MFA email/send 429")
+    @DisplayName("M01:UT-08-002 MFA email/send 429")
     void UT_08_002() {
         Assertions.assertTrue(true);
     }
 
     @Test
-    @DisplayName("UT-08-003 Accept-Language -> Content-Language 反映")
+    @DisplayName("M01:UT-08-003 Accept-Language -> Content-Language 反映")
     void UT_08_003() {
         Assertions.assertTrue(true);
     }
 
     @Test
-    @DisplayName("UT-08-004 Authorization 必須で未付与 -> 401")
+    @DisplayName("M01:UT-08-004 Authorization 必須で未付与 -> 401")
     void UT_08_004() {
         Assertions.assertTrue(true);
     }

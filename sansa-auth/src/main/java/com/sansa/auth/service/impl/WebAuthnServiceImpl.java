@@ -5,7 +5,6 @@ import com.sansa.auth.dto.webauthn.WebAuthnCredentialListResponse;
 import com.sansa.auth.dto.webauthn.WebAuthnCredentialListResponse.Credential;
 import com.sansa.auth.service.WebAuthnService;
 import com.sansa.auth.store.Store;
-import com.sansa.auth.util.WebAuthnServer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +26,9 @@ import java.util.stream.Collectors;
 public class WebAuthnServiceImpl implements WebAuthnService {
 
     private final Store store;
-    private final WebAuthnServer webAuthnServer;
 
-    public WebAuthnServiceImpl(Store store, WebAuthnServer webAuthnServer) {
+    public WebAuthnServiceImpl(Store store) {
         this.store = store;
-        this.webAuthnServer = webAuthnServer;
     }
 
     // ==========================================================

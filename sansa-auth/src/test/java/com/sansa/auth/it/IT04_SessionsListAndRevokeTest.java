@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 @DisplayName("[IT-04] セッション列挙・個別失効")
 class IT04_SessionsListAndRevokeTest extends ITBase {
 
-  @Test @DisplayName("IT-04-001 GET /sessions 複数端末 >=2")
+  @Test @DisplayName("M01:IT-04-001 GET /sessions 複数端末 >=2")
   void IT_04_001() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-04-002 DELETE /sessions/{id} 存在 -> 204")
+  @Test @DisplayName("M01:IT-04-002 DELETE /sessions/{id} 存在 -> 204")
   void IT_04_002() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-04-003 DELETE /sessions/{id} 未存在 -> 404")
+  @Test @DisplayName("M01:IT-04-003 DELETE /sessions/{id} 未存在 -> 404")
   void IT_04_003() throws Exception { /* TODO */ }
 }

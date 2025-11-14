@@ -1,42 +1,36 @@
 package com.sansa.auth.mail;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Singular;
 
 import java.util.List;
 import java.util.Locale;
 
 /**
- * メール送信内容を保持するDTO。
- * - Lombokの@Singularにより、Builderで to("a@b") のような単数追加が可能。
- * - アクセサは標準ゲッター（getTo/getCc/getBcc/...）に統一。
+ * メール送信メッセージ DTO
+ * 役割: SmtpMailService 等の共通入力
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MailMessage {
+    /** From アドレス（単一） */
+    private String from;
 
-    /** 送信元（省略時は構成のデフォルトFromを使用） */
-    private final String from;
+    /** To / Cc / Bcc は複数想定 */
+    @Singular("to")  private List<String> to;
+    @Singular("cc")  private List<String> cc;
+    @Singular("bcc") private List<String> bcc;
 
-    /** 宛先（複数） */
-    @Singular("to")
-    private final List<String> to;
+    /** 件名・本文 */
+    private String subject;
+    private String body;
 
-    /** CC（複数） */
-    @Singular("cc")
-    private final List<String> cc;
-
-    /** BCC（複数） */
-    @Singular("bcc")
-    private final List<String> bcc;
-
-    /** 件名 */
-    private final String subject;
-
-    /** 本文（プレーンテキスト前提） */
-    private final String body;
-
-    /** ローカライズに使う言語（必要なら） */
-    private final Locale locale;
+    /** ロケール（テンプレ選択等で使用する場合） */
+    @Builder.Default
+    private Locale locale = Locale.JAPAN;
 }

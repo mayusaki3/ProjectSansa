@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 @DisplayName("[IT-05] ログアウト・全端末無効化")
 class IT05_LogoutTest extends ITBase {
 
-  @Test @DisplayName("IT-05-001 logout 現セッション -> 200/204")
+  @Test @DisplayName("M01:IT-05-001 logout 現セッション -> 200/204")
   void IT_05_001() throws Exception { /* TODO: 直後 /auth/session active=false */ }
 
-  @Test @DisplayName("IT-05-002 logout sessionId/refreshToken 指定")
+  @Test @DisplayName("M01:IT-05-002 logout sessionId/refreshToken 指定")
   void IT_05_002() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-05-003 logout_all token_version++ 旧AT/RT無効")
+  @Test @DisplayName("M01:IT-05-003 logout_all token_version++ 旧AT/RT無効")
   void IT_05_003() throws Exception { /* TODO */ }
 }

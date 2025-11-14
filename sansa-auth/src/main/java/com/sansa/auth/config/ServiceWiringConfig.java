@@ -1,58 +1,44 @@
 package com.sansa.auth.config;
 
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
-import com.sansa.auth.service.port.CurrentUserPort;
+import com.sansa.auth.service.AuthService;
+import com.sansa.auth.service.MfaService;
+import com.sansa.auth.service.SessionService;
+import com.sansa.auth.service.impl.AuthServiceImpl;
+import com.sansa.auth.service.impl.MfaServiceImpl;
+import com.sansa.auth.service.impl.SessionServiceImpl;
 import com.sansa.auth.service.port.PasswordPort;
-import com.sansa.auth.service.port.impl.PasswordPortImpl;
-import com.sansa.auth.service.port.impl.SecurityContextCurrentUserPort;
-
+import com.sansa.auth.service.port.TokenFacade;
+import com.sansa.auth.store.Store;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 
 /**
- * アプリ内サービス（ユーティリティ層）の「配線」用コンフィグ。
- *
- * <h2>方針</h2>
- * <ul>
- *   <li>このクラスでは <b>JwtProvider の Bean は定義しません</b>。
- *       すでに {@code JwtProviderConfig} が提供しているため、ここで定義すると
- *       Bean 名の衝突（overriding 禁止時の起動失敗）を招きます。</li>
- *   <li>ここでは、既存の Bean（例：{@link JwtProvider}）を受け取り、
- *       それに依存する軽量サービス（例：{@link TokenIssuer}）を組み立てます。</li>
- *   <li>コンストラクタやフィールドに <code>String</code> 等のプリミティブな型を
- *       直接 @Autowired しないことで、
- *       「No qualifying bean of type 'java.lang.String'」エラーを防ぎます。
- *       必要があれば {@code @Value} か {@code @ConfigurationProperties} を
- *       専用の別クラス（例：{@code JwtConfig}）で扱ってください。</li>
- * </ul>
+ * サービス配線
+ * - PasswordPort は Argon2 で実装
  */
 @Configuration
 public class ServiceWiringConfig {
 
-    /*
-    * ここに他サービスの配線を追加したい場合の注意点:
-    * - 既存の @Configuration や @Component により同名 Bean が
-    *   すでに存在しないかを確認すること。
-    * - 原則として、ドメイン/アプリサービスの実装クラスが @Service で
-    *   自己登録しているなら、ここで二重に @Bean を作らないこと。
-    * - 外部設定値（issuer、期限、鍵素材など）は本クラスでは終端せず、
-    *   専用の Config クラスで束ねたうえで、利用側に注入すること。
-    */
-
     @Bean
-    public Argon2PasswordEncoder argon2PasswordEncoder() {
-        // 推奨値は要件に合わせ調整可
-        return new Argon2PasswordEncoder(16, 32, 1, 1 << 16, 3); // saltLen, hashLen, parallelism, memory, iterations
+    public PasswordPort passwordPort() {
+        Argon2PasswordEncoder enc = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+        return new PasswordPort() {
+            @Override public String encode(String raw) { return enc.encode(raw); }
+            @Override public boolean matches(String raw, String hashed) { return enc.matches(raw, hashed); }
+        };
     }
 
     @Bean
-    public PasswordPort passwordPort(Argon2PasswordEncoder enc) {
-        return new PasswordPortImpl(enc);
+    public AuthService authService(Store store, TokenFacade tokenFacade, SessionService sessionService,
+                                   PasswordPort passwordPort,
+                                   com.sansa.auth.mail.MailService mailService,
+                                   com.sansa.auth.mail.MailComposer mailComposer) {
+        return new AuthServiceImpl(store, tokenFacade, sessionService, passwordPort, mailService, mailComposer);
     }
 
     @Bean
-    public CurrentUserPort currentUserPort() {
-        return new SecurityContextCurrentUserPort();
+    public MfaService mfaService(Store store, TokenFacade tokenFacade, SessionService sessionService) {
+        return new MfaServiceImpl(store, tokenFacade, sessionService);
     }
-    
 }

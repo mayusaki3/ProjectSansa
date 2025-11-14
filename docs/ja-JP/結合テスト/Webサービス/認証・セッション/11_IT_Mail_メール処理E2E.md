@@ -45,47 +45,47 @@ SMTP: MailHog
 
 ## 4. テストケース（Given / When / Then）
 
-### IT-11-001: register → email-verify → verify 成功
+### M01:IT-11-001: register → email-verify → verify 成功
 - Given: 新規ユーザ登録
 - When: MailHogから email-verify URL を取得しアクセス
 - Then: 200 / セッション確立 / ログイン状態
 
-### IT-11-002: verify トークン一度きり
+### M01:IT-11-002: verify トークン一度きり
 - Given: 上記 verified
 - When: 同URL再アクセス
 - Then: 401 or 410
 
-### IT-11-003: verify トークン期限
+### M01:IT-11-003: verify トークン期限
 - Given: TTL 経過
 - When: URLアクセス
 - Then: 410（token expired）
 
-### IT-11-004: forgot → reset → reset 成功
+### M01:IT-11-004: forgot → reset → reset 成功
 - Given: /auth/password/forgot
 - When: reset URLから新PW設定
 - Then: 200 / 新PWでログイン可能
 
-### IT-11-005: reset トークン一度きり
+### M01:IT-11-005: reset トークン一度きり
 - Given: reset 済み
 - When: 同URL再アクセス
 - Then: 401
 
-### IT-11-006: reset トークン期限
+### M01:IT-11-006: reset トークン期限
 - Given: TTL 経過
 - When: reset URL アクセス
 - Then: 410
 
-### IT-11-007: session revoke → 通知メール
+### M01:IT-11-007: session revoke → 通知メール
 - Given: 複数セッション発行
 - When: /sessions/revoke_all
 - Then: revoke メール送信 / 旧tokenで 401
 
-### IT-11-008: 署名アルゴリズム・署名検証
+### M01:IT-11-008: 署名アルゴリズム・署名検証
 - Given: JWT / HMAC / RSA のいずれか（プロファイル切替）
 - When: MailHog から token 抽出
 - Then: 署名構造一致 / テスト用鍵で検証可能
 
-### IT-11-009: exp claim とヘッダ一致
+### M01:IT-11-009: exp claim とヘッダ一致
 - Given: メール生成
 - When: X-Token-Exp / JWT exp 比較
 - Then: 一致

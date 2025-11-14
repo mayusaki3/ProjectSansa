@@ -1,155 +1,127 @@
 package com.sansa.auth.service.impl;
 
+import com.sansa.auth.dto.auth.PreRegisterRequest;
+import com.sansa.auth.dto.auth.PreRegisterResponse;
 import com.sansa.auth.dto.auth.RegisterRequest;
+import com.sansa.auth.dto.auth.RegisterResponse;
 import com.sansa.auth.dto.auth.VerifyEmailRequest;
-import com.sansa.auth.dto.token.LoginTokens;
-import com.sansa.auth.dto.token.LogoutResponse;
-import com.sansa.auth.dto.token.TokenRefreshResponse;
-import com.sansa.auth.facade.TokenFacade;
+import com.sansa.auth.dto.auth.VerifyEmailResponse;
+import com.sansa.auth.dto.login.LoginRequest;
+import com.sansa.auth.dto.login.LoginResponse;
+import com.sansa.auth.dto.login.LoginTokens;
+import com.sansa.auth.dto.sessions.LogoutResponse;
+import com.sansa.auth.dto.sessions.LogoutResponse;
+import com.sansa.auth.dto.sessions.SessionInfo;
+import com.sansa.auth.mail.MailComposer;
+import com.sansa.auth.mail.MailService;
 import com.sansa.auth.service.AuthService;
-import com.sansa.auth.service.port.SessionService;
+import com.sansa.auth.service.SessionService;
+import com.sansa.auth.service.port.PasswordPort;
+import com.sansa.auth.service.port.TokenFacade;
 import com.sansa.auth.store.Store;
-import com.sansa.auth.util.PasswordHasher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 /**
- * 認証・登録・セッション管理の中核サービス。
- *
- * 主な責務：
- *  - 新規登録・事前登録確認
- *  - メール検証（verifyEmail）
- *  - ログイン（パスワード＋MFA統合）
- *  - トークンリフレッシュ / ログアウト
+ * AuthService 実装（PasswordPort 依存）
+ * 役割:
+ *  - 事前登録/メール認証/本登録
+ *  - ログイン/ログアウト
+ * 注意:
+ *  - トランザクションは spring-tx により注釈可能だが、現状は最小限ロジックで完結。
  */
-@Service
-@Transactional
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final Store store;
     private final TokenFacade tokenFacade;
     private final SessionService sessionService;
-    private final PasswordHasher passwordHasher;
+    private final PasswordPort passwordPort;
+    private final MailService mailService;
+    private final MailComposer mailComposer;
 
-    public AuthServiceImpl(Store store, TokenFacade tokenFacade,
-                           SessionService sessionService, PasswordHasher passwordHasher) {
-        this.store = store;
-        this.tokenFacade = tokenFacade;
-        this.sessionService = sessionService;
-        this.passwordHasher = passwordHasher;
+    @Override
+    public PreRegisterResponse preRegister(PreRegisterRequest req) {
+        // 省略: 入力検証は Controller/Validation 層で実施想定
+        String preRegId = store.createPreRegistration(req.getEmail(), req.getLanguage());
+        String code = store.issueEmailVerificationCode(preRegId);
+        mailService.send(mailComposer.composeVerifyEmail(req.getEmail(), code, req.getLanguage()));
+        return new PreRegisterResponse(preRegId);
     }
 
-    // ==========================================================
-    // ユーザー登録・メール検証
-    // ==========================================================
-
-    /**
-     * 事前登録コードを検証し、本登録を完了する。
-     *
-     * @param req 検証リクエスト
-     */
     @Override
-    public void verifyEmail(VerifyEmailRequest req) {
-        var pre = store.consumePreRegCode(req.getPreRegId(), req.getCode());
-        if (pre == null) {
-            throw new IllegalArgumentException("Invalid or expired pre-registration code");
-        }
-        // 本登録ユーザーを作成
-        String passwordHash = passwordHasher.hash(req.getPassword());
-        store.createUser(pre.getAccountId(), pre.getEmail(), passwordHash, false);
+    public VerifyEmailResponse verifyEmail(VerifyEmailRequest req) {
+        boolean ok = store.verifyEmailCode(req.getPreRegId(), req.getCode());
+        return new VerifyEmailResponse(ok);
     }
 
-    /**
-     * 新規ユーザー登録（メール事前登録コードを発行）。
-     *
-     * @param req 登録リクエスト
-     * @return preRegId（検証時に使用）
-     */
     @Override
-    public String register(RegisterRequest req) {
-        return store.issuePreRegCode(req.getEmail(), req.getLanguage());
+    public RegisterResponse register(RegisterRequest req) {
+        // 事前チェック
+        String preRegId = req.getPreRegId();
+        if (!store.isPreRegistrationVerified(preRegId)) {
+            return new RegisterResponse(false);
+        }
+        // パスワードハッシュ化（PasswordPort 経由）
+        String hash = passwordPort.encode(req.getPassword());
+        String accountId = store.createUserFromPreRegistration(preRegId, hash, req.getLanguage());
+        return new RegisterResponse(accountId != null);
     }
 
-    // ==========================================================
-    // ログイン・ログアウト / トークン管理
-    // ==========================================================
-
-    /**
-     * ログイン処理。
-     * パスワード認証を実行し、成功時にトークンを発行。
-     *
-     * @param accountId アカウントID
-     * @param password パスワード平文
-     * @param ip IPアドレス
-     * @param userAgent UA文字列
-     * @return LoginTokens
-     */
     @Override
-    public LoginTokens login(String accountId, String password, String ip, String userAgent) {
-        var user = store.findUserByAccountId(accountId);
-        if (user == null) {
-            throw new IllegalArgumentException("User not found");
-        }
-        if (!passwordHasher.verify(password, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid password");
+    public LoginResponse login(LoginRequest req) {
+        Optional<Store.User> user = store.findUserByEmail(req.getEmail());
+        if (user.isEmpty()) return new LoginResponse(false, null);
+
+        // パスワード照合
+        if (!passwordPort.matches(req.getPassword(), user.get().getPasswordHash())) {
+            return new LoginResponse(false, null);
         }
 
-        // セッション生成
-        Instant now = Instant.now();
-        var session = sessionService.upsertSession(accountId,
-                tokenFacade.generateSessionId(),
-                now,
-                now.plusSeconds(86400),
-                ip,
-                userAgent);
+        // セッションIDは TokenFacade から払い出し
+        String sessionId = tokenFacade.generateSessionId();
+        TokenFacade.Tokens t = tokenFacade.issue(user.get().getAccountId(), sessionId, List.of("user"));
+        sessionService.upsertSession(
+                user.get().getAccountId(),
+                sessionId,
+                Instant.now(),
+                t.refreshExpiresAt(),
+                req.getUserAgent(),
+                req.getIpAddress()
+        );
 
-        // トークン発行
-        var t = tokenFacade.issue(user.getAccountId(), session.getSessionId(), ip, userAgent);
-        return LoginTokens.builder()
+        LoginTokens tokens = LoginTokens.builder()
                 .accessToken(t.accessToken())
                 .refreshToken(t.refreshToken())
                 .build();
+        return new LoginResponse(true, tokens);
     }
 
-    /**
-     * リフレッシュトークンによる再発行。
-     *
-     * @param refreshToken リフレッシュトークン
-     * @return 新しいトークンペア
-     */
     @Override
-    public TokenRefreshResponse refresh(String refreshToken) {
-        var r = tokenFacade.refresh(refreshToken);
-        return new TokenRefreshResponse(r.accessToken(), r.refreshToken());
+    public LogoutResponse logout(String accountId, String sessionId) {
+        sessionService.logoutBySessionId(accountId, sessionId);
+        return new LogoutResponse();
     }
 
-    /**
-     * ログアウト。
-     * セッション削除＋トークンバージョン更新。
-     *
-     * @param sessionId セッションID
-     * @param accountId アカウントID
-     * @return ログアウト結果
-     */
     @Override
-    public LogoutResponse logout(String sessionId, String accountId) {
-        store.deleteSessionById(sessionId);
-        store.incrementTokenVersion(accountId);
-        return new LogoutResponse(true);
+    public LogoutResponse logoutAll(String accountId) {
+        store.incrementTokenVersion(accountId); // 全トークン失効
+        sessionService.deleteAllSessions(accountId);
+        return new LogoutResponse();
     }
 
-    // ==========================================================
-    // MFA対応 / TOTP / WebAuthn等（後段拡張用）
-    // ==========================================================
-
-    /**
-     * 現時点ではMFA対応はMfaService側で実施。
-     * AuthService側ではフックのみ定義。
-     */
     @Override
-    public void onMfaCompleted(String accountId) {
-        store.markTotpEnabled(accountId);
+    public LoginResponse refresh(String refreshToken) {
+        TokenFacade.RefreshParseResult r = tokenFacade.refresh(refreshToken);
+        // 新アクセストークンのみ再発行（セッションは維持）
+        TokenFacade.Tokens t = tokenFacade.issueAfterMfa(r.userId(), r.sessionId(), r.accessJti(), r.refreshJti());
+        LoginTokens tokens = LoginTokens.builder()
+                .accessToken(t.accessToken())
+                .refreshToken(t.refreshToken())
+                .build();
+        return new LoginResponse(true, tokens);
     }
 }

@@ -1,18 +1,35 @@
 package com.sansa.auth.dto.webauthn;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 import java.util.List;
 
 /**
- * GET /webauthn/credentials のレスポンスDTO 仕様: 03_WebAuthn.md「C) 管理 →
- * WebAuthnCredentialListResponse」 - 配列: credentialId, aaguid?, transports?,
- * signCount? を各要素に含める。:contentReference[oaicite:21]{index=21}
+ * WebAuthn 登録クレデンシャル一覧
  */
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class WebAuthnCredentialListResponse {
 
-    private List<WebAuthnCredentialSummary> credentials;   // 要素定義は上記 Summary を参照
+    private List<Credential> credentials;
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Credential {
+        /** Base64url などの識別子 */
+        private String credentialId;
+        /** 表示名 */
+        private String label;
+        /** 作成日時/最終使用日時（必要に応じて） */
+        private Instant createdAt;
+        private Instant lastUsedAt;
+    }
 }

@@ -8,18 +8,18 @@ import org.junit.jupiter.api.Test;
 @DisplayName("[IT-03] ログイン/MFA誘導/現在セッション")
 class IT03_LoginAndCurrentSessionTest extends ITBase {
 
-  @Test @DisplayName("IT-03-001 password 成功 (POST /auth/login)")
+  @Test @DisplayName("M01:IT-03-001 password 成功 (POST /auth/login)")
   void IT_03_001() throws Exception { /* TODO: tokens + amr=['pwd'] + sessionId → at/rt 設定 */ }
 
-  @Test @DisplayName("IT-03-002 password → MFA 必須")
+  @Test @DisplayName("M01:IT-03-002 password → MFA 必須")
   void IT_03_002() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-03-003 password 失敗 -> 401")
+  @Test @DisplayName("M01:IT-03-003 password 失敗 -> 401")
   void IT_03_003() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-03-004 GET /auth/session（有効）")
+  @Test @DisplayName("M01:IT-03-004 GET /auth/session（有効）")
   void IT_03_004() throws Exception { /* TODO */ }
 
-  @Test @DisplayName("IT-03-005 GET /auth/session（無効） -> 401")
+  @Test @DisplayName("M01:IT-03-005 GET /auth/session（無効） -> 401")
   void IT_03_005() throws Exception { /* TODO */ }
 }
