@@ -23,8 +23,19 @@
 **`POST /auth/mfa/totp/enroll` → MfaTotpEnrollResponse**
 | フィールド | 型 | 説明 |
 |---|---|---|
-| secret | string | 表示用（UI は QR を提示） |
+| secret | string | Base32 で符号化された TOTP シークレット（生成直後のみ返却） |
 | uri | string | `otpauth://totp/...` |
+| issuer | string | Authenticator登録用の発行者名（サービス名） |
+| account | string | ユーザー識別表示（登録メールアドレス等） |
+| algorithm | string | 既定値: SHA1 |
+| digits | int | 既定値: 6 |
+| period | int | 既定値: 30 |
+
+#### 各項目の補足
+
+- **algorithm**: TOTP 生成時に用いる HMAC のハッシュ方式。RFC 6238 に準拠し、`SHA1` / `SHA256` / `SHA512` を想定。サーバと認証アプリで一致している必要がある（互換性重視の既定は `SHA1`）。
+- **digits**: 生成されるワンタイムパスワードの桁数。一般的に `6`（既定）または `8`。サーバ検証側と認証アプリで一致している必要がある（例：6桁は 1,000,000 通り）。
+- **period**: ワンタイムパスワードの有効時間（秒）。既定は `30` 秒。サーバ検証時は時刻ずれ吸収のため ±1 ステップ程度の許容を推奨。
 
 **`POST /auth/mfa/totp/activate`**
 | フィールド | 型 | 必須 |
@@ -36,6 +47,11 @@
 |---|---|---|
 | challengeId | string | ✅ |
 | code | string | ✅ |
+
+#### セキュリティ
+- レート制限: アカウント＋IP 複合で 5/min 程度。
+- 監査イベント: MFA_TOTP_ENROLL, MFA_TOTP_VERIFY_SUCCESS/FAIL, MFA_TOTP_ENABLED/DISABLED。
+- ログには secret / uri を出力しない。
 
 ### Email OTP
 **`POST /auth/mfa/email/send`**（ボディは実装方針により省略可）
