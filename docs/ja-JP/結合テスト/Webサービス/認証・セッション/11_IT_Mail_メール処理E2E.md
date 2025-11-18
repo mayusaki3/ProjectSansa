@@ -90,6 +90,18 @@ SMTP: MailHog
 - When: X-Token-Exp / JWT exp 比較
 - Then: 一致
 
+### M01:IT-11-010: reset.init通知メール送信
+- When: 正常メール送信リクエスト
+- Then: MailHog に1通、件名/本文テンプレ一致
+
+### M01:IT-11-011: reset.init RateLimit
+- When: 同一宛先に連続リクエスト
+- Then: 429 + Retry-After
+
+### M01:IT-11-012: reset.complete 完了通知
+- When: パスワード再設定完了
+- Then: 完了報告メールが送信される
+
 ---
 
 ## 5. 成否基準
