@@ -1,23 +1,16 @@
 package com.sansa.auth.dto.mfa;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 /**
  * POST /auth/mfa/email/verify のリクエストDTO
  * 仕様: 04_MFA.md「Email verify」
  * フィールド（必須）:
- *  - challengeId
+ *  - accountId
  *  - code（TTL=5分）
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class MfaEmailVerifyRequest {
-    /** MFA 検証フローを識別するチャレンジID */
-    private String challengeId;
-
-    /** メールで受け取った OTP コード（TTL=5分） */
-    private String code;
+    private final String accountId;
+    private final String code;
+    public MfaEmailVerifyRequest(String accountId, String code) { this.accountId = accountId; this.code = code; }
+    public String getAccountId() { return accountId; }
+    public String getCode() { return code; }
 }

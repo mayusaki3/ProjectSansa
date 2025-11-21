@@ -1,19 +1,18 @@
 package com.sansa.auth.dto.login;
 
+import lombok.Builder;
+import lombok.Value;
+
 /**
- * 既存コードが tokens.setSessionId(...) を呼ぶため、setter を備える POJO にする。
+ * ログイン後または MFA 完了後に発行されるトークン群。
+ * accessToken / refreshToken をセットで保持する。
  */
+@Value
+@Builder
 public class LoginTokens {
-    private String accessToken;
-    private String refreshToken;
-    private String sessionId;
+    /** アクセストークン (JWT) */
+    String accessToken;
 
-    public String getAccessToken() { return accessToken; }
-    public void setAccessToken(String accessToken) { this.accessToken = accessToken; }
-
-    public String getRefreshToken() { return refreshToken; }
-    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
-
-    public String getSessionId() { return sessionId; }
-    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+    /** リフレッシュトークン (JWT) */
+    String refreshToken;
 }

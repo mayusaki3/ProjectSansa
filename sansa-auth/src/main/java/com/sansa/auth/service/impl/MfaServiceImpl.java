@@ -30,12 +30,6 @@ public class MfaServiceImpl implements MfaService {
     }
 
     @Override
-    public MfaTotpQrResponse totpQr(MfaTotpQrRequest req) {
-        String secret = store.totpGetSecret(req.getAccountId());
-        return new MfaTotpQrResponse(secret); // 実際は QR 化を別層で
-    }
-
-    @Override
     public MfaTotpVerifyResponse totpVerify(MfaTotpVerifyRequest req) {
         boolean ok = store.totpVerify(req.getAccountId(), req.getCode());
         if (ok) store.totpMarkEnabled(req.getAccountId());

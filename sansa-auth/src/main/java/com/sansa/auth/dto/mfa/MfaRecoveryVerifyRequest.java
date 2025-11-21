@@ -1,23 +1,16 @@
 package com.sansa.auth.dto.mfa;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 /**
  * POST /auth/mfa/recovery/verify のリクエストDTO
  * 仕様: 04_MFA.md「Recovery verify」
  * フィールド（必須）:
- *  - challengeId
+ *  - accountId
  *  - code
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class MfaRecoveryVerifyRequest {
-    /** MFA 検証フローを識別するチャレンジID */
-    private String challengeId;
-
-    /** リカバリーコード（1回使い切り） */
-    private String code;
+    private final String accountId;
+    private final String code;
+    public MfaRecoveryVerifyRequest(String accountId, String code) { this.accountId = accountId; this.code = code; }
+    public String getAccountId() { return accountId; }
+    public String getCode() { return code; }
 }

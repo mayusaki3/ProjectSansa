@@ -22,10 +22,9 @@ public class ServiceWiringConfig {
 
     @Bean
     public PasswordPort passwordPort() {
-        Argon2PasswordEncoder enc = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
         return new PasswordPort() {
-            @Override public String encode(String raw) { return enc.encode(raw); }
-            @Override public boolean matches(String raw, String hashed) { return enc.matches(raw, hashed); }
+            @Override public String encode(String raw) { return raw; }               // ダミー
+            @Override public boolean verify(String raw, String hash) { return raw.equals(hash); } // ダミー
         };
     }
 
