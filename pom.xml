@@ -1,0 +1,60 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.sansa</groupId>
+    <artifactId>project-sansa-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Project Sansa Parent</name>
+
+    <!-- マルチモジュール定義 -->
+    <modules>
+        <module>sansa-auth</module>
+        <module>sansa-testkit</module>
+    </modules>
+
+    <!-- 共通プロパティ -->
+    <properties>
+        <java.version>21</java.version>
+        <spring.boot.version>3.3.5</spring.boot.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.jupiter.version>5.10.5</junit.jupiter.version>
+    </properties>
+
+    <!-- 依存バージョンをここで一元管理してもよい（必要になったタイミングで追加） -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM をインポート -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <!-- プラグイン設定の共通化（必要に応じて追加） -->
+        <pluginManagement>
+            <plugins>
+                <!-- JUnit 5 用 Surefire の統一設定 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                    <configuration>
+                        <useModulePath>false</useModulePath>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>
