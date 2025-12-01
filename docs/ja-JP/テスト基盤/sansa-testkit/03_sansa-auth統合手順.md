@@ -55,16 +55,32 @@ void M01_UT_01_001_preRegister_success() {
 - 仕様（API/テストマトリクス） → テストコード → 実行ログ のトレース
 - CI ログからの失敗テストの特定
 
-## 4. ダミー実装との関係（将来拡張）
+## 4. ダミー実装のマーキング (@DummyImplementation)
 
-`sansa-auth` では、初期段階で**ダミー実装から段階的に本実装へ置き換える**方針を取る場合があります。  
-このとき、以下のような拡張を想定しています。
+sansa-auth のように、初版リリース前で段階的に実装を進めるモジュールでは、  
+一部のサービスクラスを「ダミー実装」として暫定提供することがあります。
 
-- ダミー実装に `@DummyImplementation` アノテーションを付与
-- `TestPrinter` が対象クラス/メソッドの属性を参照し、出力に `[DUMMY]` を付与
+その際、以下のように `@DummyImplementation` を付与しておくことで、  
+テスト出力上でダミー実装を明確に識別できます。
 
-これにより、テストログから「現在はダミー実装を対象にテストしているのか／本実装なのか」を  
-一目で判断できるようにすることを目指します。
+- テスト対象クラス側（例: AuthService の暫定実装）
+
+```java
+import com.sansa.testkit.dummy.DummyImplementation;
+
+@DummyImplementation
+public class AuthServiceDummyImpl implements AuthService {
+    // TODO: 本実装に置き換えるまでの暫定コード
+}
+```
+
+- 効果:
+  - `AuthServiceDummyImpl` を対象としたテスト結果行の末尾に `[DUMMY]` が付く
+  - テスト結果一覧を見たときに「どのケースがダミー実装に対するものか」を即座に判断できる
+  - 本実装移行フェーズで、ダミー実装が残っていないか確認するための手がかりになる
+
+sansa-auth 以外のモジュールでも、同様に `@DummyImplementation` を付与することで  
+**「テスト対象の実装が暫定かどうか」を共通フォーマットで表現**できます。
 
 ---
 [目次](../../目次.md) > テスト基盤 > [テスト基盤 目次](../目次.md) > [sansa-testkit 目次](目次.md) > sansa-auth 統合手順
