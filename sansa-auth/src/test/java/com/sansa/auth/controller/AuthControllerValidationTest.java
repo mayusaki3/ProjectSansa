@@ -16,8 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.sansa.testkit.util.TestPrinter;
+import com.sansa.testkit.util.DummyUtil;
+
 /**
- * AuthController の入力バリデーションに関するテスト。
+ * M01:UT-01-xxx AuthController バリデーションテスト.
  *
  * 目的:
  *  - DTO (@Valid) の検証が 400 を返すか
@@ -26,6 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 注意:
  *  - エンドポイントパスは実装と合わせること（デフォルト: /auth/login）。
  *  - 例外ハンドラ(ApiExceptionHandler)のメッセージ/フォーマットに追随して期待値を調整してください。
+ *  - DUMMY 判定: コントローラ実装が仮実装（stub）であり、
+ *    本番実装置き換え時に再検証が必要なテストには [DUMMY] を付与する。
  */
 @WebMvcTest(AuthController.class)
 class AuthControllerValidationTest {
@@ -37,9 +42,11 @@ class AuthControllerValidationTest {
     AuthService auth;
 
     @Test
-    @DisplayName("必須項目不足なら 400 を返す")
     @Disabled("エンドポイント/ProblemDetail 仕様確定後に有効化")
     void shouldReturn400WhenMissingRequiredFields() throws Exception {
+        var printer = new TestPrinter("M01:UT-01-001",
+            "必須項目不足なら 400 を返す");
+
         // language=json
         String body = """
           {
@@ -59,12 +66,16 @@ class AuthControllerValidationTest {
            // TODO: ApiExceptionHandler の ProblemDetail 仕様に合わせて調整
            .andExpect(jsonPath("$.title").exists())
            .andExpect(jsonPath("$.status").value(400));
+
+        printer.pass();
     }
 
     @Test
-    @DisplayName("妥当な入力なら 200 && LoginResponse を返す")
     @Disabled("Service 実装接続後に有効化")
     void shouldLoginWithValidRequest() throws Exception {
+        var printer = new TestPrinter("M01:UT-01-002",
+            "妥当な入力なら 200 && LoginResponse を返す");
+
         LoginResponse ok = LoginResponse.builder()
                 .authenticated(true)
                 .build();
