@@ -8,8 +8,9 @@ import com.sansa.auth.dto.auth.VerifyEmailRequest;
 import com.sansa.auth.dto.auth.VerifyEmailResponse;
 import com.sansa.auth.dto.login.LoginRequest;
 import com.sansa.auth.dto.login.LoginResponse;
-import com.sansa.auth.dto.login.LoginTokens;
-import com.sansa.auth.dto.sessions.LogoutResponse;
+import com.sansa.auth.dto.login.TokenRefreshRequest;
+import com.sansa.auth.dto.login.TokenRefreshResponse;
+import com.sansa.auth.dto.sessions.LogoutRequest;
 import com.sansa.auth.dto.sessions.LogoutResponse;
 import com.sansa.auth.dto.sessions.SessionInfo;
 import com.sansa.auth.mail.MailComposer;
@@ -20,108 +21,150 @@ import com.sansa.auth.service.port.PasswordPort;
 import com.sansa.auth.service.port.TokenFacade;
 import com.sansa.auth.store.Store;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * AuthService 実装（PasswordPort 依存）
- * 役割:
- *  - 事前登録/メール認証/本登録
- *  - ログイン/ログアウト
- * 注意:
- *  - トランザクションは spring-tx により注釈可能だが、現状は最小限ロジックで完結。
+ * 認証関連サービスの実装クラス（ダミー版）。
+ *
+ * <p>
+ * 現時点では、AuthService のインターフェースシグネチャだけを満たし、
+ * すべてのメソッドは {@link UnsupportedOperationException}（"DUMMY: ..."）を送出する。
+ * </p>
+ *
+ * <p>
+ * 後続の実装フェーズでは、各メソッドの「DUMMY」例外を検索し、
+ * 実際の業務ロジック（Store / SessionService / MailService / TokenFacade 等）に
+ * 差し替えていく前提とする。
+ * </p>
  */
+@Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    /**
+     * ユーザーやプレ登録情報を保持するストア。
+     * ダミー段階では参照のみ（実際の処理では使用しない）。
+     */
     private final Store store;
-    private final TokenFacade tokenFacade;
-    private final SessionService sessionService;
+
+    /**
+     * パスワードハッシュ化などを扱うポート。
+     * ダミー段階では参照のみ。
+     */
     private final PasswordPort passwordPort;
+
+    /**
+     * アクセストークン、リフレッシュトークンの発行などを担うファサード。
+     * ダミー段階では参照のみ。
+     */
+    private final TokenFacade tokenFacade;
+
+    /**
+     * セッション管理サービス。
+     * ダミー段階では参照のみ。
+     */
+    private final SessionService sessionService;
+
+    /**
+     * メール送信を行うサービス。
+     * ダミー段階では参照のみ。
+     */
     private final MailService mailService;
+
+    /**
+     * 各種メール本文の組み立てを行うコンポーネント。
+     * ダミー段階では参照のみ。
+     */
     private final MailComposer mailComposer;
 
+    /**
+     * ユーザー登録ステップ1: プレ登録。
+     *
+     * @param request メールアドレス・希望言語などのプレ登録情報
+     * @return プレ登録結果
+     */
     @Override
-    public PreRegisterResponse preRegister(PreRegisterRequest req) {
-        // 省略: 入力検証は Controller/Validation 層で実施想定
-        String preRegId = store.createPreRegistration(req.getEmail(), req.getLanguage());
-        String code = store.issueEmailVerificationCode(preRegId);
-        mailService.send(mailComposer.composeVerifyEmail(req.getEmail(), code, req.getLanguage()));
-        return new PreRegisterResponse(preRegId);
+    public PreRegisterResponse preRegister(PreRegisterRequest request) {
+        // UT では「本実装でダミー例外を投げた」と見なす前提のダミー実装
+        throw new UnsupportedOperationException("DUMMY: preRegister is not implemented yet.");
     }
 
+    /**
+     * ユーザー登録ステップ2: メールに記載されたコードの検証。
+     *
+     * @param request 検証コード等
+     * @return 検証結果（成功時は preRegId 等）
+     */
     @Override
-    public VerifyEmailResponse verifyEmail(VerifyEmailRequest req) {
-        boolean ok = store.verifyEmailCode(req.getPreRegId(), req.getCode());
-        return new VerifyEmailResponse(ok);
+    public VerifyEmailResponse verifyEmail(VerifyEmailRequest request) {
+        throw new UnsupportedOperationException("DUMMY: verifyEmail is not implemented yet.");
     }
 
+    /**
+     * ユーザー登録ステップ3: 本登録。
+     *
+     * @param request プレ登録 ID / ログイン ID / パスワードなど
+     * @return 登録結果
+     */
     @Override
-    public RegisterResponse register(RegisterRequest req) {
-        // 事前チェック
-        String preRegId = req.getPreRegId();
-        if (!store.isPreRegistrationVerified(preRegId)) {
-            return new RegisterResponse(false);
-        }
-        // パスワードハッシュ化（PasswordPort 経由）
-        String hash = passwordPort.encode(req.getPassword());
-        String accountId = store.createUserFromPreRegistration(preRegId, hash, req.getLanguage());
-        return new RegisterResponse(accountId != null);
+    public RegisterResponse register(RegisterRequest request) {
+        throw new UnsupportedOperationException("DUMMY: register is not implemented yet.");
     }
 
+    /**
+     * ログイン処理。
+     *
+     * @param request ログイン ID・パスワードなど
+     * @return ログイン結果（アクセストークン・リフレッシュトークン等）
+     */
     @Override
-    public LoginResponse login(LoginRequest req) {
-        Optional<Store.User> user = store.findUserByEmail(req.getEmail());
-        if (user.isEmpty()) return new LoginResponse(false, null);
-
-        // パスワード照合
-        if (!passwordPort.matches(req.getPassword(), user.get().getPasswordHash())) {
-            return new LoginResponse(false, null);
-        }
-
-        // セッションIDは TokenFacade から払い出し
-        String sessionId = tokenFacade.generateSessionId();
-        TokenFacade.Tokens t = tokenFacade.issue(user.get().getAccountId(), sessionId, List.of("user"));
-        sessionService.upsertSession(
-                user.get().getAccountId(),
-                sessionId,
-                Instant.now(),
-                t.refreshExpiresAt(),
-                req.getUserAgent(),
-                req.getIpAddress()
-        );
-
-        LoginTokens tokens = LoginTokens.builder()
-                .accessToken(t.accessToken())
-                .refreshToken(t.refreshToken())
-                .build();
-        return new LoginResponse(true, tokens);
+    public LoginResponse login(LoginRequest request) {
+        throw new UnsupportedOperationException("DUMMY: login is not implemented yet.");
     }
 
+    /**
+     * リフレッシュトークンを用いたトークン再発行。
+     *
+     * @param request リフレッシュトークン情報
+     * @return 再発行されたトークン情報
+     */
     @Override
-    public LogoutResponse logout(String accountId, String sessionId) {
-        sessionService.logoutBySessionId(accountId, sessionId);
-        return new LogoutResponse();
+    public TokenRefreshResponse refresh(TokenRefreshRequest request) {
+        throw new UnsupportedOperationException("DUMMY: refresh is not implemented yet.");
     }
 
+    /**
+     * 現在のセッション情報を取得。
+     *
+     * @return セッション情報（ユーザー ID・期限など）
+     */
     @Override
-    public LogoutResponse logoutAll(String accountId) {
-        store.incrementTokenVersion(accountId); // 全トークン失効
-        sessionService.deleteAllSessions(accountId);
-        return new LogoutResponse();
+    public SessionInfo getCurrentSession() {
+        throw new UnsupportedOperationException("DUMMY: getCurrentSession is not implemented yet.");
     }
 
+    /**
+     * ログアウト（現セッション or 指定セッション）。
+     *
+     * @param request ログアウト対象セッションを示すリクエスト
+     * @return ログアウト結果
+     */
     @Override
-    public LoginResponse refresh(String refreshToken) {
-        TokenFacade.RefreshParseResult r = tokenFacade.refresh(refreshToken);
-        // 新アクセストークンのみ再発行（セッションは維持）
-        TokenFacade.Tokens t = tokenFacade.issueAfterMfa(r.userId(), r.sessionId(), r.accessJti(), r.refreshJti());
-        LoginTokens tokens = LoginTokens.builder()
-                .accessToken(t.accessToken())
-                .refreshToken(t.refreshToken())
-                .build();
-        return new LoginResponse(true, tokens);
+    public LogoutResponse logout(LogoutRequest request) {
+        throw new UnsupportedOperationException("DUMMY: logout is not implemented yet.");
+    }
+
+    /**
+     * すべてのセッションを無効化（全端末ログアウト）。
+     *
+     * @return ログアウト結果
+     */
+    @Override
+    public LogoutResponse logoutAll() {
+        throw new UnsupportedOperationException("DUMMY: logoutAll is not implemented yet.");
     }
 }
