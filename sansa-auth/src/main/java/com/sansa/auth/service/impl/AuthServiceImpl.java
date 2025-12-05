@@ -87,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
      * @param request メールアドレス・希望言語などのプレ登録情報
      * @return プレ登録結果
      */
-    @Override
+    // @Override
     public PreRegisterResponse preRegister(PreRegisterRequest request) {
         // UT では「本実装でダミー例外を投げた」と見なす前提のダミー実装
         throw new UnsupportedOperationException("DUMMY: preRegister is not implemented yet.");
@@ -99,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
      * @param request 検証コード等
      * @return 検証結果（成功時は preRegId 等）
      */
-    @Override
+    // @Override
     public VerifyEmailResponse verifyEmail(VerifyEmailRequest request) {
         throw new UnsupportedOperationException("DUMMY: verifyEmail is not implemented yet.");
     }
@@ -110,7 +110,7 @@ public class AuthServiceImpl implements AuthService {
      * @param request プレ登録 ID / ログイン ID / パスワードなど
      * @return 登録結果
      */
-    @Override
+    // @Override
     public RegisterResponse register(RegisterRequest request) {
         throw new UnsupportedOperationException("DUMMY: register is not implemented yet.");
     }
@@ -142,7 +142,7 @@ public class AuthServiceImpl implements AuthService {
      *
      * @return セッション情報（ユーザー ID・期限など）
      */
-    @Override
+    // @Override
     public SessionInfo getCurrentSession() {
         throw new UnsupportedOperationException("DUMMY: getCurrentSession is not implemented yet.");
     }
@@ -153,7 +153,7 @@ public class AuthServiceImpl implements AuthService {
      * @param request ログアウト対象セッションを示すリクエスト
      * @return ログアウト結果
      */
-    @Override
+    // @Override
     public LogoutResponse logout(LogoutRequest request) {
         throw new UnsupportedOperationException("DUMMY: logout is not implemented yet.");
     }
@@ -163,7 +163,7 @@ public class AuthServiceImpl implements AuthService {
      *
      * @return ログアウト結果
      */
-    @Override
+    // @Override
     public LogoutResponse logoutAll() {
         throw new UnsupportedOperationException("DUMMY: logoutAll is not implemented yet.");
     }

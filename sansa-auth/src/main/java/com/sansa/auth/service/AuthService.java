@@ -1,30 +1,32 @@
 package com.sansa.auth.service;
 
-import com.sansa.auth.dto.auth.PreRegisterRequest;
-import com.sansa.auth.dto.auth.PreRegisterResponse;
-import com.sansa.auth.dto.auth.RegisterRequest;
-import com.sansa.auth.dto.auth.RegisterResponse;
-import com.sansa.auth.dto.auth.VerifyEmailRequest;
-import com.sansa.auth.dto.auth.VerifyEmailResponse;
+import com.sansa.auth.dto.login.LoginRequest;
+import com.sansa.auth.dto.login.LoginResponse;
+import com.sansa.auth.dto.login.TokenRefreshRequest;
+import com.sansa.auth.dto.login.TokenRefreshResponse;
 
 /**
- * 認証サービス（登録フロー）
- * API仕様および UT仕様 M01_UT02（登録フロー）に準拠
+ * 認証サービス I/F
+ *
+ * 現時点ではログイン / トークンリフレッシュのみを扱う。
+ * ユーザー登録フロー（pre-register / verify-email / register）は
+ * 後続の実装フェーズで追加する。
  */
 public interface AuthService {
 
     /**
-     * 01-01 pre-register（事前登録）
+     * ログイン処理。
+     *
+     * @param request ログインリクエスト（identifier / password 等）
+     * @return ログインレスポンス（アクセストークン / リフレッシュトークン等）
      */
-    PreRegisterResponse preRegister(PreRegisterRequest request);
+    LoginResponse login(LoginRequest request);
 
     /**
-     * 01-02 verify-email（メール認証コード検証 / preRegId発行）
+     * リフレッシュトークンによるアクセストークン再発行。
+     *
+     * @param request リフレッシュトークンリクエスト
+     * @return リフレッシュトークンレスポンス（新しいアクセストークン等）
      */
-    VerifyEmailResponse verifyEmail(VerifyEmailRequest request);
-
-    /**
-     * 01-03 register（本登録）
-     */
-    RegisterResponse register(RegisterRequest request);
+    TokenRefreshResponse refresh(TokenRefreshRequest request);
 }

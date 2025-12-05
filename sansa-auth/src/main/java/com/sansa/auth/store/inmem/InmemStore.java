@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
 /**
  * InmemStore
@@ -27,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   - 永続化ではないためプロセス終了で消える
  *   - 期限切れ自動削除等は行わない（必要に応じて呼び出し側でガベージ）
  */
+@Component
+@Profile("inmem")
 public class InmemStore implements Store {
 
     // ====== ストレージ（簡易） ======
