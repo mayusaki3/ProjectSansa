@@ -1,4 +1,4 @@
-[目次](../../目次.md) > テスト基盤 > [テスト基盤 目次](../目次.md) > [sansa-testkit 目次](目次.md) > sansa-auth 統合手順
+[目次](../../../目次.md) > テスト基盤 > [テスト基盤 目次](../目次.md) > [sansa-testkit 目次](目次.md) > sansa-auth 統合手順
 
 # sansa-auth 統合手順
 
@@ -83,4 +83,4 @@ sansa-auth 以外のモジュールでも、同様に `@DummyImplementation` を
 **「テスト対象の実装が暫定かどうか」を共通フォーマットで表現**できます。
 
 ---
-[目次](../../目次.md) > テスト基盤 > [テスト基盤 目次](../目次.md) > [sansa-testkit 目次](目次.md) > sansa-auth 統合手順
+[目次](../../../目次.md) > テスト基盤 > [テスト基盤 目次](../目次.md) > [sansa-testkit 目次](目次.md) > sansa-auth 統合手順

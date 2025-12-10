@@ -1,4 +1,4 @@
-[目次](../../../目次.md) > [テスト基盤](../../目次.md) > [sansa-testkit](../目次.md) > api > TestPrinter
+[目次](../../../../目次.md) > [テスト基盤](../../目次.md) > [sansa-testkit](../目次.md) > api > TestPrinter
 
 # TestPrinter API 仕様書
 
@@ -195,4 +195,4 @@ printer.summary();
 - カテゴリ集計機能（UT/IT の自動判別など）
 
 ---
-[目次](../../../目次.md) > [テスト基盤](../../目次.md) > [sansa-testkit](../目次.md) > api > TestPrinter
+[目次](../../../../目次.md) > [テスト基盤](../../目次.md) > [sansa-testkit](../目次.md) > api > TestPrinter
