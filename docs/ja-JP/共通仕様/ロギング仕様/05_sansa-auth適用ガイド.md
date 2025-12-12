@@ -1,6 +1,6 @@
 [目次](../../目次.md) > 共通仕様 > ロギング仕様 > sansa-auth適用ガイド
 
-# 04_sansa-auth 適用ガイド  
+# sansa-auth 適用ガイド  
 （Project Sansa 共通ロギング仕様のサービス実装への適用）
 
 ## 1. 目的
