@@ -2,7 +2,6 @@ package com.sansa.testkit.util;
 
 import com.sansa.testkit.annotations.DummyImplementation;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -42,8 +41,9 @@ public class TestPrinterSelfTest {
      * 成功・失敗・ダミー判定・サマリ出力が期待通りであることを確認する。
      */
     @Test
-    @DisplayName("TESTKIT-TP-TC-001/002/003: TestPrinter 基本出力（成功/失敗・DUMMY判定・SUMMARY/TOTAL）")
     void testPrinter_basic() {
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-001/002/003");
+
         // 出力捕捉用
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(bos, true);
@@ -86,8 +86,9 @@ public class TestPrinterSelfTest {
      * 正しくダミー判定できることを確認する。
      */
     @Test
-    @DisplayName("TESTKIT-DU-TC-001〜004: DummyUtil ダミー判定（class/instance/method/hasAnyDummy）")
     void dummyUtil_basic() throws Exception {
+        System.out.println("[TESTCASE] TESTKIT-DU-TC-001/002/003/004");
+
         // クラス判定
         assertTrue(DummyUtil.isDummy(DummyClass.class));
         assertFalse(DummyUtil.isDummy(RealClass.class));
@@ -113,8 +114,9 @@ public class TestPrinterSelfTest {
      * TestPrinter の ID 組み立てロジックの形式検証。
      */
     @Test
-    @DisplayName("TESTKIT-TP-TC-101/102: TestPrinter IDフォーマット（caseIdあり・SUMMARY形式）")
     void testPrinter_idFormat() {
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-101/102");
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(bos, true);
 
@@ -136,8 +138,9 @@ public class TestPrinterSelfTest {
      * TestPrinter の caseId が null の場合のフォールバック動作。
      */
     @Test
-    @DisplayName("TESTKIT-TP-TC-201: TestPrinter caseId null フォールバック（[module:suite]）")
     void testPrinter_caseIdNull() {
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-201");
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(bos, true);
 

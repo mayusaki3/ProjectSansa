@@ -26,8 +26,9 @@
         <!-- JUnit 等、テスト時の利用を想定。必要に応じて追加 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>provided</scope>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- ログ出力用（必要であれば） -->
@@ -42,15 +43,9 @@
     <build>
     <plugins>
         <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.2.5</version>
-        <configuration>
-            <useFile>false</useFile>
-            <reportFormat>plain</reportFormat>
-            <printSummary>true</printSummary>
-            <useLegacyReporting>false</useLegacyReporting>
-        </configuration>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
         </plugin>
     </plugins>
     </build>

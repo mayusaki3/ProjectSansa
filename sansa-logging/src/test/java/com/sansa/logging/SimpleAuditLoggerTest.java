@@ -50,6 +50,8 @@ class SimpleAuditLoggerTest {
     // T02-01: null レコードの場合は WARN ログになる
     @Test
     void T02_01_shouldWarnWhenRecordIsNull() {
+        System.out.println("[TESTCASE] LOGGING-COMMON-TC-101");
+
         TestSystemLogger systemLogger = new TestSystemLogger();
         SimpleAuditLogger auditLogger = new SimpleAuditLogger(systemLogger);
 
@@ -62,6 +64,8 @@ class SimpleAuditLoggerTest {
     // T02-02: 有効なレコードの場合は INFO ログになる
     @Test
     void T02_02_shouldInfoLogWhenRecordIsValid() {
+        System.out.println("[TESTCASE] LOGGING-COMMON-TC-102");
+
         TestSystemLogger systemLogger = new TestSystemLogger();
         SimpleAuditLogger auditLogger = new SimpleAuditLogger(systemLogger);
 

@@ -12,8 +12,9 @@
 
     <!-- マルチモジュール定義 -->
     <modules>
-        <module>sansa-auth</module>
         <module>sansa-testkit</module>
+        <module>sansa-logging</module>
+        <module>sansa-auth</module>
     </modules>
 
     <!-- 共通プロパティ -->
