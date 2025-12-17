@@ -51,6 +51,14 @@
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- sansa-testkit（テスト番号出力の統一） -->
+        <dependency>
+            <groupId>com.sansa</groupId>
+            <artifactId>sansa-testkit</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

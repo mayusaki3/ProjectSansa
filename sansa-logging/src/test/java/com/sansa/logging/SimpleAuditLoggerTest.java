@@ -2,6 +2,7 @@ package com.sansa.logging;
 
 import com.sansa.logging.impl.SimpleAuditLogger;
 import com.sansa.logging.model.AuditRecord;
+import com.sansa.testkit.util.TestCaseReporter;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -49,12 +50,12 @@ class SimpleAuditLoggerTest {
 
     /**
      * LOGGING-COMMON-TC-101
-     *  
+     *
      * null レコードの場合は WARN ログになる
      */
     @Test
     void T02_01_shouldWarnWhenRecordIsNull() {
-        System.out.println("[TESTCASE] LOGGING-COMMON-TC-101");
+        TestCaseReporter.tc("LOGGING-COMMON-TC-101");
 
         TestSystemLogger systemLogger = new TestSystemLogger();
         SimpleAuditLogger auditLogger = new SimpleAuditLogger(systemLogger);
@@ -67,12 +68,12 @@ class SimpleAuditLoggerTest {
 
     /**
      * LOGGING-COMMON-TC-102
-     * 
+     *
      * 有効なレコードの場合は INFO ログになる
      */
     @Test
     void T02_02_shouldInfoLogWhenRecordIsValid() {
-        System.out.println("[TESTCASE] LOGGING-COMMON-TC-102");
+        TestCaseReporter.tc("LOGGING-COMMON-TC-102");
 
         TestSystemLogger systemLogger = new TestSystemLogger();
         SimpleAuditLogger auditLogger = new SimpleAuditLogger(systemLogger);

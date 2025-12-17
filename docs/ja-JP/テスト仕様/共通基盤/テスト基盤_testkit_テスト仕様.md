@@ -15,8 +15,9 @@ ChatGPT 等による生成・改変が行われても、契約として維持す
 ## 2. 対象範囲
 
 - モジュール：sansa-testkit
-- 対象ユーティリティ（例）
+- 対象ユーティリティ
   - com.sansa.testkit.util.TestPrinter
+  - com.sansa.testkit.util.TestCaseReporter
   - com.sansa.testkit.util.DummyUtil
   - com.sansa.testkit.annotations.DummyImplementation
 
@@ -80,6 +81,20 @@ ChatGPT 等による生成・改変が行われても、契約として維持す
 
 ---
 
+### 4.5 TestCaseReporter（テストケース番号出力）
+
+- TESTKIT-TCR-TC-001 必須：tc(id) は "[TESTCASE] {id}" 形式で標準出力に出力される
+  - 期待："[TESTCASE] TESTKIT-TCR-TC-001" のように、指定した id が出力される
+- TESTKIT-TCR-TC-002 必須：tc(null) は例外を投げず、出力もしない
+- TESTKIT-TCR-TC-003 必須：tc(" ") は例外を投げず、出力もしない
+
+（対応テスト：TestCaseReporterTest）
+- shouldPrintTestcaseLine
+- shouldDoNothingWhenNull
+- shouldDoNothingWhenBlank
+
+---
+
 ## 5. 実装との対応（参照）
 
 - 自己検証UT：TestPrinterSelfTest.java
@@ -87,6 +102,10 @@ ChatGPT 等による生成・改変が行われても、契約として維持す
   - dummyUtil_basic
   - testPrinter_idFormat
   - testPrinter_caseIdNull
+- 自己検証UT：TestCaseReporterTest.java
+  - shouldPrintTestcaseLine
+  - shouldDoNothingWhenNull
+  - shouldDoNothingWhenBlank
 
 ---
 
