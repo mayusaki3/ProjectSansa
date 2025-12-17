@@ -13,7 +13,10 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AuditRecordTest {
 
-    // T01-01: eventType が null の場合は NPE
+    /**
+     * LOGGING-COMMON-TC-001
+     * eventType が null の場合は NPE
+     */
     @Test
     void T01_01_shouldThrowWhenEventTypeIsNull() {
         System.out.println("[TESTCASE] LOGGING-COMMON-TC-001");
@@ -30,7 +33,11 @@ class AuditRecordTest {
         });
     }
 
-    // T01-02: result が null の場合は NPE
+    /**
+     * LOGGING-COMMON-TC-002
+     * 
+     * result が null の場合は NPE
+     */
     @Test
     void T01_02_shouldThrowWhenResultIsNull() {
         System.out.println("[TESTCASE] LOGGING-COMMON-TC-002");
@@ -47,7 +54,11 @@ class AuditRecordTest {
         });
     }
 
-    // T01-03: details が null の場合は emptyMap になる
+    /**
+     * LOGGING-COMMON-TC-003
+     * 
+     * details が null の場合は emptyMap になる
+     */
     @Test
     void T01_03_shouldUseEmptyMapWhenDetailsIsNull() {
         System.out.println("[TESTCASE] LOGGING-COMMON-TC-003");
@@ -65,7 +76,11 @@ class AuditRecordTest {
         assertTrue(record.getDetails().isEmpty());
     }
 
-    // T01-04: details は不変マップとして保持される
+    /**
+     * LOGGING-COMMON-TC-004
+     * 
+     * details は不変マップとして保持される
+     */
     @Test
     void T01_04_detailsShouldBeUnmodifiable() {
         System.out.println("[TESTCASE] LOGGING-COMMON-TC-004");

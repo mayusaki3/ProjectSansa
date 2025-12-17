@@ -47,7 +47,11 @@ class SimpleAuditLoggerTest {
         }
     }
 
-    // T02-01: null レコードの場合は WARN ログになる
+    /**
+     * LOGGING-COMMON-TC-101
+     *  
+     * null レコードの場合は WARN ログになる
+     */
     @Test
     void T02_01_shouldWarnWhenRecordIsNull() {
         System.out.println("[TESTCASE] LOGGING-COMMON-TC-101");
@@ -61,7 +65,11 @@ class SimpleAuditLoggerTest {
         assertEquals("AuditRecord is null. Skip audit logging.", systemLogger.lastMessage);
     }
 
-    // T02-02: 有効なレコードの場合は INFO ログになる
+    /**
+     * LOGGING-COMMON-TC-102
+     * 
+     * 有効なレコードの場合は INFO ログになる
+     */
     @Test
     void T02_02_shouldInfoLogWhenRecordIsValid() {
         System.out.println("[TESTCASE] LOGGING-COMMON-TC-102");

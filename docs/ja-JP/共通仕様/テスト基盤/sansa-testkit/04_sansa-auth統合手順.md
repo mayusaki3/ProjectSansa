@@ -66,7 +66,7 @@ sansa-auth のように、初版リリース前で段階的に実装を進める
 - テスト対象クラス側（例: AuthService の暫定実装）
 
 ```java
-import com.sansa.testkit.dummy.DummyImplementation;
+import com.sansa.testkit.annotations.DummyImplementation;
 
 @DummyImplementation
 public class AuthServiceDummyImpl implements AuthService {

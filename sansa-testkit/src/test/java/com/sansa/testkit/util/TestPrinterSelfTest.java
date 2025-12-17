@@ -37,12 +37,18 @@ public class TestPrinterSelfTest {
     }
 
     /**
+     * TESTKIT-TP-TC-001
+     * TESTKIT-TP-TC-002
+     * TESTKIT-TP-TC-003
+     * 
      * TestPrinter の基本動作テスト。
      * 成功・失敗・ダミー判定・サマリ出力が期待通りであることを確認する。
      */
     @Test
     void testPrinter_basic() {
-        System.out.println("[TESTCASE] TESTKIT-TP-TC-001/002/003");
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-001");
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-002");
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-003");
 
         // 出力捕捉用
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -82,12 +88,20 @@ public class TestPrinterSelfTest {
     }
 
     /**
+     * TESTKIT-DU-TC-001
+     * TESTKIT-DU-TC-002
+     * TESTKIT-DU-TC-003
+     * TESTKIT-DU-TC-004
+     * 
      * DummyUtil がクラス／インスタンス／メソッドで
      * 正しくダミー判定できることを確認する。
      */
     @Test
     void dummyUtil_basic() throws Exception {
-        System.out.println("[TESTCASE] TESTKIT-DU-TC-001/002/003/004");
+        System.out.println("[TESTCASE] TESTKIT-DU-TC-001");
+        System.out.println("[TESTCASE] TESTKIT-DU-TC-002");
+        System.out.println("[TESTCASE] TESTKIT-DU-TC-003");
+        System.out.println("[TESTCASE] TESTKIT-DU-TC-004");
 
         // クラス判定
         assertTrue(DummyUtil.isDummy(DummyClass.class));
@@ -111,11 +125,15 @@ public class TestPrinterSelfTest {
     }
 
     /**
+     * TESTKIT-TP-TC-101
+     * TESTKIT-TP-TC-102
+     * 
      * TestPrinter の ID 組み立てロジックの形式検証。
      */
     @Test
     void testPrinter_idFormat() {
-        System.out.println("[TESTCASE] TESTKIT-TP-TC-101/102");
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-101");
+        System.out.println("[TESTCASE] TESTKIT-TP-TC-102");
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(bos, true);
@@ -135,6 +153,8 @@ public class TestPrinterSelfTest {
     }
 
     /**
+     * TESTKIT-TP-TC-201
+     * 
      * TestPrinter の caseId が null の場合のフォールバック動作。
      */
     @Test
