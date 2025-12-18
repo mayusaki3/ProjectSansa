@@ -95,6 +95,28 @@ ChatGPT 等による生成・改変が行われても、契約として維持す
 
 ---
 
+## 4.6 install 運用（共通基盤）
+
+sansa-testkit は他モジュール（例：sansa-logging）から test scope 依存される。
+そのため、開発環境ではローカルリポジトリ（~/.m2）へ install して単独実行を可能にしてよい。
+
+ただし install は以下を必須とする：
+
+- 事前に `clean test` を実行し、全テストが成功していること（BUILD SUCCESS）
+- 失敗した状態の成果物を install しない（依存解決の誤動作を防ぐため）
+
+推奨手順：
+
+```powershell
+mvn --% -pl sansa-testkit -DskipTests=false clean test
+mvn --% -pl sansa-testkit -DskipTests=false install
+```
+
+CI 方針：
+- CI ではローカル install を前提とせず、原則 reactor 実行で依存を解決する
+
+---
+
 ## 5. 実装との対応（参照）
 
 - 自己検証UT：TestPrinterSelfTest.java
