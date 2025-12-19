@@ -130,7 +130,7 @@
 
 ### 7.1 推奨インターフェース
 
-^^^java
+```java
 public interface AuditLogger {
     void log(AuditRecord record);
 }
@@ -140,7 +140,7 @@ public interface SystemLogger {
     void warn(String message, Map<String, Object> detail);
     void error(String message, Throwable ex, Map<String, Object> detail);
 }
-^^^
+```
 
 ### 7.2 利用方針
 
@@ -152,7 +152,7 @@ public interface SystemLogger {
 
 ## 8. 監査ログ JSON 例（再掲）
 
-^^^json
+```json
 {
   "eventType": "LOGIN_FAILED",
   "actorUserId": null,
@@ -161,7 +161,7 @@ public interface SystemLogger {
   "clientIpHash": "f22ac1...",
   "userAgentHash": "92acff..."
 }
-^^^
+```
 
 ---
 
