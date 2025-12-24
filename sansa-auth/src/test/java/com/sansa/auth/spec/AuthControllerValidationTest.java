@@ -1,70 +1,120 @@
 package com.sansa.auth.spec;
 
-import org.junit.jupiter.api.*;
+import com.sansa.auth.controller.ApiExceptionHandler;
+import com.sansa.auth.controller.AuthController;
+import com.sansa.auth.exception.InvalidCredentialsException;
+import com.sansa.auth.service.AuthService;
+import com.sansa.testkit.util.TestCaseReporter;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-// Controller入力検証・エラー整形（UT-01-001〜010）
-// 仕様: docs/ja-JP/単体テスト/Webサービス/認証・セッション/01_Controller_入力検証・エラー整形.md
-@DisplayName("[UT-01] Controller 入力検証・エラー整形")
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Controller入力検証・エラー整形（AuthController: /auth/login）
+ *
+ * 仕様優先:
+ * - identifier(accountId/email) 未指定は 400 invalid-argument
+ * - errors[].field は "identifier" とする
+ */
+@WebMvcTest(controllers = AuthController.class)
+@Import(ApiExceptionHandler.class)
 class AuthControllerValidationTest {
 
+    @Autowired
+    private MockMvc mvc;
+
+    @MockBean
+    private AuthService auth;
+
+    /**
+     * AUTH-CTRL-UT-005
+     * login の identifier（accountId/email）未指定 -> 400
+     */
     @Test
-    @DisplayName("M01:UT-01-001 pre-register email 空 -> 400")
-    void UT_01_001() {
-        // TODO: MockMvcで /auth/pre-register を検証
-        Assertions.assertTrue(true);
+    void auth_ctrl_ut_005_login_identifier_missing_returns_400_problem_json() throws Exception {
+        TestCaseReporter.tc("AUTH-CTRL-UT-005");
+
+        // password はあるが accountId/email が無い（AccountIdOrEmailRequired が弾く）
+        String body = """
+          {
+            "password": "pass"
+          }
+        """;
+
+        mvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(body))
+           .andExpect(status().isBadRequest())
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+           .andExpect(jsonPath("$.title").value("invalid-argument"))
+           .andExpect(jsonPath("$.code").value("invalid-argument"))
+           .andExpect(jsonPath("$.errors").isArray())
+           .andExpect(jsonPath("$.errors.length()").value(greaterThanOrEqualTo(1)))
+           .andExpect(jsonPath("$.errors[*].field", hasItem("identifier")));
     }
 
+    /**
+     * AUTH-CTRL-UT-006
+     * login 失敗 -> 401 invalid-credentials
+     */
     @Test
-    @DisplayName("M01:UT-01-002 pre-register language フォーマット不正 -> 400")
-    void UT_01_002() {
-        Assertions.assertTrue(true);
+    void auth_ctrl_ut_006_login_invalid_credentials_returns_401_problem_json() throws Exception {
+        TestCaseReporter.tc("AUTH-CTRL-UT-006");
+
+        Mockito.when(auth.login(any()))
+               .thenThrow(new InvalidCredentialsException("dummy"));
+
+        // 入力検証を通すため accountId と password を入れる
+        String body = """
+          {
+            "accountId": "alice",
+            "password": "wrong"
+          }
+        """;
+
+        mvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(body))
+           .andExpect(status().isUnauthorized())
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+           .andExpect(jsonPath("$.title").value("invalid-credentials"))
+           .andExpect(jsonPath("$.code").value("invalid-credentials"));
     }
 
+    /**
+     * AUTH-CTRL-UT-007
+     * i18n Accept-Language -> Content-Language 反映（バリデーションエラーで確認）
+     */
     @Test
-    @DisplayName("M01:UT-01-003 verify-email code 桁不足 -> 400")
-    void UT_01_003() {
-        Assertions.assertTrue(true);
-    }
+    void auth_ctrl_ut_007_accept_language_reflected_to_content_language_on_validation_error() throws Exception {
+        TestCaseReporter.tc("AUTH-CTRL-UT-007");
 
-    @Test
-    @DisplayName("M01:UT-01-004 register preRegId 欠落 -> 400")
-    void UT_01_004() {
-        Assertions.assertTrue(true);
-    }
+        // バリデーションエラーを確実に起こす（identifier不足）
+        String body = """
+          {
+            "password": "pass"
+          }
+        """;
 
-    @Test
-    @DisplayName("M01:UT-01-005 login identifier 未指定 -> 400")
-    void UT_01_005() {
-        Assertions.assertTrue(true);
-    }
-
-    @Test
-    @DisplayName("M01:UT-01-006 login 失敗 -> 401 invalid-credentials")
-    void UT_01_006() {
-        Assertions.assertTrue(true);
-    }
-
-    @Test
-    @DisplayName("M01:UT-01-007 i18n Accept-Language -> Content-Language 反映")
-    void UT_01_007() {
-        Assertions.assertTrue(true);
-    }
-
-    @Test
-    @DisplayName("M01:UT-01-008 WebAuthn assertion 必須欠落 -> 400")
-    void UT_01_008() {
-        Assertions.assertTrue(true);
-    }
-
-    @Test
-    @DisplayName("M01:UT-01-009 セッション個別失効: ID不正 -> 404")
-    void UT_01_009() {
-        Assertions.assertTrue(true);
-    }
-
-    @Test
-    @DisplayName("M01:UT-01-010 レート制限 -> 429 + ヘッダ")
-    void UT_01_010() {
-        Assertions.assertTrue(true);
+        mvc.perform(post("/auth/login")
+                .header(HttpHeaders.ACCEPT_LANGUAGE, "ja-JP")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(body))
+           .andExpect(status().isBadRequest())
+           .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, "ja-JP"));
     }
 }

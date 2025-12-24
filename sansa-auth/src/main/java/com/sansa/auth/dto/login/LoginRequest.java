@@ -1,16 +1,32 @@
 package com.sansa.auth.dto.login;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * ログインリクエスト。
- * accountId または email のいずれかで認証する想定。
+ *
+ * 仕様:
+ * - accountId または email のどちらかが必須
+ * - password は必須
+ *
+ * 注意:
+ * - ip / userAgent は入力として受け取らない（ログ用途は HttpServletRequest から取得する）
  */
+@AccountIdOrEmailRequired
 public class LoginRequest {
 
+    @Size(max = 64)
     private String accountId;
+
+    @Email
+    @Size(max = 254)
     private String email;
+
+    @NotBlank
+    @Size(max = 128)
     private String password;
-    private String ip;
-    private String userAgent;
 
     public LoginRequest() {
     }
@@ -27,14 +43,6 @@ public class LoginRequest {
         return password;
     }
 
-    public String getIp() {
-        return ip;
-    }
-
-    public String getUserAgent() {
-        return userAgent;
-    }
-
     public void setAccountId(String accountId) {
         this.accountId = accountId;
     }
@@ -45,13 +53,5 @@ public class LoginRequest {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
     }
 }
