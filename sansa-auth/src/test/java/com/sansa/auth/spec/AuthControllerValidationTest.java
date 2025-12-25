@@ -4,7 +4,7 @@ import com.sansa.auth.controller.ApiExceptionHandler;
 import com.sansa.auth.controller.AuthController;
 import com.sansa.auth.exception.InvalidCredentialsException;
 import com.sansa.auth.service.AuthService;
-import com.sansa.testkit.util.TestCaseReporter;
+import com.sansa.testkit.util.TestPrinter;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.*;
+import java.io.PrintStream;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,6 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 仕様優先:
  * - identifier(accountId/email) 未指定は 400 invalid-argument
  * - errors[].field は "identifier" とする
+ *
+ * 注意:
+ * - [TESTCASE] 出力は testkit/logging の自己検証のみ。
+ * - 本テストは TestPrinter により ✅/❌ を出力する。
  */
 @WebMvcTest(controllers = AuthController.class)
 @Import(ApiExceptionHandler.class)
@@ -37,32 +44,50 @@ class AuthControllerValidationTest {
     @MockBean
     private AuthService auth;
 
+    private TestPrinter newPrinter(PrintStream out) {
+        // module/suite はプロジェクト内で統一する前提。
+        // 例: module="AUTH", suite="CTRL-UT"
+        return new TestPrinter("AUTH", "CTRL-UT", out);
+    }
+
     /**
      * AUTH-CTRL-UT-005
      * login の identifier（accountId/email）未指定 -> 400
      */
     @Test
-    void auth_ctrl_ut_005_login_identifier_missing_returns_400_problem_json() throws Exception {
-        TestCaseReporter.tc("AUTH-CTRL-UT-005");
+    void AUTH_CTRL_UT_005_login_identifier_missing_returns_400_problem_json() throws Exception {
+        var printer = newPrinter(System.out);
+        boolean ok = false;
 
-        // password はあるが accountId/email が無い（AccountIdOrEmailRequired が弾く）
-        String body = """
-          {
-            "password": "pass"
-          }
-        """;
+        try {
+            String body = """
+              {
+                "password": "pass"
+              }
+            """;
 
-        mvc.perform(post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .content(body))
-           .andExpect(status().isBadRequest())
-           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-           .andExpect(jsonPath("$.title").value("invalid-argument"))
-           .andExpect(jsonPath("$.code").value("invalid-argument"))
-           .andExpect(jsonPath("$.errors").isArray())
-           .andExpect(jsonPath("$.errors.length()").value(greaterThanOrEqualTo(1)))
-           .andExpect(jsonPath("$.errors[*].field", hasItem("identifier")));
+            mvc.perform(post("/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .content(body))
+               .andExpect(status().isBadRequest())
+               .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+               .andExpect(jsonPath("$.title").value("invalid-argument"))
+               .andExpect(jsonPath("$.code").value("invalid-argument"))
+               .andExpect(jsonPath("$.errors").isArray())
+               .andExpect(jsonPath("$.errors.length()").value(greaterThanOrEqualTo(1)))
+               .andExpect(jsonPath("$.errors[*].field", hasItem("identifier")));
+
+            ok = true;
+        } finally {
+            printer.printCase(
+                    "005",
+                    "AUTH-CTRL-UT-005 login identifier未指定 -> 400 problem+json (errors[].field==identifier)",
+                    ok,
+                    AuthController.class
+            );
+            printer.printSummary();
+        }
     }
 
     /**
@@ -70,28 +95,40 @@ class AuthControllerValidationTest {
      * login 失敗 -> 401 invalid-credentials
      */
     @Test
-    void auth_ctrl_ut_006_login_invalid_credentials_returns_401_problem_json() throws Exception {
-        TestCaseReporter.tc("AUTH-CTRL-UT-006");
+    void AUTH_CTRL_UT_006_login_invalid_credentials_returns_401_problem_json() throws Exception {
+        var printer = newPrinter(System.out);
+        boolean ok = false;
 
-        Mockito.when(auth.login(any()))
-               .thenThrow(new InvalidCredentialsException("dummy"));
+        try {
+            Mockito.when(auth.login(any()))
+                   .thenThrow(new InvalidCredentialsException("dummy"));
 
-        // 入力検証を通すため accountId と password を入れる
-        String body = """
-          {
-            "accountId": "alice",
-            "password": "wrong"
-          }
-        """;
+            String body = """
+              {
+                "accountId": "alice",
+                "password": "wrong"
+              }
+            """;
 
-        mvc.perform(post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .content(body))
-           .andExpect(status().isUnauthorized())
-           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-           .andExpect(jsonPath("$.title").value("invalid-credentials"))
-           .andExpect(jsonPath("$.code").value("invalid-credentials"));
+            mvc.perform(post("/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .content(body))
+               .andExpect(status().isUnauthorized())
+               .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+               .andExpect(jsonPath("$.title").value("invalid-credentials"))
+               .andExpect(jsonPath("$.code").value("invalid-credentials"));
+
+            ok = true;
+        } finally {
+            printer.printCase(
+                    "006",
+                    "AUTH-CTRL-UT-006 login invalid-credentials -> 401 problem+json",
+                    ok,
+                    AuthController.class
+            );
+            printer.printSummary();
+        }
     }
 
     /**
@@ -99,22 +136,34 @@ class AuthControllerValidationTest {
      * i18n Accept-Language -> Content-Language 反映（バリデーションエラーで確認）
      */
     @Test
-    void auth_ctrl_ut_007_accept_language_reflected_to_content_language_on_validation_error() throws Exception {
-        TestCaseReporter.tc("AUTH-CTRL-UT-007");
+    void AUTH_CTRL_UT_007_accept_language_reflected_to_content_language_on_validation_error() throws Exception {
+        var printer = newPrinter(System.out);
+        boolean ok = false;
 
-        // バリデーションエラーを確実に起こす（identifier不足）
-        String body = """
-          {
-            "password": "pass"
-          }
-        """;
+        try {
+            String body = """
+              {
+                "password": "pass"
+              }
+            """;
 
-        mvc.perform(post("/auth/login")
-                .header(HttpHeaders.ACCEPT_LANGUAGE, "ja-JP")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .content(body))
-           .andExpect(status().isBadRequest())
-           .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, "ja-JP"));
+            mvc.perform(post("/auth/login")
+                    .header(HttpHeaders.ACCEPT_LANGUAGE, "ja-JP")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .content(body))
+               .andExpect(status().isBadRequest())
+               .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, "ja-JP"));
+
+            ok = true;
+        } finally {
+            printer.printCase(
+                    "007",
+                    "AUTH-CTRL-UT-007 Accept-Language -> Content-Language (ja-JP) on validation error",
+                    ok,
+                    AuthController.class
+            );
+            printer.printSummary();
+        }
     }
 }
