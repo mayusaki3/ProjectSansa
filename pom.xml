@@ -45,6 +45,11 @@
         <!-- プラグイン設定の共通化（必要に応じて追加） -->
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring.boot.version}</version>
+                </plugin>
                 <!-- JUnit 5 用 Surefire の統一設定 -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

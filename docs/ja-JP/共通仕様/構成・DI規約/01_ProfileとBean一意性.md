@@ -43,6 +43,48 @@ Spring Boot において、Profile 切替時に複数の実装 Bean が同時に
 
 ---
 
+### 原則4：外部ライブラリの Bean 差し替えは「テスト限定の構成クラス」で行う（例外規定）
+
+本規約の「@Primary による逃げ禁止」は、**プロジェクトが定義する Interface（例: MailService / Store / RateLimiter 等）**に適用する。
+
+一方で、以下のような **外部ライブラリが提供する Interface** については、
+テスト環境でのスタブ差し替えのために、次の条件を満たす場合に限り @Primary を許可する。
+
+- 対象が外部ライブラリの Interface（例: JavaMailSender）
+- `@TestConfiguration` に定義され、src/test/java 配下に存在する
+- `@Profile("it")` / `@Profile("test")` 等で **テスト用途 Profile に閉じている**
+- 本番（prod）で同一の差し替えが有効化されない
+
+#### 例（JavaMailSender のテスト差し替え）
+
+```java
+@TestConfiguration
+@Profile("it")
+public class NoopMailConfig {
+
+  @Bean
+  @Primary
+  public JavaMailSender noopJavaMailSender() {
+    ...
+  }
+}
+```
+
+注意：
+- 上記は「MailService のようなプロジェクト Interface を @Primary で逃げる」ことを許可するものではない。
+- プロジェクト Interface は **Profile による排他**を必須とする（原則1）。
+
+---
+
+### 原則5：Slice テスト（@WebMvcTest 等）では Controller 依存を必ず @MockBean で解決する
+
+- @WebMvcTest は Controller 周辺のみをロードし、Service 層の @Service / @Component は原則ロードされない
+- Controller が constructor injection している Interface（例: AuthService）は、テスト側で必ず @MockBean を宣言する
+- @Disabled は「テスト実行」を抑止するだけで、ApplicationContext 初期化失敗は抑止できない
+  - したがって Context 初期化失敗を起こす未解決依存は、@Disabled でも必ず解決すること
+
+---
+
 ## 3. MailService を例とした適用指針（代表例）
 
 ### 3.1 想定構成
