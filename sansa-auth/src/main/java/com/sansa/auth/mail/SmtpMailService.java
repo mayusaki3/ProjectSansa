@@ -29,7 +29,17 @@ public class SmtpMailService implements MailService {
         }
 
         SimpleMailMessage m = new SimpleMailMessage();
-        m.setTo(message.getTo());
+
+        /*
+        * Spring の SimpleMailMessage#setTo は String / String... のみ。
+        * MailMessage#getTo が List<String> 想定のため配列に変換する。
+        */
+        var toList = message.getTo();
+        if (toList == null || toList.isEmpty()) {
+            throw new IllegalArgumentException("mail to must not be empty");
+        }
+        m.setTo(toList.toArray(new String[0]));
+
         m.setSubject(message.getSubject());
         m.setText(message.getBody());
 

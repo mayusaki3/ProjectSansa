@@ -1,6 +1,7 @@
 package com.sansa.auth.spec.mail;
 
 import com.sansa.auth.mail.MailMessage;
+import com.sansa.auth.mail.InMemoryMailService;
 import com.sansa.auth.testutil.InmemOutboxMailSender;
 import com.sansa.auth.testutil.MailOutboxSupport;
 import org.junit.jupiter.api.Test;
@@ -31,9 +32,14 @@ public class InMemoryMailServiceTest {
      *   - テスト用の静的フィールドに保持しておく など
      */
     private Object obtainRealOutboxForTest() {
-        // TODO: ここを環境に合わせて実装する。
-        // 今は null を返すとテスト失敗になるため、必ず実体を返すようにすること。
-        return null;
+        /*
+        * 本テストは Spring コンテキストに依存せず、最小構成で
+        * 「outbox の purge/snapshot が可能な実体」を提供する。
+        *
+        * InmemOutboxMailSender は、渡された実体に対して
+        * clearOutbox()/snapshotOutbox() 等を（必要なら反射で）呼ぶ設計の想定。
+        */
+        return new InMemoryMailService();
     }
 
     @Test
