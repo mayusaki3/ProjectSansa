@@ -1,10 +1,66 @@
-# ProjectSansa
+# Project Sansa（プロジェクトサンサ）とは
 
-ProjectSansa（プロジェクトサンサ）は、VR / AR / MR / 非XR を横断する xR ecosystem / federation 構想です。
+ProjectSansa（プロジェクトサンサ、以下 Sansa）は、VR / AR / MR / 非XR を横断する xR ecosystem / federation 構想です。  
+「現実世界」「仮想世界」「理想」が交差する三叉をイメージして名付けました。  
+個人プロジェクトとして開始していますが、面白そうと思ったら誰でも参加歓迎です。
 
-「現実世界」「仮想世界」「理想」が交差する三叉をイメージして命名されています。
+Discord  
+https://discord.gg/wN67tdzrCT
+
+---
+
+# 実現したいこと
+
+最終的には、スマートフォンに代わる新しいパーソナルデバイスとサービス基盤を作りたいと考えています。
+
+Sansa では、VR / AR / MR / 非XR を1つのサービスとして扱います。
+
+- 非XR: 通話・コミュニケーション
+- AR: 現実空間との情報重畳
+- VR: 仮想空間SNS
+- MR: 現実空間と仮想空間の融合
+
+これらは簡単な操作で切り替えられ、現実世界と仮想世界を自然につなぐことを目指しています。
+
+また、Sansa 単体ではなく、他の VRSNS やサービスとも接続・連携できるオープンな構成を目指しています。
+
+---
+
+# システム構想
 
 ProjectSansa は ecosystem / architecture / federation を主責務とし、単一 runtime や engine 実装を集中管理する monorepo とはしない方針を採用しています。
+
+実装は repository federation 方式で分離します。
+
+```text
+ProjectSansa
+├─ ecosystem architecture
+├─ federation
+├─ interoperability
+└─ repository map
+
+SansaXR
+├─ XR runtime
+├─ networking
+└─ OpenXR
+
+SansaVRM
+├─ avatar format
+├─ validator
+└─ adapters
+
+SansaVRM-MuJoCo-Adapter
+├─ MuJoCo integration
+└─ simulation bridge
+
+SansaVRM-Studio-AI
+├─ AI tooling
+└─ avatar generation
+
+SansaCloth
+├─ anti-clipping
+└─ cloth interaction
+```
 
 ---
 
@@ -17,6 +73,7 @@ ProjectSansa は ecosystem / architecture / federation を主責務とし、単�
 ### 全体構想
 
 - [ProjectSansa全体構想](./docs/ja-JP/仕様/00_全体構想/01_ProjectSansa全体構想.md)
+- [Repository Federation](./docs/ja-JP/仕様/00_全体構想/02_Repository_Federation.md)
 
 ---
 
@@ -54,23 +111,6 @@ https://github.com/mayusaki3/SansaCloth
 
 ---
 
-## 主な構想領域
-
-- VR / AR / MR / 非XR 統合
-- ecosystem federation
-- distributed architecture
-- repository interoperability
-- OpenXR ベース xR 基盤
-- 分散サーバークラスタ
-- Webサービス連携
-- 統合認証
-- タイムキャプチャ
-- デスクトップ連携
-- VRSNS 間連携
-- AI / ロボット / MuJoCo 連携
-
----
-
 ## 開発方針
 
 - ドキュメントは HLDocS ベースで管理
@@ -80,11 +120,3 @@ https://github.com/mayusaki3/SansaCloth
 - OpenXR を基盤としたマルチ Runtime 対応
 - 特定プラットフォームへの固定依存を避ける
 - オープンな拡張性を重視
-
----
-
-## コミュニティ
-
-Discord
-
-https://discord.gg/wN67tdzrCT
