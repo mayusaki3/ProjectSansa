@@ -39,6 +39,15 @@ ProjectSansa
 ├─ interoperability
 └─ repository map
 
+SansaSphere
+├─ account
+├─ profile
+├─ audit
+├─ logging
+├─ provenance
+├─ analytics
+└─ economy
+
 SansaXR
 ├─ XR runtime
 ├─ networking
@@ -78,6 +87,12 @@ SansaCloth
 ---
 
 ## 関連 repository
+
+### SansaSphere
+
+account / profile / audit / logging / provenance / analytics 系統。
+
+https://github.com/mayusaki3/SansaSphere
 
 ### SansaXR
 
