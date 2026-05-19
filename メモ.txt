@@ -1,8 +1,0 @@
-
-
-5) 運用メモ
-
-しきい値は当面 Python 85% / Java 80%。レッドが多い間は段階的運用（PRで上げる）を推奨。
-アーティファクト（coverage-*.xml / htmlcov/ / target/site/jacoco/）は自動添付。ローカルでの HTML 確認は任意。
-将来、単一スコアに集約したい場合は、両 XML（coverage.py / JaCoCo）を読み取り、重み付け平均を出すスクリプトを追加可能。
-
