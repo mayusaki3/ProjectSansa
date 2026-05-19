@@ -73,11 +73,9 @@ SansaCloth
 
 ---
 
-## ドキュメント
+## ドキュメント / Documents
 
-### 日本語ドキュメント目次
-
-- [docs/ja-JP/目次.md](./docs/ja-JP/目次.md)
+- 日本語 : [目次](./docs/ja-JP/目次.md)
 
 ### 全体構想
 
