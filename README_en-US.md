@@ -1,6 +1,6 @@
 [日本語](./README.md) | [English](./README_en-US.md)
 
-# <img src="docs/ja-JP/ロゴマーク/Project%20Sansa%20logo%202023.png" width="20"> What is Project Sansa?
+# <img src="docs/ja-JP/ロゴマーク/Project%20Sansa%20logo%202023.png" width="36"> What is Project Sansa?
 
 Project Sansa (hereinafter “Sansa”) began as an xR open platform based on the idea, “If something like this existed, I’d want to use it,” and has evolved into a vision for an xR system that spans VR, AR, MR, and non-xR domains.  
 The project name “Sansa” was chosen to evoke the image of a three-way intersection where the “real world,” the “virtual world,” and “ideals” converge.  
@@ -11,274 +11,88 @@ Although it started as a personal project, anyone who finds it interesting is we
 
 ---
 
-## 1. 実現したいこと
+## 1. What We Want to Achieve
 
-結構な大風呂敷になりますが、最終的には、スマートフォンに代わる新しいパーソナルデバイスとサービス基盤を作りたいと考えています。  
-主に自分で使いたいがために。
+This might sound like a tall order, but ultimately, we aim to create a new personal device and service platform to replace the smartphone.  
+Mainly because I want to use it myself.
 
-Sansa では、VR / AR / MR / 非XR を1つのサービスとして扱います。
+At Sansa, we treat VR, AR, MR, and non-XR as a single service.
 
-- 非XR: 通話・コミュニケーション
-- AR: 現実空間との情報重畳
-- VR: 仮想空間SNS
-- MR: 現実空間と仮想空間の融合
+- Non-XR: Calls and communication
+- AR: Overlaying information onto the real world
+- VR: Virtual space social networking
+- MR: Fusion of the real and virtual worlds
 
-これらは簡単な操作で切り替えられ、現実世界と仮想世界を自然につなぐことを目指しています。
-また、Sansa 単体ではなく、他の VRSNS やサービスとも接続・連携できるオープンな構成を目指しています。  
-そして、UGC(User Generated Content)の発展を後押しするため、権利関係や経済圏に関する仕組みも組み込んでいきたいです。
-
----
-
-## 2. 本リポジトリの位置づけ
-
-本リポジトリは ProjectSansaの全体構想や、Sansaシリーズの紹介および導線の役割を持ちます。  
-また、Sansaシリーズの共通認識、特に用語については本リポジトリの管理下で共有します。  
-ProjectSansaでは、Sansaシリーズ共通の用語・運用・LLM連携方針を提供しています。  
-各Sansaシリーズは、それらを参照して運用することを推奨します。
-（[5. 開発方針](#5-開発方針) 参照）
-
-- [ProjectSansa 目次](./docs/ja-JP/目次.md)
-
-## 3. 利用シーン
-
-これらは最初期案（2020年6月19日）のアイデアです。  
-すべてを実現するわけではありません。
-
-### 3.1 基本サービス
-xRという事でSansaではVRからARおよびARなしまでのいくつかの領域を１つのサービスでサポートします。
-
-- ARなしでは、通話サービスになります。通話相手はVRの中でも良いし、現実世界でも構いません。
-
-  (イメージ図)
-
-- AR領域では、現実空間にARタグを表示したりといったAR＋通話サービスになります。
-
-  (イメージ図)
-
-- VR領域では、VR空間上でのSNSサービスになります。
-
-  (イメージ図)
-
-- MR領域では、(VR)通話ドーム内でのSNS＋AR＋通話サービスになります。この領域では誰か１人がAR動作(MR-A)、他の人はMR動作(MR-M)となります。
-
-  (イメージ図)
-
-MR領域での各動作は次の通り。
-
-#### MR-A 接続 ( Mixed Reality - Augmented Reality 接続 )
-
-MR-Aでは、自身のアバターが通話ドームの中心に配置されるとともに、自身のヘッドセットから配信された映像が通話ドームに投影されます。  
-他のユーザーのアバターは、通話ドーム内の位置関係に合わせてAR表示されます。  
-（VR領域外でMRに切り替えたときはMR-A/MR-Mを選択）  
-
-  (イメージ図)
-
-#### MR-M 接続 ( Mixed Reality - Mixed Reality 接続 )
-
-MR-Mでは、通話ドーム内の任意の場所に移動でき、通話ドームに投影された映像を見ることができます。  
-他のユーザーのアバターは、通話ドーム内の位置関係に合わせてAR表示されます。  
-（VR領域でMRに切り替えたときの既定動作）
-
-  (イメージ図)
+Users can switch between these modes with simple controls, aiming to naturally bridge the real and virtual worlds.
+Furthermore, we aim for an open architecture that allows Sansa to connect and integrate not only on its own but also with other VRSNS platforms and services.  
+Furthermore, to support the growth of UGC (User-Generated Content), we intend to incorporate mechanisms related to rights management and the economic ecosystem.
 
 ---
 
-#### 利用シナリオ
+## 2. Purpose of This Repository
 
-これらの領域・動作は、簡単な操作で、切り替えられます。  
-例えば、次のようなシナリオです。
+This repository serves as an introduction to the overall vision of ProjectSansa and the Sansa series, as well as a hub for related resources.  
+It also serves as a central repository for sharing common understandings regarding the Sansa series, particularly terminology.  
+ProjectSansa provides common terminology, operational guidelines, and LLM integration policies for the Sansa series.  
+We recommend that each Sansa series operate in accordance with these guidelines.
 
-Aさんが街を歩いていて、面白いものを見つけた。（Aさん:ARなし）
+For details, please refer to the following documents.  
+Ideas for use cases are also listed here.
 
-  (イメージ図)
+- [ProjectSansa Table of Contents](./docs/en-US/index.md)
 
-AさんがBさんに通話、BさんはVR空間内に居た。（Aさん:ARなし、Bさん:VR）
+## 3. Introduction to Each Sansa Series
 
-  (イメージ図)
+### 3.1 SansaSphere
 
-Bさんに話したら見たいというので、AさんBさんがMRに切替。（Aさん:MR-A、Bさん:MR-M）
+SansaSphere handles the foundational aspects of Project Sansa, including user authentication, rights management, provenance information, verification, and the economic ecosystem.  
+It also serves as a portal site.
 
-  (イメージ図)
-
-面白いのでBさんがCさんに通話、Cさんは外出していた。（Aさん:MR-A、Bさん:MR-M、Cさん:AR）
-危ないので会話しつつ移動して、CさんもMRに切替。（Aさん:MR-A、Bさん:MR-M、Cさん:MR-M）
-
-  (イメージ図)
-
-ライブなども、現地参加とVR参加を一緒にみたいなことができるので、状態の情報提供を条件にVR参加者は何割引かで参加できるみたいなシナリオも考えられます。 企業なら視察にも使えるし、下見なども概念がかなり変わるのでは。
+- [SansaSphere Repository](https://github.com/mayusaki3/SansaSphere)
 
 ---
 
-### 3.2 その他の機能
+### 3.2 SansaVRM
 
-その他実現したい機能を挙げてしておきます。
+VRM stands for Virtual Reality Models.
+It is the content data format used by ProjectSansa.
 
-#### タイムキャプチャ機能
-あるルーム／ワールドに対する入力データの時間情報付きキャプチャができる。
-これを再生した時にルーム／ワールド及びアバターなどのデータがあれば、その時の再現ができる。
+Multiple models can be stored within a single format, and in addition to rights information, it can also include provenance data, terms of use, and information regarding compensation.  
+Since it is merely a format, tampering cannot be prevented; however, when distributing content, registering it with SansaSphere is expected to enable tamper detection and compensation evaluation (such as usage status and what percentage of the total revenue is allocated) by querying SansaSphere.
 
-#### デスクトップ連携機能
-クライアントPCのデスクトップをキャプチャして、スライドや写真・動画などを通話ドーム内やVRSNS内の任意の場所に投影できる。
-
-#### 統合認証機能
-サーバークラスタ全体として認証を行える仕組みを実現します。
-
-#### VRSNSランチャー機能
-Sansaから、他のVRSNSに切り替える機能をサポートします。
+- [SansaVRM Repository](https://github.com/mayusaki3/SansaVRM)
 
 ---
 
-### 3.3 その他のアイデア
+### 3.3 SansaVRM Studio AI
 
-#### システム構成など
+This is the development environment for creating SansaVRM content.  
+In addition to basic editing functions, it enables AI-assisted creation.  
+Regarding AI support, the plan is not for Project Sansa to provide AI services, but rather for each individual to build and use their own local AI.  
+The philosophy is that creators should be able to create anything—whether it’s erotic or gory—at the time of creation, and that compliance with policies is determined only when the content is ready for distribution.
 
-持続性の観点から、特定企業のみがサービスを提供する形ではなく、誰でもサービスを提供できて、企業もそれに乗る形にしたいと考えています。  
-そのため、ベース部分はオープンソースで、オリジナル要素はクローズドで実装みたいにしたいです。
-また、商取引や世界に１つだけのアイテムみたいなことを実現するために、ブロックチェーンの仕組みなんかも取り入れたいですね。  
+- [SansaVRM-Studio-AI Repository](https://github.com/mayusaki3/SansaVRM-Studio-AI)
 
-ハードウェア的な構成は、サーバー、クライアントPC、ヘッドセットの、いわゆるPC VRと変わらないもの、と考えています。  
-クライアントPCにサーバーのソフトウェアを入れて同居させることも検討したいです。 スタンドアロン型ヘッドセットは、レンダリングをヘッドセットが行いますが、稼働時間なども考慮し、ARタグ表示などの非力な範囲に限定し、MR～VR領域のレンダリングはクライアントPCが受け持ちことになります。  
-ヘッドセットについては、網膜投影ディスプレイなども入手可能になっていますし、試作までできたらいいかな。  
+### 3.4 SansaXR
 
-#### サーバークラスタ
+This is a so-called XRSNS system where SansaVRM content is available.
+Most of what Project Sansa aims to achieve is concentrated here.
 
-サーバークラスタを構成するサーバーは、個人や企業が立てたサーバーです。  
-サーバークラスタに所属するサーバー同士は相互にリストアップされ、ワールドを構成します。  
+- [SansaXR Repository](https://github.com/mayusaki3/SansaXR)
 
-その性質上、サーバーはVR空間をサービスとして提供する必要があります。  
-この空間は公共アリアと私有エリアに別れており、サーバーを公開した場合は、最低限の公共エリアを提供する必要があります。  
-企業サーバーであっても、公共エリアまでは誰でも入ることができるわけです。  
+### 3.5 SansaCloth
 
-#### クライアントPC
+A shader for SansaXR, primarily aimed at improving the rendering of clothing and similar items.  
+It processes effects that would normally require mesh deformation directly within the shader.  
+We plan to port this to various environments.
 
-クライアントPCはクラウドVM前提ですが、クライアントソフトウェアは無償で手持ちのPCにインストールして利用できます。  
-企業はクラウドVMをサブスクリプションの形で提供することもできます。  
-なお、サーバーソフトウェアと同居することも可能です。  
+- [SansaCloth Repository](https://github.com/mayusaki3/SansaCloth)
 
-#### ヘッドセット
+### 3.6 SansaVRM MuJoCo Adapter
 
-基本的にARヘッドセットになります。発信側がVR内の場合、シナリオにあっとように会話しながら周りの安全を確保してVR内にそのまま移動できるものですが、ヘッドセットの特性上、フルトラはできません。  
-ヘッドセットはトラッキング用のカメラを持ち、そのカメラにより映像を送信します。  
+This is an adapter for converting data from the SansaVRM format into a format compatible with MuJoCo, an external physics simulator.  
 
-視覚障害者向けの音のxRのみのヘッドセットも標準仕様に入れたいです。  
-
-## 4. 各Sansaシリーズの紹介
-
-### SansaSphere（サンサスフィア）
-
-ProjectSansa利用者の認証や、権利処理・来歴情報・検証・経済圏等の基盤部分を担当します。  
-いわゆるポータルサイト機能も持ちます。
-
-[SansaSphere](https://github.com/mayusaki3/SansaSphere)
-
----
-
-### SansaVRM（サンサブイアールエム）
-
-VRM = Virtual Reality Models です。
-ProjectSansaが扱うコンテンツデータフォーマットです。
-
-フォーマット内に複数モデルを格納でき、権利情報以外に来歴情報や利用条件、対価に関する情報等も入れることができます。  
-あくまでフォーマットですので改ざんは防げませんが、流通させる場合は SansaSphere への登録を行えば、SansaSphere に問い合わせることで改ざん検知や、対価の評価（利用状況や全体の何パーセントが取り分か？等）などが可能になる想定です。
-
-[SansaVRM](https://github.com/mayusaki3/SansaVRM)
-
----
-
-### SansaVRM Studio AI（サンサブイアールエムスタジオエーアイ）
-
-SansaVRMコンテンツの作成環境です。  
-基本的な編集機能に加え、AIによる創作サポートを可能にします。  
-AIサポートについては、ProjectSansaでAIサービスを提供するのではなく、各個人がローカルAIを構築し、それを利用する想定になります。  
-創作時点ではエログロだろうと何だろうと創作できるべきで、それを流通させようとした段階でポリシー違反かどうかを判断する考え方です。
-
-[SansaVRM-Studio-AI](https://github.com/mayusaki3/SansaVRM-Studio-AI)
-
-### SansaXR（サンサエックスアール）
-
-いわゆるXRSNSシステムで、SansaVRMコンテンツが利用可能。
-ProjectSansaの実現したいこと、の大半がここに集約されています。
-
-[SansaXR](https://github.com/mayusaki3/SansaXR)
-
-### SansaCloth（サンサクロース）
-
-SansaXR用シェーダーで、主に服などの表現UPを狙ったものです。  
-本来メッシュ変形で実現しなければならない表現を、シェーダー側で処理するようにしたものです。  
-各環境用に展開したいです。
-
-[SansaCloth](https://github.com/mayusaki3/SansaCloth)
-
-### SansaVRM MuJoCo Adapter（サンサブイアールエムムジョコアダプター）
-
-SansaVRMフォーマットから、外部物理シミュレータであるMuJoCo用フォーマットに変換するためのアダプターです。  
-
-[SansaVRM-MuJoCo-Adapter](https://github.com/mayusaki3/SansaVRM-MuJoCo-Adapter)
-
----
-
-## 5. 開発時専守事項
-
-この章の内容をLLM向けに整理したものを、次のようにLLMに与えてください。
-```
-以下のURLにアクセスし内容を参照して。以降の作業はその内容に従うこと。
-(URL)
-```
-
-### 5.1 多言語化対応
-
-基本的に使用言語は日本語ですが、コード内部で使用するIDなどは、すべて英語基準です。  
-コード内に埋め込むメッセージは英語のみで、外部リソース(例: resource/ja-JP/message.json)で日本語に対応してください。  
-
-- リソースなしまたはen-USリソースがある場合、英語表示
-- ja-JPリソースがある場合、日本語表示
-- それ以外の言語については、翻訳リソースを用意すれば表示可能にしたい。
-
-ドキュメントについては、docs/ja-JP のように、言語ごとに作成できます。  
-その際、HLDocSの規約に従い、doc-id / sec_id は維持したまま翻訳してください。
-
-README.md だけは特別で、多言語対応する場合は README_en-US.md のように名前を付けて、リポジトリ直下に翻訳版を作成してください。参照しているイラストなどは、docs/en-US/Illustrations に翻訳したものを格納したものを使用してください。
-
-### 5.2 LLMルール
-
-LLM利用による開発を想定しています。ここではそのルールを説明します。  
-
-- ドキュメント管理等は、HLDocS 準拠とします。  
-  仕様→コード、仕様→テスト仕様→テストコード、テスト実施などのルール化で最低限の品質担保を行います。  
-
-- LLM利用は、リポジトリ単位で個別である想定です。
-  各リポジトリには、以下のフォルダが作成できます。
-    ```
-    LLM_Workspace
-    ```
-
-- LLMによるGitHub操作は許容します。  
-  その代わり、LLMは作業内容もリポジトリの以下の場所に記録することが必要です。
-    ```
-    LLM_Workspace/worklog/*
-    ```
-  worklogの内容は、LLM自身の作業引継ぎ情報でもあるので、任意のタイミングで整理が必要です。  
-  記述言語は問いませんが、おそらくは開発者が使用する言語になるでしょう。
-
-- 各Sansaシリーズのリポジトリ間で仕様のすり合わせが必要な場合は、LLMで申し送り情報を作成し、それを開発者が相手先のLLMに添付などで伝える想定です。  
-  それぞれ以下のフォルダに日時付きで作成します。
-    ```
-    # 申し送り情報 - LLMが申し送り情報を格納、開発者がこれをLLMに渡す。
-    LLM_Workspace/Handover/*
-    # 申し入れ情報 - LLMが受け取った申し送り情報を整理して格納。
-    LLM_Workspace/Request/*
-    ```
-  対応結果なども同様に情報交換する。
-
-- 用語定義等、全Sansaリポジトリに関する情報は、ProjectSansaリポジトリで管理する。  
-  必要なタイミングで ProjectSansa側に申し送り、ProjectSansaからは、全Sansaリポジトリ向けに、共通認識に変更があったことを申し入れます。
-
-- HLDocSに対する申し入れも同様に行います。
-
----
-
-## 6. ライセンス
-MIT License
+- [SansaVRM-MuJoCo-Adapter Repository](https://github.com/mayusaki3/SansaVRM-MuJoCo-Adapter)
 
 ---
 © 2020 ProjectSansa
