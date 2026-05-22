@@ -1,10 +1,11 @@
 [日本語](./README.md) | [English](./README_en-US.md)
 
-# <img src="docs/ja-JP/ロゴマーク/Project%20Sansa%20logo%202023.png" width="20"> Project Sansa（プロジェクトサンサ）とは
+# <img src="docs/ja-JP/ロゴマーク/Project%20Sansa%20logo%202023.png" width="20"> What is Project Sansa?
 
-ProjectSansa（プロジェクトサンサ、以下 Sansa）とは、ざっくりいうと、こんなのあったら使いたいxRオープンプラットフォームから始まり、VR / AR / MR / 非XR を横断する xRシステム構想になりました。  
-プロジェクト名のサンサは「現実世界」「仮想世界」「理想」が交差する三叉をイメージして名付けました。  
-個人プロジェクトとして開始していますが、面白そうと思ったら誰でも参加歓迎です。
+Project Sansa (hereinafter “Sansa”) began as an xR open platform based on the idea, “If something like this existed, I’d want to use it,” and has evolved into a vision for an xR system that spans VR, AR, MR, and non-xR domains.  
+The project name “Sansa” was chosen to evoke the image of a three-way intersection where the “real world,” the “virtual world,” and “ideals” converge.  
+Although it started as a personal project, anyone who finds it interesting is welcome to join.  
+(Sorry, but we’re currently only Japanese speakers.)
 
 [Discord](https://discord.gg/wN67tdzrCT)
 
