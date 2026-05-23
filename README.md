@@ -1,6 +1,6 @@
 [日本語](./README.md) | [English](./README_en-US.md)
 
-# <img src="docs/ja-JP/ロゴマーク/Project%20Sansa%20logo%202023.png" width="36"> Project Sansa（プロジェクトサンサ）とは
+# <img src="Logo/Sansa2023.png" width="24"> Project Sansa（プロジェクトサンサ）とは
 
 ProjectSansa（プロジェクトサンサ、以下 Sansa）とは、ざっくりいうと、こんなのあったら使いたいxRオープンプラットフォームから始まり、VR / AR / MR / 非XR を横断する xRシステム構想になりました。  
 プロジェクト名のサンサは「現実世界」「仮想世界」「理想」が交差する三叉をイメージして名付けました。  

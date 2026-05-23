@@ -1,6 +1,6 @@
 [日本語](./README.md) | [English](./README_en-US.md)
 
-# <img src="docs/ja-JP/ロゴマーク/Project%20Sansa%20logo%202023.png" width="36"> What is Project Sansa?
+# <img src="Logo/Sansa2023.png" width="24"> What is Project Sansa?
 
 Project Sansa (hereinafter “Sansa”) began as an xR open platform based on the idea, “If something like this existed, I’d want to use it,” and has evolved into a vision for an xR system that spans VR, AR, MR, and non-xR domains.  
 The project name “Sansa” was chosen to evoke the image of a three-way intersection where the “real world,” the “virtual world,” and “ideals” converge.  
