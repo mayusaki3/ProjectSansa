@@ -27,6 +27,8 @@ Users will be able to switch between these modes with simple controls, aiming to
 Additionally, we aim for an open architecture that allows Sansa to connect and integrate not only on its own but also with other VRSNS platforms and services.  
 Furthermore, to support the growth of UGC (User-Generated Content), we intend to incorporate mechanisms related to rights management and economic ecosystems.
 
+- [Initial Ideas and Use Cases](./docs/ja-JP/01_初期アイデアと利用シーン.md) (Japanese)
+
 ---
 
 ## 2. Purpose of This Repository
