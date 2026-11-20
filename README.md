@@ -44,117 +44,107 @@ ProjectSansaでは、Sansaシリーズ共通の用語・運用・LLM連携方針
 
 ## 3. 各Sansaシリーズの紹介
 
+各リポジトリの `develop` ブランチの README・設計資料・実装・テスト構成をもとにした概要です（2026-11-20確認）。ここで示す進捗は概要であり、正式リリースや機能完成を保証するものではありません。詳細は各リポジトリの仕様・テスト・Worklogを参照してください。
+
 <table>
 
 <tr><td>
 
-### [SansaSphere（サンサスフィア）](https://github.com/mayusaki3/SansaSphere)
+### [SansaSphere](https://github.com/mayusaki3/SansaSphere)
 
-ProjectSansa利用者の認証や、権利処理・来歴情報・検証・経済圏等の基盤部分を担当します。  
-いわゆるポータルサイト機能も持ちます。
+認証・アカウント、権利・来歴、監査・ログ、経済圏、フェデレーション連携を担う共通サービス基盤。機能別リポジトリへの分離と信頼連携も設計しています。
 
 ### 現在の状況
-- 設計中
+- 設計・基盤構成整理中
 
-`ポータルサイト` `アカウント` `認証` `権利処理` `来歴情報` `検証` `経済圏`
+`認証` `権利管理` `来歴情報` `監査` `経済圏` `フェデレーション`
 </td></tr>
 
 <tr><td>
 
-### [SansaVRM（サンサブイアールエム）](https://github.com/mayusaki3/SansaVRM)
+### [SansaVRM](https://github.com/mayusaki3/SansaVRM)
 
-VRM = Virtual Reality Models です。  
-ProjectSansaが扱うコンテンツデータフォーマットで、アバターやワールドオブジェクトなどを扱います。
-
-フォーマット内に複数モデルを格納でき、権利情報以外に来歴情報や利用条件、対価に関する情報等も入れることができます。  
-あくまでフォーマットですので改ざんは防げませんが、流通させる場合は SansaSphere への登録を行えば、SansaSphere に問い合わせることで改ざん検知や、対価の評価（利用状況や全体の何パーセントが取り分か？等）などが可能になる想定です。
+人型・非人型を扱う構造化モデル基盤。モデル、モジュール、装着状態、拡張情報や権利・来歴の扱いを整理し、Rustによるコア、バリデータ、形式アダプターの実装とテストを進めています。
 
 ### 現在の状況
-- 設計中
+- 設計・初版実装／検証中
 
-`フォーマット` `glTF` `許諾情報` `来歴情報` `経済圏`
+`3Dモデル` `Rust` `glTF` `VRM` `モジュール` `検証`
 </td></tr>
 
 <tr><td>
 
-### [SansaVRM Studio AI（サンサブイアールエムスタジオエーアイ）](https://github.com/mayusaki3/SansaVRM-Studio-AI)
+### [SansaVRM Studio AI](https://github.com/mayusaki3/SansaVRM-Studio-AI)
 
-SansaVRMコンテンツの作成環境です。  
-基本的な編集機能に加え、AIによる創作サポートを可能にします。  
-AIサポートについては、ProjectSansaでAIサービスを提供するのではなく、各個人がローカルAIを構築し、それを利用する想定になります。  
-創作時点ではエログロだろうと何だろうと創作できるべきで、それを流通させようとした段階でポリシー違反かどうかを判断する考え方です。
+SansaVRMを中心とした3Dアセットの制作・変換・検証とAI前処理支援環境。プロジェクト管理、ワークフロー、依存関係管理、ローカルサーバー、最小検証UIなどのPoCを実装しています。AIなしでも使える基盤とローカルAI優先の構成を目指します。
 
 ### 現在の状況
-- 設計中
+- アーキテクチャ整理・PoC実装中
 
-`SansaVRM` `AI生成` `編集` `変換` `組み立て` `許諾情報` `来歴情報` `経済圏`
+`3D制作` `AI前処理` `ローカルAI` `Python` `ワークフロー` `PoC`
 </td></tr>
 
 <tr><td>
 
-### [SansaXR（サンサエックスアール）](https://github.com/mayusaki3/SansaXR)
+### [SansaXR](https://github.com/mayusaki3/SansaXR)
 
-いわゆるXRSNSシステムで、SansaVRMコンテンツが利用可能。
-ProjectSansaの実現したいこと、の大半がここに集約されています。
+OpenXRに基づくXRランタイム、トラッキング、マルチプレイヤー、同期、インタラクションなどを担当。Demo 1でO3DEとGodotを同一要件で比較・検証し、エンジン固有実装から共通境界を整理します。
 
 ### 現在の状況
-- 設計中/ゲームエンジンも含め検証中
+- 設計・XRランタイム技術検証中
 
-`XRSNS` `OpenXR` `O3DE` `Godot` `SansaVRM`
+`XRSNS` `OpenXR` `O3DE` `Godot` `マルチプレイヤー` `技術検証`
 </td></tr>
 
 <tr><td>
 
-### [SansaXR-WorldCore（サンサエックスアールワールドコア）](https://github.com/mayusaki3/SansaXR-WorldCore)
+### [SansaXR-WorldCore](https://github.com/mayusaki3/SansaXR-WorldCore)
 
-VR霧世界マップを妄想してみました。
-それをベースにSansaXRのワールド管理基盤として整理しようとしています。
-
-- 地球複製（緯度経度を基準）の未定義箇所は霧、位置情報付き写真から3D再構築、追加写真による改善。
-- Creator IFは分岐世界。離れた既知エリアは霧ワープゲートで接続する構想。
-- 空間を定義するセルは動的ストリーミングの検索・配信単位。重複セル、セル横断オブジェクト／ギミックを許す。オブジェクト所有権をセルに固定しない。
-- ワールド作品は制作者のSandboxへアップロード・検証し、承認済み差分を稼働中のLive Worldへ公開。公開リビジョンとアセット、権限・必要なランタイム状態を永続化し、再起動後に復元する。
-- 公開方式: 自領域内の安全な変更は自動公開、共有物・他者領域・高リスク変更は承認。承認は形式／安全性の検証失敗を上書きしない。競合時は再検証。
-- Sandbox時に権利・利益配分査定、本番利用はWorldCoreからSansaSphereへ必要最小限の利用実績イベントを送り、Sandbox試験を収益算定に混ぜない。
-- ワールド入場の公開/Private/招待/有料/グループ等の条件を組み合わせて制御。Discover（存在発見）、View（外観）、Enter（入場）、Interact（操作）、Asset Fetch（取得）を分ける。
-- シームレスワールドのアクセス方式: 物理的な境界制御と別インスタンス方式を併用。通常はドア・境界をサーバー権限で制御、非公開・有料・イベント等は必要に応じ隔離インスタンスに遷移する。入場先の権限を確認してから移送し、失敗時は元の位置/インスタンスに留める。
-- アバターの登録・選択・所有者との関連はSansaSphere側。実体アセットは参照型の共通ストレージ候補。描画セッションへの反映はSansaXR。
-
-などなど。
+SansaXRのワールド管理基盤。霧で覆われた未定義領域、地理セル、写真からの3D再構築、SandboxからLive Worldへの公開、アクセス権限、ワールド／インスタンス遷移を構想しています。ライブイベント向けの出演側・観客側インスタンス分離やギミック配布・再同期も設計Worklogで検討しています。
 
 ### 現在の状況
-- 設計中
+- ワールド管理基盤を設計中（実装前）
 
-`XRSNS` `OpenXR` `O3DE` `Godot` `SansaVRM`
+`ワールド管理` `霧世界` `空間セル` `インスタンス` `アクセス制御` `ギミック同期`
 </td></tr>
 
 <tr><td>
 
-### [SansaCloth（サンサクロース）](https://github.com/mayusaki3/SansaCloth)
+### [SansaCloth](https://github.com/mayusaki3/SansaCloth)
 
-SansaXR用シェーダーで、主に服などの表現UPを狙ったものです。  
-本来メッシュ変形で実現しなければならない表現を、シェーダー側で処理するようにしたものです。  
-各環境用に展開したいです。
+衣服と身体の貫通を抑えるSDFベースのアンチクリッピング／表面応答基盤。Rustの参照実装とテストに加え、Godot・Unity・O3DE向けの検証コードを整備しています。製品版の完成を意味するものではありません。
 
 ### 現在の状況
-- 設計・試作中
+- リファレンス実装・エンジン連携検証中
 
-`SansaVRM` `シェーダー` `PC` `Android` `iOS` `Unity` `O3DE` `Godot`
+`衣服` `アンチクリッピング` `SDF` `Rust` `Godot` `Unity` `O3DE`
 </td></tr>
 
 <tr><td>
 
-### [SansaVRM MuJoCo Adapter（サンサブイアールエムムジョコアダプター）](https://github.com/mayusaki3/SansaVRM-MuJoCo-Adapter)
+### [SansaVRM MuJoCo Adapter](https://github.com/mayusaki3/SansaVRM-MuJoCo-Adapter)
 
-SansaVRMフォーマットから、外部物理シミュレータであるMuJoCo用フォーマットに変換するためのアダプターです。  
+SansaVRMとMuJoCo/MJCF/制御設定を接続するアダプター。MuJoCo固有の変換・アクチュエータ対応付け・診断を本体から分離し、Python実装とテストを進めています。
 
 ### 現在の状況
-- 設計中
+- 設計・基礎実装／テスト中
 
-`SansaVRM` `MuJoCo`
+`SansaVRM` `MuJoCo` `MJCF` `Python` `シミュレーション` `アダプター`
 </td></tr>
 
 </table>
+
+---
+
+## 4. ドキュメント規約：HLDocS
+
+ProjectSansaと関連リポジトリでは、Human–LLM Document Roles Specification（[HLDocS](https://github.com/mayusaki3/HLDocS)）をドキュメント作成・検証・再構成の共通規約として活用します。HLDocSは、人間が要件・意味・設計判断を担い、LLMが文書構造・ID・対応関係の維持を支援する役割分担を定義します。
+
+仕様・設計・テスト間のトレーサビリティ、Markdownの構造的な運用、長期作業を引き継ぐ `LLM_WORKSPACE`（Request／Worklog／Handover）などを扱います。リポジトリによって導入・移行状況やディレクトリ表記が異なるため、詳細は各リポジトリの規約を優先してください。
+
+- **安定運用側：** HLDocS `main`（v0.6.1系）
+- **次期仕様の評価：** HLDocS `develop`（v0.7.0再構成中。完成・安定版ではありません）
+- [HLDocS リポジトリと利用方法](https://github.com/mayusaki3/HLDocS)
 
 ---
 © 2020 ProjectSansa

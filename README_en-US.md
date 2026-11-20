@@ -45,91 +45,107 @@ Ideas for use cases are also listed here.
 
 ## 3. Introduction to Each Sansa Series
 
+The following overview reflects each repository's `develop` branch README, design materials, code and test structure, checked on 2026-11-20. Status descriptions are summaries, not claims of production readiness or completed releases. Consult each repository's specifications, tests and worklogs for details.
+
 <table>
 
 <tr><td>
 
 ### [SansaSphere](https://github.com/mayusaki3/SansaSphere)
 
-It handles the foundational aspects of Project Sansa, including user authentication, rights management, provenance information, verification, and the economic ecosystem.  
-It also functions as a portal site.
+Shared ecosystem services for accounts, authentication, rights, provenance, auditing, logging, economy and federation. The design also covers separation into service repositories and federated trust.
 
 ### Current Status
-- Under design
+- Architecture and infrastructure design
 
-`Portal Site` `Account` `Authentication` `Rights Management` `Provenance Information` `Verification` `Economic Ecosystem`
+`Authentication` `Rights` `Provenance` `Audit` `Economy` `Federation`
 </td></tr>
 
 <tr><td>
 
 ### [SansaVRM](https://github.com/mayusaki3/SansaVRM)
 
-VRM stands for Virtual Reality Models.  
-It is the content data format used by ProjectSansa, handling avatars, world objects, and more.
-Multiple models can be stored within the format, and in addition to rights information, it can also include provenance information, terms of use, and information regarding compensation.  
-Since it is merely a format, tampering cannot be prevented; however, when distributing content, registering it with SansaSphere is expected to enable tamper detection and compensation evaluation (such as usage status and what percentage of the total constitutes the share) by querying SansaSphere.
+A structured model foundation for humanoid and non-humanoid assets. Development includes Rust core APIs, validators and format adapters, with tests for models, modules and related metadata.
 
 ### Current Status
-- Under development
+- Design, initial implementation and validation
 
-`Format` `glTF` `Licensing Information` `Provenance Information` `Economic Ecosystem`
+`3D Models` `Rust` `glTF` `VRM` `Modules` `Validation`
 </td></tr>
 
 <tr><td>
 
 ### [SansaVRM Studio AI](https://github.com/mayusaki3/SansaVRM-Studio-AI)
 
-This is the development environment for SansaVRM content.  
-In addition to basic editing functions, it enables AI-assisted creation.  
-Regarding AI support, the plan is not for Project Sansa to provide AI services, but rather for individuals to build and use their own local AI.  
-The philosophy is that creators should be able to create anything—whether it’s erotic, gory, or otherwise—at the time of creation, and that compliance with policies is determined only when the content is ready for distribution.
+A creation, conversion, validation and AI preprocessing environment built around SansaVRM. PoCs include project workspaces, workflow management, dependency graphs, a local server and a minimal validation UI. The core is intended to work without AI, with local AI preferred for preprocessing.
 
 ### Current Status
-- Under design
+- Architecture stabilization and PoC implementation
 
-`SansaVRM` `AI Generation` `Editing` `Conversion` `Assembly` `Licensing Information` `History Information` `Economic Ecosystem`
+`3D Authoring` `AI Preprocessing` `Local AI` `Python` `Workflow` `PoC`
 </td></tr>
 
 <tr><td>
 
 ### [SansaXR](https://github.com/mayusaki3/SansaXR)
 
-A so-called XRSNS system where SansaVRM content is available.
-Most of what Project Sansa aims to achieve is concentrated here.
+XR runtime, OpenXR tracking, multiplayer, synchronization and interaction. Demo 1 compares native implementations in O3DE and Godot against shared requirements before defining common engine boundaries.
 
 ### Current Status
-- Under design
+- Design and XR runtime technology validation
 
-`XRSNS` `OpenXR` `O3DE` `SansaVRM`
+`XRSNS` `OpenXR` `O3DE` `Godot` `Multiplayer` `Validation`
+</td></tr>
+
+<tr><td>
+
+### [SansaXR-WorldCore](https://github.com/mayusaki3/SansaXR-WorldCore)
+
+SansaXR world management: fog-covered undefined regions, geographic cells, photo-based 3D reconstruction, Sandbox-to-Live publication, access policies and world/instance transitions. Worklogs also explore separate performer/audience instances for live events and distribution and resynchronization of stage gimmicks.
+
+### Current Status
+- World-management design (pre-implementation)
+
+`World Management` `Fog World` `Spatial Cells` `Instances` `Access Control` `Gimmick Sync`
 </td></tr>
 
 <tr><td>
 
 ### [SansaCloth](https://github.com/mayusaki3/SansaCloth)
 
-A shader for SansaXR, primarily aimed at improving the rendering of clothing and similar items.  
-It processes effects that would normally require mesh deformation directly within the shader.  
-We plan to port this to various platforms.
+An SDF-based clothing anti-clipping and surface-response foundation. Rust reference code and tests exist alongside validation tools for Godot, Unity and O3DE; these do not imply a production release.
 
 ### Current Status
-- Not yet started
+- Reference implementation and engine validation
 
-`SansaVRM` `Shader` `PC` `Android` `iOS`
+`Cloth` `Anti-clipping` `SDF` `Rust` `Godot` `Unity` `O3DE`
 </td></tr>
 
 <tr><td>
 
 ### [SansaVRM MuJoCo Adapter](https://github.com/mayusaki3/SansaVRM-MuJoCo-Adapter)
 
-This is an adapter for converting from the SansaVRM format to a format compatible with MuJoCo, an external physics simulator.  
+An adapter connecting SansaVRM with MuJoCo, MJCF and controller configuration. MuJoCo-specific conversion, actuator mapping and diagnostics are separated from SansaVRM; Python modules and tests are under development.
 
 ### Current Status
-- Under design
+- Design, foundational implementation and tests
 
-`SansaVRM` `MuJoCo`
+`SansaVRM` `MuJoCo` `MJCF` `Python` `Simulation` `Adapter`
 </td></tr>
 
 </table>
+
+---
+
+## 4. Documentation convention: HLDocS
+
+ProjectSansa and related repositories use [HLDocS (Human–LLM Document Roles Specification)](https://github.com/mayusaki3/HLDocS) as a common convention for creating, validating and reconstructing documentation. HLDocS assigns requirements, meaning and design decisions to humans, while LLMs help maintain document structures, identifiers and traceability.
+
+It covers traceability between specifications, design and tests; structured Markdown; and `LLM_WORKSPACE` workflows (Request / Worklog / Handover) for long-running work. Adoption and directory naming can differ by repository; consult each repository's own conventions.
+
+- **Stable operational line:** HLDocS `main` (v0.6.1 series)
+- **Next-specification evaluation:** HLDocS `develop` (v0.7.0 reconstruction in progress; not yet complete or stable)
+- [HLDocS repository and usage guidance](https://github.com/mayusaki3/HLDocS)
 
 ---
 © 2020 ProjectSansa
