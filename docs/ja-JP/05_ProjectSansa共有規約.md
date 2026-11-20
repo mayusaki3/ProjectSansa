@@ -35,7 +35,29 @@ ProjectSansa は、Sansa シリーズ全体における以下の共有ハブと�
 
 ---
 
-## 3. 規約継承方針
+## 3. ProjectSansaの責務
+
+ProjectSansa は以下を管理する。
+
+- 共通概念
+- 共通用語
+- エコシステム構想
+- リポジトリ連携構成
+- ガバナンス方針
+- 著作物来歴記録方針
+
+以下は管理対象外とする。
+
+- ドキュメント作成手法
+- ドキュメント検証手法
+- LLM一般運用手法
+- HLDocS共通規約
+
+これらは HLDocS の責務とする。
+
+---
+
+## 4. 規約継承方針
 
 各 Sansa シリーズは、ProjectSansa の共有規約を継承します。
 
@@ -50,7 +72,7 @@ ProjectSansa 共有規約と個別シリーズ規約に矛盾がある場合は�
 
 ---
 
-## 4. 共通用語参照方針
+## 5. 共通用語参照方針
 
 Sansa シリーズ間で共有する概念は、ProjectSansa の共通用語定義を参照します。
 
@@ -67,7 +89,7 @@ Sansa シリーズ間で共有する概念は、ProjectSansa の共通用語定�
 
 ---
 
-## 5. LLM_Rules の位置づけ
+## 6. LLM_Rules の位置づけ
 
 `LLM_Rules` は、LLM が作業前に参照する入口として扱います。
 
@@ -76,14 +98,13 @@ Sansa シリーズ間で共有する概念は、ProjectSansa の共通用語定�
 - HLDocS 規約への導線
 - ProjectSansa 共有規約への導線
 - ProjectSansa 共通用語定義への導線
-- LLM_Workspace など、実験中の LLM 作業運用への導線
 
 `LLM_Rules` は、詳細仕様や正本そのものを保持する場所ではありません。  
 安定した内容は `docs/ja-JP` 配下へ移し、`LLM_Rules` から参照します。
 
 ---
 
-## 6. LLM運用変更の共有方法
+## 7. LLM運用変更の共有方法
 
 ProjectSansa で LLM 運用が変わった場合は、以下の順で共有します。
 
@@ -96,7 +117,7 @@ ProjectSansa で LLM 運用が変わった場合は、以下の順で共有し�
 
 ---
 
-## 7. Repository Federation 方針
+## 8. Repository Federation 方針
 
 ProjectSansa は、Sansa シリーズ全体を単一巨大リポジトリに統合するのではなく、責務ごとに分離されたリポジトリ群として扱います。
 
@@ -112,29 +133,29 @@ ProjectSansa 側には、シリーズ横断の共通概念・共有規約・用�
 
 ---
 
-## 8. LLM_Workspace の暫定位置づけ
+## 9. LLM_Workspace の位置づけ
 
-`LLM_Workspace` は、GitHub 上で LLM 作業を共有するための暫定運用領域です。
+`LLM_Workspace` は、GitHub 上で LLM 作業情報を共有するための運用領域です。  
+詳細な運用方法は HLDocS を参照します。
 
-現時点では、ProjectSansa 内の実験中の運用として扱います。
-
+利用者も Sansa シリーズのリポジトリ間の申し送り/作業依頼などで参照します。  
 想定する用途は以下です。
 
 - Handover: リポジトリ間・チャット間の申し送り
 - Request: LLM への作業依頼や入力受け渡し
 - Worklog: LLM 作業ログ、検討メモ、暫定整理
 
-`LLM_Workspace` の運用方式は、将来的に HLDocS 側へ共通化を申し入れる候補とします。
-
 ---
 
-## 9. 正本管理方針
+## 10. 正本管理方針
 
 ProjectSansa では、安定した規約・方針・用語定義を `docs/ja-JP` 配下で管理します。
 
-暫定運用・作業中メモ・申し送りは、`LLM_Rules` または `LLM_Workspace` に置きます。
-
-暫定内容が安定した場合は、`docs/ja-JP` 配下の正本へ反映します。
+- 暫定運用は、`LLM_Rules` に置きます。これは Sansaシリーズ全リポジトリが従います。  
+  暫定内容が安定した場合は、`docs/ja-JP` 配下の正本へ反映します。  
+  暫定運用かどうかは、正本有無で決まります。
+- 作業中メモ・申し送りは `LLM_Workspace` に置きます。  
+  詳細な運用方法は HLDocS を参照します。
 
 ---
 
